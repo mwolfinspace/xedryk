@@ -464,5 +464,5 @@ html>* {
 .backgroundweb {
     min-height: 100vh;
     min-height: 100dvh;
-    background: linear-gradient(180deg, #22002e, #7c00b1);
+    background: linear-gradient(180deg, #0d0011, #7c00b1);
 }
