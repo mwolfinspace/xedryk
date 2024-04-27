@@ -45,10 +45,8 @@
     padding: 10px;
     margin: 0;
     color: #000000;
-    font-weight: 700;
-    font-weight: 700;
-    font-size: 25px;
-    line-height: 1.5;
+    font-weight: 600;
+    font-size: 40px;
     text-overflow: ellipsis;
     max-width: 100%;
     white-space: nowrap;
@@ -61,16 +59,6 @@
     align-items: center;
     text-align: center;
     flex-wrap: wrap;
-    font-size: 1.1rem;
-}
-
-@media (max-width: 640px) {
-    .text-big {
-        font-size: 3rem;
-    }
-    .content-container {
-        font-size: 1rem;
-    }
 }
 
 .Nznqc {
@@ -203,7 +191,7 @@
     color: #ffffff;
     font-weight: 700;
     font-weight: 700;
-    font-size: 30px;
+    font-size: 50px;
     line-height: 1.5;
     text-overflow: ellipsis;
     max-width: 100%;
@@ -217,14 +205,14 @@
     text-align: center;
     font-weight: 700;
     color: #ffffff;
-    font-size: 25px;
+    font-size: 30px;
     line-height: 1.5;
 }
 
 /*!sc*/
 @media screen and (min-width:576px) {
     .textMiddle {
-        font-size: 16px;
+        font-size: 30px;
     }
 }
 
@@ -236,7 +224,7 @@
     text-align: center;
     line-height: 1.5;
     color: #ffffff;
-    font-size: 18px;
+    font-size: 30px;
     font-weight: 500;
     line-height: 1.5;
 }
@@ -244,14 +232,14 @@
 /*!sc*/
 @media screen and (min-width:576px) {
     .descriptionText {
-        font-size: 16px;
+        font-size: 30px;
     }
 }
 
 /*!sc*/
 @media screen and (min-width:576px) {
-    .textboxFormat {
-        font-size: 16px;
+    .text-big {
+        font-size: 35px;
     }
 }
 
