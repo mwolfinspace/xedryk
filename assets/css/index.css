@@ -46,7 +46,7 @@
     margin: 0;
     color: #000000;
     font-weight: 600;
-    font-size: 40px;
+    font-size: 50px;
     text-overflow: ellipsis;
     max-width: 100%;
     white-space: nowrap;
@@ -85,9 +85,6 @@
         padding: 16px;
     }
 }
-
-
-
 
 /*!sc*/
 .ewSEqQ {
@@ -189,8 +186,7 @@
     padding: 10px;
     margin: 0;
     color: #ffffff;
-    font-weight: 700;
-    font-weight: 700;
+    font-weight: 500;
     font-size: 50px;
     line-height: 1.5;
     text-overflow: ellipsis;
@@ -203,7 +199,7 @@
 .textMiddle {
     margin: 0;
     text-align: center;
-    font-weight: 700;
+    font-weight: 300;
     color: #ffffff;
     font-size: 30px;
     line-height: 1.5;
@@ -212,7 +208,7 @@
 /*!sc*/
 @media screen and (min-width:576px) {
     .textMiddle {
-        font-size: 30px;
+        font-size: 40px;
     }
 }
 
@@ -225,21 +221,24 @@
     line-height: 1.5;
     color: #ffffff;
     font-size: 30px;
-    font-weight: 500;
+    font-weight: 300;
     line-height: 1.5;
 }
 
 /*!sc*/
 @media screen and (min-width:576px) {
     .descriptionText {
-        font-size: 30px;
+        font-size: 40px;
     }
 }
 
 /*!sc*/
 @media screen and (min-width:576px) {
     .text-big {
-        font-size: 35px;
+        font-size: 60px;
+    }
+    .titleformat {
+        font-size: 80px;
     }
 }
 
@@ -265,8 +264,8 @@
 
 /*!sc*/
 .avatarbox {
-    width: 150px;
-    height: 150px;
+    width: 300px;
+    height: 300px;
     border-radius: 50%;
     display: block;
     object-fit: contain;
@@ -338,8 +337,8 @@
 
 /*!sc*/
 html {
-    font-family: IBM Plex Sans, sans-serif;
-    font-weight: 500;
+    font-family: "Jersey 15", sans-serif;
+    font-weight: 300;
     font-size: inherit;
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
