@@ -25,6 +25,10 @@
     margin-top: 3rem
 }
 
+.mt-1 {
+    margin-top: 0.5rem
+}
+
 .flex {
     display: flex
 }
