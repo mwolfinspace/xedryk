@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mica Effect Button</title>
+<style>
+  /* Body style for custom cursor */
+  body {
+    cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="24" font-size="24">🐉</text></svg>') 16 16, auto;
+  }
+
+  /* Center the content */
+  .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #1b1b1f;
+  }
+
+  /* Button styling with Mica effect */
+  .mica-button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1); /* Frosted glass effect */
+    backdrop-filter: blur(10px);
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  /* Shining effect */
+  .mica-button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.6),
+      rgba(255, 255, 255, 0)
+    );
+    transition: left 0.5s;
+  }
+
+  /* Hover effect for the shining animation */
+  .mica-button:hover::after {
+    left: 150%;
+    transition: left 0.5s;
+  }
+
+  /* Slight color shift and elevation on hover */
+  .mica-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.6);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <button class="mica-button">Mica Button</button>
+</div>
+</body>
+</html>
