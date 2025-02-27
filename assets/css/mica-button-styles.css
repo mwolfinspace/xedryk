@@ -1,3 +1,28 @@
+/* Global cursor override */
+html, 
+body, 
+* {
+  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+}
+
+/* Specific overrides for common interactive elements */
+a, 
+button, 
+input[type="submit"], 
+input[type="button"], 
+.clickable, 
+[role="button"],
+.mica-button,
+.mica-button::after,
+.mica-button:hover,
+.mica-button:active {
+  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+}
+
+/* Prevent any browser defaults from overriding */
+:root {
+  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+}
 /* Base styles */
 :root {
   --primary-color: #5e008c;
@@ -16,7 +41,6 @@
 
 /* Custom cursor */
 body {
-  cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><text y="24" font-size="24">🐉</text></svg>') 16 16, auto;
   font-family: "Jersey 15", sans-serif;
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
