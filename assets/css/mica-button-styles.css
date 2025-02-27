@@ -2,7 +2,7 @@
 html, 
 body, 
 * {
-  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+  cursor: url('../images/cursor.cur') 16 16, auto !important;
 }
 
 /* Specific overrides for common interactive elements */
@@ -16,12 +16,12 @@ input[type="button"],
 .mica-button::after,
 .mica-button:hover,
 .mica-button:active {
-  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+  cursor: url('../images/cursor.cur') 16 16, auto !important;
 }
 
 /* Prevent any browser defaults from overriding */
 :root {
-  cursor: url('../images/Cursor.cur') 16 16, auto !important;
+  cursor: url('../images/cursor.cur') 16 16, auto !important;
 }
 /* Base styles */
 :root {
