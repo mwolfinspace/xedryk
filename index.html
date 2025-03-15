@@ -2,7 +2,42 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <style>
+        .jump-word {
+            display: inline-block;
+            vertical-align: middle;
 
+        }
+
+        .jump-word span {
+            display: inline-block;
+            animation-duration: 1s;
+            /* Initial duration, will be changed in JS */
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+            animation-play-state: paused;
+            /* Initially paused */
+        }
+
+        .color-change span {
+            transition: color 0.3s ease;
+            /* Smooth color transition */
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+                /* Adjust bounce height */
+            }
+        }
+    </style>
     <title>Xedryk The Dragon</title>
     <link rel="stylesheet" href="./assets/css/index.css">
     <link rel="stylesheet" href="./assets/css/mica-button-styles.css">
@@ -25,13 +60,13 @@
                         <div class="flex items-center mx-3 max-w-full">
                             <h1 class="titleformat">Xedryk The Dragon</h1>
                         </div>
-                        <div class="mt-1">
+                        <div class="mt-1 color-change">
                             <h2 class="textMiddle descriptionText">A dark dragon. Who lives and explores
                                 worlds.</h2>
                         </div>
-                        <div class="mt-1">
+                        <div class="mt-1 jump-word">
                             <h2 class="textMiddle descriptionText">
-                                <span style="color: #32CD32;">AMATEUR</span>
+                                <span style="color: #32CD32;">AMATEUR </span>
                                 <span style="color: #32CD32;">ARTIST</span>
                                 <span style="color: #1E90FF;">|</span>
                                 <span style="color: #FFD700;">PROGRAMMER</span>
@@ -136,8 +171,9 @@
                         <h3 class="text-big textMiddle">Social Links</h3>
                     </div>
                     <div>
-                        <div class="mica-button primary" type="CLASSIC"><a href="https://bsky.app/profile/xedryk.bsky.social"
-                                target="_blank" rel="noopener" class="textformatinbox boxbuttonshadow" height="auto">
+                        <div class="mica-button primary" type="CLASSIC"><a
+                                href="https://bsky.app/profile/xedryk.bsky.social" target="_blank" rel="noopener"
+                                class="textformatinbox boxbuttonshadow" height="auto">
                                 <div>
                                     <div class="logoboxlocation display logostyle">
                                         <img src="./assets/images/cloud.png" alt="" filter="" class="logobox" />
@@ -148,8 +184,9 @@
                             </a></div>
                     </div>
                     <div>
-                        <div class="mica-button primary" type="CLASSIC"><a href="https://www.facebook.com/xedrykthedragon"
-                                target="_blank" rel="noopener" class="textformatinbox boxbuttonshadow" height="auto">
+                        <div class="mica-button primary" type="CLASSIC"><a
+                                href="https://www.facebook.com/xedrykthedragon" target="_blank" rel="noopener"
+                                class="textformatinbox boxbuttonshadow" height="auto">
                                 <div>
                                     <div class="logoboxlocation display logostyle">
                                         <img src="./assets/images/facebook.png" alt="" filter="" class="logobox" />
@@ -185,8 +222,9 @@
                     </div>
 
                     <div>
-                        <div class="mica-button primary" type="CLASSIC"><a href="https://www.furaffinity.net/user/1234hdpa/"
-                                target="_blank" rel="noopener" class="textformatinbox boxbuttonshadow" height="auto">
+                        <div class="mica-button primary" type="CLASSIC"><a
+                                href="https://www.furaffinity.net/user/1234hdpa/" target="_blank" rel="noopener"
+                                class="textformatinbox boxbuttonshadow" height="auto">
                                 <div>
                                     <div class="logoboxlocation display logostyle">
                                         <img src="./assets/images/paw.png" alt="" filter="" class="logobox" />
@@ -197,8 +235,9 @@
                             </a></div>
                     </div>
                     <div>
-                        <div class="mica-button primary" type="CLASSIC"><a href="https://www.weasyl.com/~xedrykthedragon"
-                                target="_blank" rel="noopener" class="textformatinbox boxbuttonshadow" height="auto">
+                        <div class="mica-button primary" type="CLASSIC"><a
+                                href="https://www.weasyl.com/~xedrykthedragon" target="_blank" rel="noopener"
+                                class="textformatinbox boxbuttonshadow" height="auto">
                                 <div>
                                     <div class="logoboxlocation display logostyle">
                                         <img src="./assets/images/paw.png" alt="" filter="" class="logobox" />
@@ -266,9 +305,9 @@
                                 </a></div>
                         </div>
                         <div>
-                            <div class="mica-button primary" type="CLASSIC"><a href="https://www.patreon.com/XedrykTheDragon"
-                                    target="_blank" rel="noopener" class="textformatinbox boxbuttonshadow"
-                                    height="auto">
+                            <div class="mica-button primary" type="CLASSIC"><a
+                                    href="https://www.patreon.com/XedrykTheDragon" target="_blank" rel="noopener"
+                                    class="textformatinbox boxbuttonshadow" height="auto">
                                     <div>
                                         <div class="logoboxlocation display logostyle">
                                             <img src="./assets/images/patreon-icon.png" alt="" filter=""
@@ -359,6 +398,102 @@
                 </div>
             </div>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const jumpWords = document.querySelectorAll('.jump-word');
+
+                jumpWords.forEach(word => {
+                    const originalSpans = word.querySelectorAll('h2 span');
+
+                    let newHtml = '';
+                    originalSpans.forEach((span, index) => {
+                        const color = span.style.color;
+                        const text = span.textContent;
+                        const letters = text.split('');
+                        letters.forEach(letter => {
+                            newHtml += `<span style="color: ${color}">${letter}</span>`;
+                        });
+                        if (index < originalSpans.length - 1) {
+                            newHtml += '&nbsp;';
+                        }
+                    });
+
+                    word.querySelector('h2').innerHTML = newHtml;
+
+                    const letterSpans = word.querySelectorAll('h2 span');
+                    let currentIndex = 0;
+
+                    function animateLetters() {
+                        if (currentIndex < letterSpans.length) {
+                            letterSpans[currentIndex].style.animationName = 'bounce';
+                            letterSpans[currentIndex].style.animationPlayState = 'running';
+                            letterSpans[currentIndex].style.animationDuration = '0.3s'; // Reset duration
+
+                            setTimeout(() => {
+                                letterSpans[currentIndex].style.animationPlayState = 'paused';
+                                letterSpans[currentIndex].style.animationName = 'none'; //remove animation name, prevent unwanted animation.
+                                currentIndex++;
+                                animateLetters();
+                            }, 300); // Match animation duration
+                        } else {
+                            currentIndex = 0; // Reset and repeat
+                            animateLetters();
+                        }
+                    }
+
+                    animateLetters(); // Start the animation
+                });
+                const colorChangeElements = document.querySelectorAll('.color-change');
+
+                colorChangeElements.forEach(element => {
+                    const h2 = element.querySelector('h2');
+                    const text = h2.textContent;
+                    h2.innerHTML = text.split('').map(char => `<span>${char}</span>`).join('');
+
+                    const letterSpans = h2.querySelectorAll('span');
+                    const originalColors = Array.from(letterSpans).map(span => span.style.color);
+
+                    let intervalId;
+
+                    const isMobile = window.matchMedia("(any-pointer: coarse)").matches; //detect if on mobile
+
+                    function startColorChange() {
+                        changeColors();
+                        intervalId = setInterval(changeColors, 1000);
+                    }
+
+                    function stopColorChange() {
+                        clearInterval(intervalId);
+                        letterSpans.forEach((span, index) => {
+                            span.style.color = originalColors[index] || '';
+                        });
+                    }
+
+                    if (isMobile) {
+                        element.addEventListener('touchstart', startColorChange);
+                        element.addEventListener('touchend', stopColorChange);
+                    } else {
+                        element.addEventListener('mouseover', startColorChange);
+                        element.addEventListener('mouseout', stopColorChange);
+                    }
+
+                    function changeColors() {
+                        letterSpans.forEach(span => {
+                            span.style.color = getRandomColor();
+                        });
+                    }
+
+                    function getRandomColor() {
+                        const letters = '0123456789ABCDEF';
+                        let color = '#';
+                        for (let i = 0; i < 6; i++) {
+                            color += letters[Math.floor(Math.random() * 16)];
+                        }
+                        return color;
+                    }
+                });
+            });
+        </script>
 </body>
 
 </html>
