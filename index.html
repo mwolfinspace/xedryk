@@ -453,29 +453,19 @@
                     const letterSpans = h2.querySelectorAll('span');
                     const originalColors = Array.from(letterSpans).map(span => span.style.color);
 
-                    let intervalId;
+                    let intervalId; // Store the interval ID
 
-                    const isMobile = window.matchMedia("(any-pointer: coarse)").matches; //detect if on mobile
+                    element.addEventListener('mouseover', () => {
+                        changeColors(); // Initial color change
+                        intervalId = setInterval(changeColors, 1000); // Start interval
+                    });
 
-                    function startColorChange() {
-                        changeColors();
-                        intervalId = setInterval(changeColors, 1000);
-                    }
-
-                    function stopColorChange() {
-                        clearInterval(intervalId);
+                    element.addEventListener('mouseout', () => {
+                        clearInterval(intervalId); // Stop interval
                         letterSpans.forEach((span, index) => {
                             span.style.color = originalColors[index] || '';
                         });
-                    }
-
-                    if (isMobile) {
-                        element.addEventListener('touchstart', startColorChange);
-                        element.addEventListener('touchend', stopColorChange);
-                    } else {
-                        element.addEventListener('mouseover', startColorChange);
-                        element.addEventListener('mouseout', stopColorChange);
-                    }
+                    });
 
                     function changeColors() {
                         letterSpans.forEach(span => {
