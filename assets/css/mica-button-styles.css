@@ -1,28 +1,3 @@
-/* Global cursor override */
-html, 
-body, 
-* {
-  cursor: url('../images/cursor.cur') 16 16, auto !important;
-}
-
-/* Specific overrides for common interactive elements */
-a, 
-button, 
-input[type="submit"], 
-input[type="button"], 
-.clickable, 
-[role="button"],
-.mica-button,
-.mica-button::after,
-.mica-button:hover,
-.mica-button:active {
-  cursor: url('../images/cursor.cur') 16 16, auto !important;
-}
-
-/* Prevent any browser defaults from overriding */
-:root {
-  cursor: url('../images/cursor.cur') 16 16, auto !important;
-}
 /* Base styles */
 :root {
   --primary-color: #5e008c;
