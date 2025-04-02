@@ -1,0 +1,388 @@
+/* Base styles from mica-button-styles.css & index.css */
+:root {
+    --primary-color: #5e008c;
+    --secondary-color: #7c00b1; /* Used in background */
+    --hover-color: rgb(255, 0, 195);
+    --active-color: #73004e;
+    --button-shadow: rgba(0, 0, 0, 0.38); /* 0x00000061 */
+    --text-light: #ffffff;
+    --text-dark: #000000;
+    --border-color: #000000;
+    --primary-button-bg: #ffd3fb;
+    --secondary-button-bg: #dadada;
+  }
+  
+  /* Global Styles */
+  html {
+      font-family: "Jersey 15", sans-serif;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-size: 16px; /* Base font size */
+  }
+  
+  html>* {
+      letter-spacing: normal; /* Reset letter spacing */
+  }
+  
+  *, *:before, *:after {
+      box-sizing: inherit;
+      margin: 0;
+      padding: 0;
+  }
+  
+  body {
+    font-weight: 300;
+    color: var(--text-light); /* Default text color */
+    background-color: var(--secondary-color); /* Fallback background */
+  }
+  
+  /* Background */
+  .backgroundbase {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+  }
+  
+  .backgroundweb {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: linear-gradient(180deg, #0d0011, var(--secondary-color));
+  }
+  
+  /* Layout Utilities */
+  .display { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  .flex-wrap { flex-wrap: wrap; }
+  .text-center { text-align: center; }
+  
+  .maincolumn {
+      flex: 1;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      width: 100%;
+      padding: 1.5rem; /* Base padding */
+  }
+  @media screen and (min-width: 576px) {
+      .maincolumn {
+          padding: 1.5rem 1.5rem 4rem; /* 24px 24px 64px */
+      }
+  }
+  
+  .contentwide {
+      margin: auto;
+      height: 100%;
+      width: 100%;
+      max-width: 900px; /* Max content width */
+  }
+  
+  /* Spacing */
+  .mt-1 { margin-top: 0.5rem; } /* 8px */
+  .mt-8 { margin-top: 3rem; } /* 48px */
+  .mb-4 { margin-bottom: 1.5rem; } /* 24px, adjusted from original inconsistent values */
+  .mx-3 { margin-left: 0.75rem; margin-right: 0.75rem; } /* 12px */
+  .max-w-full { max-width: 100%; }
+  
+  /* Typography */
+  .titleformat, .textMiddle, .descriptionText, .button-text, .contact-detail, .section-title {
+      font-weight: 300;
+      line-height: 1.5;
+      text-align: center;
+  }
+  
+  .titleformat {
+      padding: 0.625rem; /* 10px */
+      color: var(--text-light);
+      font-size: 3.75rem;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+  }
+  
+  .textMiddle {
+      color: var(--text-light);
+      font-size: 2rem;
+  }
+  
+  .descriptionText {
+      color: var(--text-light);
+      font-size: 2rem;
+      word-wrap: break-word; /* Allow wrapping */
+      white-space: normal;
+  }
+  
+  .section-title {
+       color: var(--text-light);
+       font-size: 2.5rem; /* Base size for section titles (h3) */
+       margin-bottom: 1.5rem;
+       margin-top: 3rem;
+  }
+  .contact-detail {
+      color: var(--text-light);
+      font-size: 2.5rem; /* Slightly smaller for contact */
+      margin-bottom: 0.75rem;
+  }
+  
+  /* Responsive Typography Adjustments */
+  @media screen and (min-width: 576px) {
+      .titleformat { font-size: 5rem; } /* 80px */
+      .textMiddle, .descriptionText { font-size: 2.5rem; } /* 40px */
+      .section-title { font-size: 3rem; } /* Larger size for section titles (h3) */
+      .contact-detail { font-size: 1.75rem; }
+  }
+  
+  
+  /* Avatar */
+  .avatar-container {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-bottom: 1rem;
+  }
+  .avatarbox {
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      display: block;
+      object-fit: contain;
+      object-position: center;
+      margin-left: auto;
+      margin-right: auto;
+  }
+  
+  /* Icons */
+  .topiconbox {
+      margin-top: 1.5rem; /* 24px */
+      margin-bottom: 2.5rem; /* 40px */
+  }
+  
+  .iconbox {
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      gap: 1rem;
+  }
+  
+  .iconlayout {
+      padding: 0 0.625rem; /* 10px horizontal */
+      color: var(--text-light);
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  
+  .iconlayout:hover {
+      transform: scale(1.5);
+  }
+  
+  .icontopformat {
+      fill: currentColor;
+      width: 50px;
+      height: 50px;
+      display: block;
+      pointer-events: none;
+  }
+  
+  /* Buttons */
+  .section-container {
+      margin-top: 2.5rem; /* 40px */
+  }
+  
+  .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem; /* 24px space between buttons */
+      align-items: center;
+      width: 100%;
+  }
+  
+  .mica-button {
+      position: relative;
+      overflow: hidden;
+      border-radius: 25px;
+      border: 2px solid var(--border-color);
+      color: var(--primary-color);
+      width: 100%;
+      max-width: 600px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform 0.25s cubic-bezier(0.08, 0.59, 0.29, 0.99),
+                  box-shadow 0.25s cubic-bezier(0.08, 0.59, 0.29, 0.99),
+                  background-color 0.25s cubic-bezier(0.08, 0.59, 0.29, 0.99);
+  }
+  
+ /* Button Link (Container for content) */
+.button-link {
+    display: flex; /* Use flex mainly for vertical alignment now */
+    align-items: center;
+    /* justify-content: center; */ /* Let text element handle horizontal centering */
+    position: relative; /* For absolute positioning of logo */
+    padding: 1rem 1.5rem; /* Consistent vertical/horizontal padding on the link itself */
+    text-decoration: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    width: 100%;
+    min-height: 80px;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent potential overflow issues */
+}
+.button-link:focus { outline: none; }
+.button-link:disabled { cursor: default; pointer-events: none; }
+  
+.button-logo {
+    position: absolute;
+    left: 1rem; /* 16px from left */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px; /* Icon width */
+    height: 50px;
+    object-fit: contain;
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.button-text {
+    /* Font Size matches .section-title */
+    font-size: 2.5rem;
+    font-weight: 300;
+    line-height: 1.5; /* Ensure consistent line height */
+    flex-grow: 1; /* Allow text element to fill space */
+    text-align: center; /* Center the text *within this element* */
+    color: var(--primary-color);
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    box-sizing: border-box;
+
+    /* --- Centering Fix --- */
+    /* Add padding-left = icon width (50px) + icon offset (1rem=16px) + desired gap (e.g., 0.5rem=8px) */
+    /* Total approx = 50 + 16 + 8 = 74px. Let's use rems */
+    padding-left: calc(5px + 1rem + 0.5rem); /* Adjust gap (0.5rem) as needed */
+    /* Keep right padding minimal and symmetrical IF POSSIBLE, or ensure it doesn't interfere */
+    padding-right: 1rem; /* Minimal padding on the right */
+    /* REMOVED margin-left */
+}
+/* Match h3 responsive size */
+@media screen and (min-width: 576px) {
+    .button-text { font-size: 3rem; }
+}
+  
+  
+  /* Shine effect */
+  .mica-button::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -75%;
+      width: 10%;
+      height: 100%;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.6), rgba(232, 227, 233, 0.562));
+      transition: left 1.4s ease-out;
+      pointer-events: none;
+  }
+  
+  .mica-button:hover::after {
+      left: 150%;
+  }
+  
+  /* Primary Button Colors & Shadow */
+  .mica-button.primary {
+      background-color: var(--primary-button-bg);
+      box-shadow: 8px 8px 0 0 var(--button-shadow);
+  }
+  
+  .mica-button.primary:hover {
+      transform: translate(4px, 4px);
+      box-shadow: 4px 4px 0 0 var(--hover-color);
+  }
+  
+  .mica-button.primary:active {
+      transform: translate(4px, 4px);
+      box-shadow: 4px 4px 0 0 var(--active-color);
+  }
+  
+  /* Secondary Button Colors & Shadow */
+  .mica-button.secondary {
+      background-color: var(--secondary-button-bg);
+      box-shadow: 8px 8px 0 0 var(--button-shadow);
+  }
+  
+  .mica-button.secondary:hover {
+      transform: translate(4px, 4px);
+      box-shadow: 4px 4px 0 0 var(--hover-color);
+  }
+  
+  .mica-button.secondary:active {
+      transform: translate(4px, 4px);
+      box-shadow: 4px 4px 0 0 var(--active-color);
+  }
+  
+  
+  /* Contact Info */
+  .contact-info {
+      margin-top: 3rem;
+      padding-bottom: 3rem;
+  }
+  .contact-info h3.section-title {
+      margin-bottom: 1.5rem;
+  }
+  .contact-info .contact-detail {
+      font-size: 2rem; /* Smaller font for details */
+      margin-bottom: 0.5rem;
+  }
+  @media screen and (min-width: 576px) {
+      .contact-info .contact-detail { font-size: 1.5rem; }
+  }
+  
+  
+  /* SR Only */
+  .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border-width: 0;
+  }
+  
+  
+  /* Animation keyframes */
+  @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+  }
+  
+  /* Word/Letter Animations Styling */
+  .jump-word h2, .color-change h2 {
+      line-height: 1.5;
+  }
+  .jump-word span, .color-change span {
+      display: inline-block;
+      vertical-align: middle;
+      letter-spacing: normal;
+      word-spacing: normal;
+      padding: 0;
+      margin: 0;
+  }
+  
+  /* Jump animation applied via JS */
+  .jump-word span {
+     /* animation props set in JS */
+  }
+  
+  /* Color change transition */
+  .color-change span {
+      transition: color 0.3s ease;
+  }
