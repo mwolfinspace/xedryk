@@ -211,7 +211,7 @@
       border: 2px solid var(--border-color);
       color: var(--primary-color);
       width: 100%;
-      max-width: 600px;
+      max-width: 800px;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       transition: transform 0.25s cubic-bezier(0.08, 0.59, 0.29, 0.99),
@@ -242,8 +242,8 @@
     left: 1rem; /* 16px from left */
     top: 50%;
     transform: translateY(-50%);
-    width: 50px; /* Icon width */
-    height: 50px;
+    width: 80px; /* Icon width */
+    height: 80px;
     object-fit: contain;
     border-radius: 10px;
     pointer-events: none;
@@ -251,9 +251,9 @@
 
 .button-text {
     /* Font Size matches .section-title */
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 300;
-    line-height: 1.5; /* Ensure consistent line height */
+    line-height: 1.8; /* Ensure consistent line height */
     flex-grow: 1; /* Allow text element to fill space */
     text-align: center; /* Center the text *within this element* */
     color: var(--primary-color);
@@ -266,7 +266,7 @@
     /* --- Centering Fix --- */
     /* Add padding-left = icon width (50px) + icon offset (1rem=16px) + desired gap (e.g., 0.5rem=8px) */
     /* Total approx = 50 + 16 + 8 = 74px. Let's use rems */
-    padding-left: calc(5px + 1rem + 0.5rem); /* Adjust gap (0.5rem) as needed */
+    padding-left: calc(1rem); /* Adjust gap (0.5rem) as needed */
     /* Keep right padding minimal and symmetrical IF POSSIBLE, or ensure it doesn't interfere */
     padding-right: 1rem; /* Minimal padding on the right */
     /* REMOVED margin-left */
