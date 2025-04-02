@@ -377,11 +377,6 @@
       margin: 0;
   }
   
-  /* Jump animation applied via JS */
-  .jump-word span {
-     /* animation props set in JS */
-  }
-  
   /* Color change transition */
   .color-change span {
       transition: color 0.3s ease;
