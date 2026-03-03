@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trắc Nghiệm Định Hướng Nghề Nghiệp</title>
+<style>
+  :root {
+    --primary: #6c63ff;
+    --secondary: #f50057;
+    --dark: #1a1a2e;
+    --card: #16213e;
+    --card2: #0f3460;
+    --text: #e0e0e0;
+    --accent: #e94560;
+    --green: #00c9a7;
+    --yellow: #ffd166;
+    --orange: #f4845f;
+    --border: #2a2a4a;
+    --input-bg: #0d1628;
+    --muted: #888;
+  }
+  body.light-mode {
+    --dark: #f0f4ff;
+    --card: #ffffff;
+    --card2: #e8ecf8;
+    --text: #1a1a2e;
+    --accent: #d63a57;
+    --yellow: #b8870a;
+    --border: #d0d5ec;
+    --input-bg: #f8f9ff;
+    --muted: #555;
+    --primary: #5a52e0;
+  }
+  body.light-mode .section-header { background: var(--card); }
+
+  /* Unselected buttons in light mode */
+  body.light-mode .scale-btns button:not([class*="sel-"]) { border-color: var(--border); color: #444; background: var(--input-bg); }
+  body.light-mode .choice-btn:not(.selected) { border-color: var(--border); color: #444; background: var(--input-bg); }
+  body.light-mode .agree-btn:not(.selected) { border-color: var(--border); color: #444; background: var(--input-bg); }
+
+  /* Scale selected: vivid colors, white text */
+  body.light-mode .scale-btns button.sel-1  { background: #c62828 !important; border-color: #c62828 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-2  { background: #d84315 !important; border-color: #d84315 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-3  { background: #e65100 !important; border-color: #e65100 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-4  { background: #f57f17 !important; border-color: #f57f17 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-5  { background: #9e8c00 !important; border-color: #9e8c00 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-6  { background: #558b2f !important; border-color: #558b2f !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-7  { background: #2e7d32 !important; border-color: #2e7d32 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-8  { background: #1b5e20 !important; border-color: #1b5e20 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-9  { background: #006064 !important; border-color: #006064 !important; color: #fff !important; }
+  body.light-mode .scale-btns button.sel-10 { background: #00695c !important; border-color: #00695c !important; color: #fff !important; }
+
+  /* Agree selected: color-coded, white text */
+  body.light-mode .agree-btn.selected { color: #fff !important; }
+  body.light-mode .agree-btn.a-sd.selected { background: #c62828 !important; border-color: #c62828 !important; }
+  body.light-mode .agree-btn.a-d.selected  { background: #e65100 !important; border-color: #e65100 !important; }
+  body.light-mode .agree-btn.a-n.selected  { background: #757575 !important; border-color: #757575 !important; }
+  body.light-mode .agree-btn.a-a.selected  { background: #2e7d32 !important; border-color: #2e7d32 !important; }
+  body.light-mode .agree-btn.a-sa.selected { background: #006064 !important; border-color: #006064 !important; }
+
+  /* Choice selected */
+  body.light-mode .choice-btn.selected { background: var(--primary) !important; border-color: var(--primary) !important; color: #fff !important; }
+
+  /* Answered card border */
+  body.light-mode .q-card.answered { border-color: var(--primary); }
+
+  body.light-mode #progress-bar-wrap { background: var(--dark); border-color: var(--border); }
+  body.light-mode .progress-track { background: var(--border); }
+  body.light-mode .dim-bar { background: var(--border); }
+  body.light-mode .t-bar { background: var(--border); }
+  body.light-mode .career-card { background: var(--card); border-color: var(--border); }
+  body.light-mode .career-card h4 { color: var(--text); }
+  body.light-mode .career-card .match { color: #059669; }
+  body.light-mode .career-card p { color: var(--muted); }
+  body.light-mode .career-card .tag { background: #e8ecf8; color: #555; }
+  body.light-mode .dim-card { background: var(--card); border-color: var(--border); }
+  body.light-mode .dim-card h4 { color: #555; }
+  body.light-mode .trait-pill { background: var(--card); border-color: var(--border); }
+  body.light-mode .trait-pill .t-name { color: var(--text); }
+  body.light-mode .trait-pill .t-val { color: var(--muted); }
+  body.light-mode .advice-section { background: var(--card); border-color: var(--border); }
+  body.light-mode .advice-section h3 { color: #b8870a; }
+  body.light-mode .advice-item div h4 { color: var(--text); }
+  body.light-mode .advice-item div p { color: var(--muted); }
+  body.light-mode .career-card .tag { background: #e8ecf8; color: #555; }
+  body.light-mode .result-hero { background: linear-gradient(135deg, var(--card), var(--card2)); border-color: var(--border); }
+  body.light-mode .result-hero h2 { color: #b8870a; }
+  body.light-mode .result-hero p { color: var(--muted); }
+  body.light-mode .q-sub { color: #777; }
+  body.light-mode .q-text { color: var(--text); }
+  body.light-mode .q-card { background: var(--card); border-color: var(--border); }
+  body.light-mode .feature-card { background: var(--card); border-color: var(--border); }
+  body.light-mode #intro p { color: #555; }
+  body.light-mode #seed-panel { background: var(--card); border-color: var(--border); }
+  body.light-mode #seed-display { background: var(--input-bg); border-color: var(--border); }
+  body.light-mode #seed-import-box { background: var(--input-bg); border-color: var(--border); color: var(--text); }
+  body.light-mode .fab#fab-theme { background: #e8ecf8; color: #333; border-color: var(--border); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .25s, color .25s;
+  }
+  #app { max-width: 100%; margin: 0 auto; padding: 20px; }
+  #intro { max-width: 100%; }
+  #questions-wrap { max-width: 860px; margin: 0 auto; padding-top: 20px; }
+
+  /* INTRO */
+  #intro {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 100%;
+    overflow: hidden;
+    height: auto;
+    min-height: auto;
+  }
+  #intro .badge {
+    display: inline-block;
+    background: rgba(108,99,255,0.15);
+    color: var(--primary);
+    border: 1px solid rgba(108,99,255,0.25);
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  #intro h1 {
+    font-size: 2.6em;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  #intro p {
+    font-size: 1.1em;
+    color: #aaa;
+    max-width: 600px;
+    margin: 0 auto 30px;
+    line-height: 1.7;
+  }
+  .features {
+    display: flex;
+    gap: 12px;
+    margin: 30px 0;
+    text-align: left;
+  }
+  .feature-card {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 14px 16px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .feature-card .icon { font-size: 1.6em; margin-bottom: 6px; }
+  .feature-card h3 { font-size: 0.82em; color: var(--primary); margin-bottom: 3px; }
+  .feature-card p { font-size: 0.75em; color: #888; line-height: 1.4; }
+  .btn-start {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px 44px;
+    font-size: 1.05em;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 4px 20px rgba(108,99,255,0.28);
+    margin-top: 10px;
+    letter-spacing: -0.01em;
+  }
+  .btn-start:hover { opacity: .88; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(108,99,255,0.36); }
+
+  /* PROGRESS */
+  #progress-bar-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, rgba(26,26,46,0.95), rgba(26,26,46,0.85));
+    padding: 12px 20px;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    animation: progressFloat 2s ease-in-out infinite;
+  }
+  @keyframes progressFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+  .progress-info { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 6px; }
+  .progress-track { background: #2a2a4a; border-radius: 10px; height: 8px; overflow: hidden; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 10px;
+    transition: width .4s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: liquidShine 2s ease-in-out infinite;
+  }
+  @keyframes liquidShine {
+    0%, 100% { transform: translateX(-100%); opacity: 0; }
+    50% { transform: translateX(100%); opacity: 1; }
+  }
+
+  /* SECTIONS */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border-left: 4px solid var(--primary);
+    padding: 14px 18px;
+    border-radius: 0 12px 12px 0;
+    margin: 30px 0 16px;
+  }
+  .section-header .s-icon { font-size: 1.6em; }
+  .section-header h2 { font-size: 1em; font-weight: 700; color: var(--primary); }
+  .section-header span { font-size: 0.82em; color: #666; }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: border-color .2s;
+  }
+  .q-card.answered { border-color: var(--primary); }
+  .q-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .q-num {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    font-weight: 800;
+    font-size: 0.78em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .q-text { font-size: 0.97em; line-height: 1.5; font-weight: 500; }
+  .q-sub { font-size: 0.78em; color: #666; margin-top: 4px; font-style: italic; }
+
+  /* SCALE */
+  .scale-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 0.72em; color: #666; margin-bottom: 2px; }
+  .scale-btns { display: flex; gap: 6px; justify-content: center; }
+  .scale-btns button {
+    flex: 1;
+    height: 38px;
+    border: 1.5px solid #2a2a4a;
+    background: transparent;
+    color: #888;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85em;
+    transition: all .15s;
+    max-width: 52px;
+  }
+  .scale-btns button:hover { border-color: var(--primary); color: var(--primary); }
+  .scale-btns button.selected { background: var(--primary); border-color: var(--primary); color: white; }
+  .scale-btns button.sel-1 { background: #c62828; border-color: #c62828; }
+  .scale-btns button.sel-2 { background: #d84315; border-color: #d84315; }
+  .scale-btns button.sel-3 { background: #e65100; border-color: #e65100; }
+  .scale-btns button.sel-4 { background: #f57f17; border-color: #f57f17; }
+  .scale-btns button.sel-5 { background: #827717; border-color: #827717; }
+  .scale-btns button.sel-6 { background: #33691e; border-color: #33691e; }
+  .scale-btns button.sel-7 { background: #2e7d32; border-color: #2e7d32; }
+  .scale-btns button.sel-8 { background: #1b5e20; border-color: #1b5e20; }
+  .scale-btns button.sel-9 { background: #004d40; border-color: #004d40; }
+  .scale-btns button.sel-10 { background: #00695c; border-color: #00695c; }
+
+  /* CHOICE */
+  .choice-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choice-btn {
+    border: 1.5px solid #2a2a4a;
+    background: transparent;
+    color: #aaa;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all .15s;
+  }
+  .choice-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .choice-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+
+  /* AGREE */
+  .agree-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .agree-btn {
+    flex: 1;
+    min-width: 100px;
+    border: 1.5px solid #2a2a4a;
+    background: transparent;
+    color: #aaa;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82em;
+    text-align: center;
+    transition: all .15s;
+  }
+  .agree-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .agree-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+  .agree-btn.a-sd { --c: #c62828; }
+  .agree-btn.a-d { --c: #e65100; }
+  .agree-btn.a-n { --c: #555; }
+  .agree-btn.a-a { --c: #2e7d32; }
+  .agree-btn.a-sa { --c: #00695c; }
+  .agree-btn.selected { background: var(--c, var(--primary)); border-color: var(--c, var(--primary)); color: white; }
+
+  /* SUBMIT */
+  .submit-wrap { text-align: center; margin: 40px 0; }
+  #incomplete-msg { color: var(--accent); font-size: 0.9em; margin-top: 10px; display: none; }
+  .btn-submit {
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 14px 48px;
+    font-size: 1.05em;
+    border-radius: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 4px 18px rgba(0,201,167,0.28);
+    letter-spacing: -0.01em;
+  }
+  .btn-submit:hover { opacity: .88; transform: translateY(-1px); }
+
+  /* RESULT */
+  #result { display: none; }
+  .result-hero {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, var(--card), var(--card2));
+    border-radius: 20px;
+    margin-bottom: 30px;
+    border: 1px solid #2a2a4a;
+  }
+  .result-hero .mbti-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    font-size: 2.8em;
+    font-weight: 900;
+    padding: 10px 30px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    letter-spacing: 3px;
+  }
+  .result-hero h2 { font-size: 1.4em; color: var(--yellow); margin-bottom: 10px; }
+  .result-hero p { color: #999; font-size: 0.95em; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+  .dimension-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  .dim-card {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .dim-card h4 { font-size: 0.8em; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .dim-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .dim-label { font-size: 0.78em; width: 32px; }
+  .dim-label.left { text-align: right; color: var(--accent); }
+  .dim-label.right { color: var(--green); }
+  .dim-bar { flex: 1; background: #2a2a4a; border-radius: 10px; height: 10px; overflow: hidden; }
+  .dim-fill { height: 100%; border-radius: 10px; transition: width 1s ease; }
+  .dim-pct { font-size: 0.78em; color: #888; min-width: 36px; text-align: right; }
+
+  .careers-section { margin-bottom: 30px; }
+  .careers-section h3 { font-size: 1.1em; color: var(--yellow); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .career-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .career-card {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .career-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+  }
+  .career-card .rank { font-size: 1.6em; margin-bottom: 8px; }
+  .career-card h4 { font-size: 1em; font-weight: 700; color: white; margin-bottom: 6px; }
+  .career-card .match {
+    font-size: 0.78em;
+    color: var(--green);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .career-card p { font-size: 0.8em; color: #888; line-height: 1.5; }
+  .career-card .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .career-card .tag {
+    font-size: 0.7em;
+    background: #2a2a4a;
+    color: #aaa;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .traits-section { margin-bottom: 30px; }
+  .traits-section h3 { font-size: 1.1em; color: var(--yellow); margin-bottom: 14px; }
+  .traits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .trait-pill {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.85em;
+  }
+  .trait-pill .t-name { font-weight: 700; color: white; margin-bottom: 4px; }
+  .trait-pill .t-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .trait-pill .t-bar { flex: 1; background: #2a2a4a; border-radius: 10px; height: 6px; }
+  .trait-pill .t-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--primary), var(--green)); }
+  .trait-pill .t-val { font-size: 0.75em; color: #666; }
+
+  .advice-section {
+    background: var(--card);
+    border: 1px solid #2a2a4a;
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 30px;
+  }
+  .advice-section h3 { color: var(--yellow); margin-bottom: 14px; font-size: 1.05em; }
+  .advice-item { display: flex; gap: 12px; margin-bottom: 14px; }
+  .advice-item .a-icon { font-size: 1.4em; flex-shrink: 0; }
+  .advice-item div h4 { font-size: 0.9em; font-weight: 700; color: white; margin-bottom: 4px; }
+  .advice-item div p { font-size: 0.83em; color: #888; line-height: 1.5; }
+
+  .btn-retry {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 11px 28px;
+    font-size: 0.9em;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .2s, transform .15s;
+  }
+  .btn-retry:hover { opacity: .88; transform: translateY(-1px); }
+
+  @media (max-width: 600px) {
+    .dimension-grid { grid-template-columns: 1fr; }
+    .scale-btns button { max-width: 36px; font-size: 0.78em; }
+    #intro h1 { font-size: 1.8em; }
+  }
+
+  .hidden { display: none; }
+  #quiz { display: none; }
+
+  /* FLOATING BUTTONS */
+  #fab-group {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+  }
+  .fab {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    transition: transform .2s, box-shadow .2s, opacity .2s;
+    opacity: 0.92;
+  }
+  .fab:hover { transform: scale(1.1); opacity: 1; box-shadow: 0 6px 22px rgba(0,0,0,0.4); }
+  #fab-top { background: var(--primary); color: white; }
+  #fab-current { background: var(--accent); color: white; }
+  #fab-theme { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+  #fab-reset { background: #c62828; color: white; }
+
+  /* SEED PANEL */
+  #seed-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin: 20px 0;
+  }
+  #seed-panel h4 { font-size: 0.9em; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .seed-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #seed-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1em;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--green);
+    background: var(--input-bg, #0d1628);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    min-width: 200px;
+  }
+  .seed-input-wrap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  #seed-import-box {
+    font-family: 'Courier New', monospace;
+    font-size: 0.95em;
+    background: var(--input-bg, #0d1628);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: var(--text);
+    width: 240px;
+    letter-spacing: 1px;
+  }
+  .seed-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 0.82em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .seed-btn:hover { opacity: 0.85; }
+  .seed-btn.copy { background: var(--green); }
+  .seed-btn.load { background: var(--accent); }
+  #seed-status { font-size: 0.78em; color: var(--green); margin-top: 6px; min-height: 18px; }
+  #qr-canvas { display: block; margin-top: 12px; border-radius: 8px; background: white; padding: 6px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #333;
+    color: white;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 0.88em;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity .3s, transform .3s;
+    z-index: 2000;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* RESUME BANNER */
+  #resume-banner {
+    background: rgba(108,99,255,0.1);
+    border: 1px solid rgba(108,99,255,0.25);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  body.light-mode #resume-banner { background: rgba(90,82,224,0.07); border-color: rgba(90,82,224,0.2); }
+  #resume-banner p { font-size: 0.88em; color: var(--primary); font-weight: 600; }
+  #resume-banner span { font-size: 0.78em; color: var(--muted); }
+  .banner-btns { display: flex; gap: 8px; }
+  .banner-btn {
+    background: var(--primary);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 0.82em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+    white-space: nowrap;
+  }
+  .banner-btn:hover { opacity: .85; }
+  .banner-btn.discard {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--muted);
+  }
+  body.light-mode .banner-btn.discard { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .banner-btn.discard:hover { background: rgba(255,255,255,0.12); }
+
+  /* ── SHARED MODAL BACKDROP ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    /* frosted glass backdrop */
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    animation: backdropIn .2s ease;
+  }
+  .modal-backdrop.open { display: flex; }
+  @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+  body.light-mode .modal-backdrop { background: rgba(200, 210, 240, 0.45); }
+
+  /* ── MODAL PANEL (Win11 / macOS style) ── */
+  .modal-panel {
+    background: rgba(22, 26, 50, 0.82);
+    backdrop-filter: blur(28px) saturate(1.8);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.08) inset;
+    width: 100%;
+    animation: panelIn .22s cubic-bezier(.34,1.3,.64,1);
+    position: relative;
+    overflow: hidden;
+  }
+  body.light-mode .modal-panel {
+    background: rgba(248, 250, 255, 0.88);
+    border-color: rgba(100,110,180,0.18);
+    box-shadow: 0 20px 50px rgba(80,90,160,0.18), 0 1px 0 rgba(255,255,255,0.9) inset;
+  }
+  @keyframes panelIn {
+    from { opacity: 0; transform: scale(.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+  }
+
+  /* ── MODAL TITLEBAR ── */
+  .modal-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  body.light-mode .modal-titlebar { border-color: rgba(0,0,0,0.08); }
+  .modal-titlebar h3 {
+    font-size: 0.97em;
+    font-weight: 650;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: -0.01em;
+  }
+  .modal-close-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    font-size: 1em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  body.light-mode .modal-close-btn { background: rgba(0,0,0,0.07); }
+  .modal-close-btn:hover { background: rgba(233,69,96,0.25); color: var(--accent); }
+
+  /* ── MODAL BODY ── */
+  .modal-body { padding: 20px 22px; }
+  .modal-footer {
+    padding: 14px 22px 20px;
+    display: flex; gap: 10px; justify-content: flex-end;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  body.light-mode .modal-footer { border-color: rgba(0,0,0,0.08); }
+
+  /* ── MODAL BUTTONS ── */
+  .mbtn {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: 0.86em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    letter-spacing: -0.01em;
+  }
+  .mbtn:active { transform: scale(.97); }
+  .mbtn-ghost {
+    background: rgba(255,255,255,0.07);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  body.light-mode .mbtn-ghost { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+  .mbtn-ghost:hover { background: rgba(255,255,255,0.13); }
+  body.light-mode .mbtn-ghost:hover { background: rgba(0,0,0,0.09); }
+  .mbtn-primary { background: var(--primary); color: white; }
+  .mbtn-primary:hover { opacity: .88; }
+  .mbtn-danger { background: rgba(198,40,40,0.85); color: white; }
+  .mbtn-danger:hover { opacity: .88; }
+
+  /* ── SEED MODAL SPECIFICS ── */
+  #seed-modal .modal-panel { max-width: 420px; }
+
+  .seed-modal-display {
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 1.6em;
+    font-weight: 800;
+    letter-spacing: 6px;
+    color: var(--green);
+    text-align: center;
+    padding: 16px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 14px;
+    word-break: break-all;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  body.light-mode .seed-modal-display {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.1);
+    color: #007a6a;
+  }
+  .seed-modal-display:hover { background: rgba(0,201,167,0.08); }
+  .seed-modal-hint {
+    font-size: 0.78em;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .seed-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0;
+    font-size: 0.75em; color: var(--muted);
+  }
+  .seed-divider::before, .seed-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: rgba(255,255,255,0.08);
+  }
+  body.light-mode .seed-divider::before, body.light-mode .seed-divider::after { background: rgba(0,0,0,0.1); }
+
+  .seed-input-field {
+    width: 100%;
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 1em;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-align: center;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.2);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    text-transform: uppercase;
+  }
+  body.light-mode .seed-input-field {
+    background: rgba(255,255,255,0.7);
+    border-color: rgba(0,0,0,0.15);
+  }
+  .seed-input-field:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(108,99,255,0.18);
+  }
+  .seed-input-field::placeholder { color: rgba(180,180,180,0.4); letter-spacing: 2px; font-weight: 400; }
+  #seed-modal-status {
+    font-size: 0.78em;
+    min-height: 18px;
+    margin-top: 8px;
+    text-align: center;
+  }
+  .status-ok { color: var(--green); }
+  .status-err { color: var(--accent); }
+
+  /* QR inside seed modal */
+  #seed-modal-qr {
+    display: block;
+    margin: 0 auto 4px;
+    border-radius: 10px;
+    background: white;
+    padding: 6px;
+  }
+  .qr-label {
+    text-align: center;
+    font-size: 0.72em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* ── REVIEW MODAL ── */
+  #review-modal .modal-panel { max-width: 680px; }
+  #review-modal .modal-body { max-height: 60vh; overflow-y: auto; padding-top: 10px; }
+  #review-modal .modal-body::-webkit-scrollbar { width: 6px; }
+  #review-modal .modal-body::-webkit-scrollbar-track { background: transparent; }
+  #review-modal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  .review-item { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.83em; align-items: flex-start; }
+  body.light-mode .review-item { border-color: rgba(0,0,0,0.07); }
+  .review-item .rq { flex: 1; color: var(--text); line-height: 1.4; }
+  .review-item .ra { font-weight: 700; min-width: 90px; text-align: right; flex-shrink: 0; }
+
+  /* ── SEED TRIGGER LINK on homepage ── */
+  .seed-trigger-wrap {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .seed-trigger-wrap span {
+    font-size: 0.82em;
+    color: var(--muted);
+  }
+  .seed-trigger-link {
+    font-size: 0.82em;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color .15s;
+  }
+  .seed-trigger-link:hover { color: var(--accent); }
+
+  @media (max-width: 600px) {
+    #fab-group { bottom: 16px; right: 16px; }
+    .fab { width: 40px; height: 40px; font-size: 1em; }
+  }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- FLOATING BUTTONS -->
+<div id="fab-group">
+  <button class="fab" id="fab-theme" onclick="toggleTheme()" title="Chuyển giao diện sáng/tối">🌙</button>
+  <button class="fab" id="fab-current" onclick="jumpToCurrent()" title="Nhảy đến câu chưa trả lời" style="display:none">📍</button>
+  <button class="fab" id="fab-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Về đầu trang">↑</button>
+  <button class="fab" id="fab-reset" onclick="confirmReset()" title="Làm lại từ đầu">↺</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- SEED MODAL -->
+<div class="modal-backdrop" id="seed-modal" onclick="closeSeedModal(event)">
+  <div class="modal-panel">
+    <div class="modal-titlebar">
+      <h3>🔑 Seed ID</h3>
+      <button class="modal-close-btn" onclick="closeSeedModal()">✕</button>
+    </div>
+    <div class="modal-body" id="seed-modal-body">
+      <!-- content injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="modal-backdrop" id="review-modal" onclick="closeReviewModal(event)">
+  <div class="modal-panel">
+    <div class="modal-titlebar">
+      <h3>📋 Xem Lại Câu Trả Lời</h3>
+      <button class="modal-close-btn" onclick="closeReviewModal()">✕</button>
+    </div>
+    <div class="modal-body" id="review-list"></div>
+    <div class="modal-footer">
+      <button class="mbtn mbtn-ghost" onclick="closeReviewModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="badge">🧭 CAREER DISCOVERY TEST</div>
+  <h1>Bạn Sinh Ra Để<br>Làm Nghề Gì?</h1>
+  <p>Bộ trắc nghiệm 100 câu hỏi toàn diện dựa trên khung 16 Personality, Holland Code, và phân tích đa chiều giúp xác định nhóm nghề nghiệp phù hợp nhất với bạn.</p>
+  <div class="features">
+    <div class="feature-card"><div class="icon">🧠</div><h3>16 Chiều Tính Cách</h3><p>Phân tích E/I, S/N, T/F, J/P và 12 chiều mở rộng</p></div>
+    <div class="feature-card"><div class="icon">🎯</div><h3>Holland RIASEC</h3><p>6 nhóm nghề: Realistic, Investigative, Artistic, Social, Enterprising, Conventional</p></div>
+    <div class="feature-card"><div class="icon">⚡</div><h3>100 Câu Hỏi Sâu</h3><p>Bao gồm thể trạng, môn học, áp lực, giá trị sống, ước mơ</p></div>
+    <div class="feature-card"><div class="icon">📊</div><h3>Phân Tích Chi Tiết</h3><p>Top 6 nhóm nghề với tỷ lệ phù hợp và lý giải cụ thể</p></div>
+  </div>
+  <div id="resume-banner" style="display:none">
+    <div><p>🔄 Bạn có bài làm chưa hoàn thành</p><span id="resume-info">Đã trả lời 0/100 câu</span></div>
+    <div class="banner-btns">
+      <button class="banner-btn" onclick="resumeQuiz()">Tiếp tục →</button>
+      <button class="banner-btn discard" onclick="discardAndStart()">Làm lại</button>
+    </div>
+  </div>
+  <button class="btn-start" id="btn-start-main" onclick="startQuiz()">Bắt Đầu Trắc Nghiệm →</button>
+  <div class="seed-trigger-wrap">
+    <span>Đã có mã kết quả?</span>
+    <button class="seed-trigger-link" onclick="openSeedModalImport()">Nhập Seed ID →</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz">
+  <div id="progress-bar-wrap">
+    <div class="progress-info">
+      <span id="prog-text">Câu 0 / 100</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div id="questions-wrap"></div>
+  <div class="submit-wrap">
+    <button class="btn-submit" onclick="submitQuiz()">🔍 Phân Tích Kết Quả</button>
+    <div id="incomplete-msg">⚠️ Vui lòng trả lời tất cả 100 câu hỏi trước khi xem kết quả.</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result"></div>
+
+</div>
+
+<script>
+// ============================================================
+// THEME
+// ============================================================
+let isDark = true;
+function initTheme() {
+  // Check for saved theme preference first
+  const saved = localStorage.getItem('career_theme');
+  if (saved === 'light') {
+    isDark = false;
+    applyTheme();
+    return;
+  }
+  
+  // If no saved preference, check browser's color scheme preference
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    isDark = false;
+    applyTheme();
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    isDark = true;
+    applyTheme();
+  }
+  // If no preference detected, default to dark theme (current behavior)
+}
+function toggleTheme() {
+  isDark = !isDark;
+  applyTheme();
+  localStorage.setItem('career_theme', isDark ? 'dark' : 'light');
+  showToast(isDark ? '🌙 Giao diện tối' : '☀️ Giao diện sáng');
+}
+function applyTheme() {
+  document.body.classList.toggle('light-mode', !isDark);
+  document.getElementById('fab-theme').textContent = isDark ? '🌙' : '☀️';
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg, dur=2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ============================================================
+// LOCALSTORAGE PERSISTENCE
+// ============================================================
+const LS_KEY = 'career_answers_v2';
+const LS_STATE = 'career_state_v2';
+const LS_SEEDID = 'career_seedid_v2';
+
+function saveAnswers() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(answers));
+    const state = getCurrentState();
+    localStorage.setItem(LS_STATE, state);
+  } catch(e) {}
+}
+
+function loadSavedAnswers() {
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (!saved) return false;
+    const parsed = JSON.parse(saved);
+    const count = Object.keys(parsed).length;
+    if (count === 0) return false;
+    Object.assign(answers, parsed);
+    return count;
+  } catch(e) { return false; }
+}
+
+function clearSaved() {
+  try {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_STATE);
+    localStorage.removeItem(LS_SEEDID);
+  } catch(e) {}
+}
+
+// ============================================================
+// SEED ID SYSTEM — base-89, 41 chars, lossless encode/decode
+// ============================================================
+// base-89 charset: printable ASCII (33–126) minus 0, 1, ", ', // → 89 chars, 41 chars encodes all 100 answers exactly
+// Total answer space: 10^27 × 5^68 × 6^5 ≈ 2.6×10^78 combos
+// Format: 8-8-8-8-9 (5 groups, 45 chars with dashes)
+
+const B89_CHARSET = '!#$%&()*+,-./23456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
+const B89 = 89;
+const SEED_LEN = 41;
+
+// Question type metadata (ordered by q.id)
+const AGREE_ENC = { sd:0, d:1, n:2, a:3, sa:4 };
+const AGREE_DEC = ['sd','d','n','a','sa'];
+
+// Map each question to its radix (number of possible answers)
+function getQuestionRadix(q) {
+  if (q.type === 'scale10') return 10;
+  if (q.type === 'agree')   return 5;
+  if (q.type === 'choice')  return q.options.length;
+  return 1;
+}
+
+// Encode all answers → single BigInt
+function answersToBigInt() {
+  let num = 0n;
+  // Process questions in reverse so first question is most significant
+  const qs = [...ALL_QUESTIONS].reverse();
+  for (const q of qs) {
+    const radix = BigInt(getQuestionRadix(q));
+    const ans = answers[q.id];
+    let val = 0n;
+    if (ans !== undefined) {
+      if (q.type === 'scale10') val = BigInt(ans - 1);         // 0–9
+      else if (q.type === 'agree') val = BigInt(AGREE_ENC[ans] ?? 0);
+      else if (q.type === 'choice') val = BigInt(Math.max(0, q.options.indexOf(ans)));
+    }
+    num = num * radix + val;
+  }
+  return num;
+}
+
+// Decode BigInt → restore all answers
+function bigIntToAnswers(num) {
+  Object.keys(answers).forEach(k => delete answers[k]);
+  for (const q of ALL_QUESTIONS) {
+    const radix = BigInt(getQuestionRadix(q));
+    const val = Number(num % radix);
+    num = num / radix;
+    if (q.type === 'scale10') answers[q.id] = val + 1;
+    else if (q.type === 'agree') answers[q.id] = AGREE_DEC[val];
+    else if (q.type === 'choice') answers[q.id] = q.options[val];
+  }
+}
+
+// BigInt → base-89 string of exactly SEED_LEN chars
+function bigIntToB89(num) {
+  const chars = [];
+  for (let i = 0; i < SEED_LEN; i++) {
+    chars.push(B89_CHARSET[Number(num % BigInt(B89))]);
+    num /= BigInt(B89);
+  }
+  return chars.reverse().join('');
+}
+
+// base-89 string → BigInt
+function b89ToBigInt(str) {
+  let num = 0n;
+  for (const c of str) {
+    const idx = B89_CHARSET.indexOf(c);
+    if (idx < 0) return null;
+    num = num * BigInt(B89) + BigInt(idx);
+  }
+  return num;
+}
+
+// Format raw 41-char seed as 8-8-8-8-9
+function formatSeed(raw) {
+  return raw.slice(0,8)+'-'+raw.slice(8,16)+'-'+raw.slice(16,24)+'-'+raw.slice(24,32)+'-'+raw.slice(32);
+}
+
+// Strip dashes/spaces from user input
+function cleanSeed(input) {
+  return input.replace(/[-\s]/g, '');
+}
+
+// Checksum: simple mod-89 of all char indices
+function addChecksum(raw) {
+  let sum = 0;
+  for (const c of raw) sum = (sum + B89_CHARSET.indexOf(c)) % B89;
+  const check = B89_CHARSET[(B89 - sum) % B89];
+  return raw + check; // append 1 checksum char → 42 total
+}
+
+function verifyChecksum(str42) {
+  if (str42.length !== 42) return false;
+  let sum = 0;
+  for (const c of str42) sum = (sum + B89_CHARSET.indexOf(c)) % B89;
+  return sum === 0;
+}
+
+function generateSeedId() {
+  try {
+    const num = answersToBigInt();
+    const raw41 = bigIntToB89(num);
+    const raw42 = addChecksum(raw41);   // 42 chars with checksum
+    const seed  = formatSeed(raw42);    // formatted with dashes (48 chars displayed)
+    try {
+      localStorage.setItem(LS_SEEDID, seed);
+      // Also keep raw for quick lookup
+      localStorage.setItem('seed_raw_' + raw42, '1');
+    } catch(e) {}
+    return seed;
+  } catch(e) {
+    console.error('generateSeedId error:', e);
+    return '????-????-????-????-?????';
+  }
+}
+
+function loadFromSeedId(input) {
+  try {
+    const raw = cleanSeed(input.trim());
+    if (raw.length < 41 || raw.length > 42) return null;
+    const raw42 = raw.length === 42 ? raw : raw + B89_CHARSET[0];
+    // Validate all chars are in charset
+    for (const c of raw42) {
+      if (B89_CHARSET.indexOf(c) < 0) return null;
+    }
+    // Verify checksum if 42 chars
+    if (raw.length === 42 && !verifyChecksum(raw42)) {
+      return null; // checksum mismatch
+    }
+    const raw41 = raw42.slice(0, 41);
+    const num = b89ToBigInt(raw41);
+    if (num === null) return null;
+    bigIntToAnswers(num);
+    // Re-format for display
+    const formatted = formatSeed(raw42);
+    try { localStorage.setItem(LS_SEEDID, formatted); } catch(e) {}
+    return formatted;
+  } catch(e) {
+    console.error('loadFromSeedId error:', e);
+    return null;
+  }
+}
+
+// Legacy restoreFromState shim (not used by new system)
+function restoreFromState(state) {
+  // No-op: new system uses loadFromSeedId directly
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('✅ Đã sao chép!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Đã sao chép!');
+  });
+}
+
+  // Simple QR generator (pure JS, no library)
+function generateQRDataURL(text) {
+  // We'll use a simple visual representation with canvas
+  // Since we can't load qrcode.js, we'll create a "hash visual" pattern
+  const canvas = document.createElement('canvas');
+  const size = 120;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Generate deterministic pattern from seed text
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) & 0x7fffffff;
+  }
+  
+  const cells = 11;
+  const cellSize = Math.floor((size - 20) / cells);
+  const off = 10;
+  
+  ctx.fillStyle = '#1a1a2e';
+  
+  // Draw finder pattern (top-left)
+  function drawFinder(x, y) {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(x, y, 7*cellSize, 7*cellSize);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x+cellSize, y+cellSize, 5*cellSize, 5*cellSize);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(x+2*cellSize, y+2*cellSize, 3*cellSize, 3*cellSize);
+  }
+  drawFinder(off, off);
+  drawFinder(off + (cells-7)*cellSize, off);
+  drawFinder(off, off + (cells-7)*cellSize);
+  
+  // Data area
+  ctx.fillStyle = '#1a1a2e';
+  let rng = hash;
+  for (let row = 0; row < cells; row++) {
+    for (let col = 0; col < cells; col++) {
+      const inFinder = (row < 8 && col < 8) || (row < 8 && col >= cells-8) || (row >= cells-8 && col < 8);
+      if (!inFinder) {
+        rng = (rng * 1103515245 + 12345) & 0x7fffffff;
+        if (rng % 2 === 0) {
+          ctx.fillRect(off + col*cellSize, off + row*cellSize, cellSize-1, cellSize-1);
+        }
+      }
+    }
+  }
+  
+  return canvas.toDataURL();
+}
+
+// Custom popup system
+function showCustomPopup(title, message, type = 'info', onConfirm = null, onCancel = null) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.style.display = 'flex';
+  
+  const panel = document.createElement('div');
+  panel.className = 'modal-panel';
+  panel.style.maxWidth = '420px';
+  
+  const titlebar = document.createElement('div');
+  titlebar.className = 'modal-titlebar';
+  titlebar.innerHTML = `<h3>${title}</h3><button class="modal-close-btn" onclick="this.closest('.modal-backdrop').remove()">✕</button>`;
+  
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+  body.innerHTML = `<p style="text-align:center; color:var(--muted); line-height:1.5">${message}</p>`;
+  
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+  
+  if (type === 'confirm') {
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'mbtn mbtn-ghost';
+    cancelBtn.textContent = 'Huỷ';
+    cancelBtn.onclick = () => {
+      if (onCancel) onCancel();
+      backdrop.remove();
+    };
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'mbtn mbtn-primary';
+    confirmBtn.textContent = 'Đồng ý';
+    confirmBtn.onclick = () => {
+      if (onConfirm) onConfirm();
+      backdrop.remove();
+    };
+    
+    footer.appendChild(cancelBtn);
+    footer.appendChild(confirmBtn);
+  } else {
+    const okBtn = document.createElement('button');
+    okBtn.className = 'mbtn mbtn-primary';
+    okBtn.textContent = 'OK';
+    okBtn.onclick = () => {
+      if (onConfirm) onConfirm();
+      backdrop.remove();
+    };
+    
+    footer.appendChild(okBtn);
+  }
+  
+  panel.appendChild(titlebar);
+  panel.appendChild(body);
+  panel.appendChild(footer);
+  backdrop.appendChild(panel);
+  document.body.appendChild(backdrop);
+  
+  // Focus the first button
+  setTimeout(() => {
+    const firstBtn = panel.querySelector('.mbtn');
+    if (firstBtn) firstBtn.focus();
+  }, 100);
+}
+
+// ============================================================
+// RESET & NAVIGATION
+// ============================================================
+function confirmReset() {
+  showCustomPopup('⚠️ Xác nhận làm lại', 'Bạn có chắc muốn làm lại từ đầu? Toàn bộ câu trả lời sẽ bị xóa.', 'confirm', hardReset);
+}
+
+function hardReset() {
+  clearSaved();
+  Object.keys(answers).forEach(k => delete answers[k]);
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('result').innerHTML = '';
+  document.getElementById('intro').style.display = 'block';
+  document.getElementById('resume-banner').style.display = 'none';
+  document.getElementById('fab-current').style.display = 'none';
+  window.scrollTo(0, 0);
+  showToast('🔄 Đã reset — sẵn sàng làm lại!');
+}
+
+function resumeQuiz() {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  renderQuestions();
+  restoreUIAnswers();
+  updateProgress();
+  jumpToCurrent();
+}
+
+function discardAndStart() {
+  clearSaved();
+  Object.keys(answers).forEach(k => delete answers[k]);
+  document.getElementById('resume-banner').style.display = 'none';
+  startQuiz();
+}
+
+function jumpToCurrent() {
+  const unanswered = ALL_QUESTIONS.find(q => !answers[q.id]);
+  if (unanswered) {
+    const el = document.getElementById('qcard' + unanswered.id);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); showToast('📍 Câu ' + unanswered.id + ' chưa trả lời'); }
+  } else {
+    showToast('✅ Đã trả lời hết 100 câu!');
+    document.querySelector('.btn-submit')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function restoreUIAnswers() {
+  ALL_QUESTIONS.forEach(q => {
+    const ans = answers[q.id];
+    if (!ans) return;
+    if (q.type === 'scale10') {
+      const val = ans;
+      document.querySelectorAll('[id^="s' + q.id + '_"]').forEach(b => {
+        b.className = '';
+        const bVal = parseInt(b.id.split('_')[1]);
+        if (bVal <= val) b.classList.add('sel-' + val);
+      });
+      document.getElementById('qcard' + q.id)?.classList.add('answered');
+    } else if (q.type === 'agree') {
+      const btns = document.querySelectorAll('#qcard' + q.id + ' .agree-btn');
+      const opts = ['sd','d','n','a','sa'];
+      btns.forEach((b, i) => { if (opts[i] === ans) b.classList.add('selected'); });
+      document.getElementById('qcard' + q.id)?.classList.add('answered');
+    } else if (q.type === 'choice') {
+      const btns = document.querySelectorAll('#qcard' + q.id + ' .choice-btn');
+      btns.forEach(b => { if (b.textContent === ans) b.classList.add('selected'); });
+      document.getElementById('qcard' + q.id)?.classList.add('answered');
+    }
+  });
+}
+
+function openReviewModal() {
+  const list = document.getElementById('review-list');
+  const agreeLabels = { sd:'Rất không đồng ý', d:'Không đồng ý', n:'Trung lập', a:'Đồng ý', sa:'Rất đồng ý' };
+  let html = '';
+  ALL_QUESTIONS.forEach(q => {
+    const ans = answers[q.id];
+    let label = '—';
+    if (ans !== undefined) {
+      if (q.type === 'scale10') label = ans + '/10';
+      else if (q.type === 'agree') label = agreeLabels[ans] || ans;
+      else label = ans;
+    }
+    const color = ans ? 'var(--green)' : 'var(--accent)';
+    html += '<div class="review-item"><span class="rq">Q'+q.id+'. '+q.text+'</span><span class="ra" style="color:'+color+'">'+label+'</span></div>';
+  });
+  list.innerHTML = html;
+  document.getElementById('review-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReviewModal(e) {
+  if (e && e.target !== document.getElementById('review-modal')) return;
+  document.getElementById('review-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── SEED MODAL ──
+let seedModalMode = 'result'; // 'result' | 'import'
+
+function openSeedModalImport() {
+  seedModalMode = 'import';
+  renderSeedModalImport();
+  document.getElementById('seed-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('seed-import-main')?.focus(), 100);
+}
+
+function openSeedModalResult(seedId) {
+  seedModalMode = 'result';
+  renderSeedModalResult(seedId);
+  document.getElementById('seed-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSeedModal(e) {
+  if (e && e.target !== document.getElementById('seed-modal')) return;
+  document.getElementById('seed-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderSeedModalResult(seedId) {
+  const body = document.getElementById('seed-modal-body');
+  body.innerHTML = `
+    <canvas id="seed-modal-qr" width="120" height="120"></canvas>
+    <div class="qr-label">Nhấn vào mã để sao chép</div>
+    <div class="seed-modal-display" onclick="copySeedId()" title="Nhấn để sao chép">${seedId}</div>
+    <p class="seed-modal-hint">Lưu mã này để xem lại kết quả trên thiết bị này.<br>Mã được lưu tự động trong trình duyệt của bạn.</p>
+    <div class="seed-divider">hoặc nhập mã khác</div>
+    <input class="seed-input-field" id="seed-import-main" placeholder="XXXXXXXX-XXXXXXXX-…" maxlength="50"
+      oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doImportSeed()" autocomplete="off" spellcheck="false"/>
+    <div id="seed-modal-status"></div>
+    <div class="modal-footer" style="padding:16px 0 0;border:none;justify-content:space-between">
+      <button class="mbtn mbtn-ghost" onclick="closeSeedModal()">Đóng</button>
+      <button class="mbtn mbtn-primary" onclick="doImportSeed()">↩ Tải mã</button>
+    </div>
+  `;
+  // draw QR
+  const qr = document.getElementById('seed-modal-qr');
+  if (qr) {
+    const img = new Image();
+    img.onload = () => qr.getContext('2d').drawImage(img, 0, 0, 120, 120);
+    img.src = generateQRDataURL(seedId);
+  }
+}
+
+function renderSeedModalImport() {
+  const body = document.getElementById('seed-modal-body');
+  body.innerHTML = `
+    <p class="seed-modal-hint" style="margin-bottom:16px">Nhập Seed ID để tải lại kết quả từ lần làm trước trên thiết bị này.</p>
+    <input class="seed-input-field" id="seed-import-main" placeholder="XXXXXXXX-XXXXXXXX-…" maxlength="50"
+      oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')doImportSeed()" autocomplete="off" spellcheck="false"/>
+    <div id="seed-modal-status"></div>
+    <div class="modal-footer" style="padding:16px 0 0;border:none;justify-content:space-between">
+      <button class="mbtn mbtn-ghost" onclick="closeSeedModal()">Huỷ</button>
+      <button class="mbtn mbtn-primary" onclick="doImportSeed()">↩ Tải kết quả</button>
+    </div>
+  `;
+}
+
+function doImportSeed() {
+  const input = document.getElementById('seed-import-main')?.value?.trim();
+  const statusEl = document.getElementById('seed-modal-status');
+  if (!input) { if(statusEl) { statusEl.textContent = '⚠️ Vui lòng nhập mã'; statusEl.className='status-err'; } return; }
+  const result = loadFromSeedId(input);
+  if (result) {
+    if(statusEl) { statusEl.textContent = '✅ Đã tải! Đang phân tích...'; statusEl.className='status-ok'; }
+    showToast('✅ Đã tải Seed ID!');
+    setTimeout(() => {
+      closeSeedModal();
+      document.getElementById('intro').style.display = 'none';
+      document.getElementById('quiz').style.display = 'none';
+      calculateResult();
+      document.getElementById('result').style.display = 'block';
+      window.scrollTo(0, 0);
+    }, 700);
+  } else {
+    if(statusEl) { statusEl.textContent = '❌ Không tìm thấy mã này. Mã chỉ hoạt động trên cùng thiết bị.'; statusEl.className='status-err'; }
+    showToast('❌ Không tìm thấy Seed ID', 3000);
+  }
+}
+
+// ============================================================
+// PAGE LOAD INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  // Escape key closes modals
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeReviewModal();
+      closeSeedModal();
+    }
+  });
+  const savedCount = loadSavedAnswers();
+  if (savedCount && savedCount > 0) {
+    if (savedCount >= 100) {
+      // Already completed — restore result
+      document.getElementById('resume-info').textContent = 'Đã hoàn thành! Xem lại kết quả?';
+      document.getElementById('resume-banner').style.display = 'flex';
+      document.querySelector('.banner-btn').textContent = 'Xem kết quả →';
+      document.querySelector('.banner-btn').onclick = () => {
+        document.getElementById('intro').style.display = 'none';
+        calculateResult();
+        document.getElementById('result').style.display = 'block';
+      };
+    } else {
+      document.getElementById('resume-info').textContent = 'Đã trả lời ' + savedCount + '/100 câu';
+      document.getElementById('resume-banner').style.display = 'flex';
+    }
+  }
+});
+
+// ============================================================
+// DATA: 100 Questions
+// ============================================================
+const SECTIONS = [
+  {
+    id: 'personality',
+    title: 'Tính Cách & Năng Lượng',
+    icon: '🧠',
+    desc: 'Câu 1–15 • Cách bạn tư duy và tương tác',
+    questions: [
+      { id: 1, text: 'Sau một ngày dài giao tiếp xã hội, bạn cảm thấy mệt mỏi và cần thời gian một mình để nạp lại năng lượng.', sub: 'Hướng nội vs Hướng ngoại', type: 'agree', dims: { E: -2, I: 2 } },
+      { id: 2, text: 'Bạn dễ dàng bắt chuyện với người lạ và thường chủ động trong các cuộc trò chuyện.', type: 'agree', dims: { E: 2, I: -2 } },
+      { id: 3, text: 'Tôi thích làm việc trong môi trường sôi nổi, đông người hơn là văn phòng yên tĩnh.', type: 'agree', dims: { E: 2, I: -2 } },
+      { id: 4, text: 'Khi đưa ra quyết định, tôi ưu tiên logic và dữ liệu hơn là cảm xúc của những người liên quan.', sub: 'Lý trí vs Cảm xúc', type: 'agree', dims: { T: 2, F: -2 } },
+      { id: 5, text: 'Tôi thường cảm nhận được cảm xúc của người khác rất nhanh và quan tâm đến họ nhiều.', type: 'agree', dims: { F: 2, T: -2 } },
+      { id: 6, text: 'Tôi thích lập kế hoạch chi tiết và tuân theo nó, không thích những thay đổi bất ngờ.', sub: 'Quy tắc vs Linh hoạt', type: 'agree', dims: { J: 2, P: -2 } },
+      { id: 7, text: 'Tôi làm việc tốt nhất dưới áp lực deadline, thường hoàn thành công việc vào phút chót.', type: 'agree', dims: { P: 2, J: -2 } },
+      { id: 8, text: 'Tôi thường chú ý đến chi tiết cụ thể, thực tế hơn là bức tranh tổng thể trừu tượng.', sub: 'Thực tế vs Trực giác', type: 'agree', dims: { S: 2, N: -2 } },
+      { id: 9, text: 'Tôi thích khám phá ý tưởng mới, lý thuyết và các khả năng hơn là sự kiện cụ thể.', type: 'agree', dims: { N: 2, S: -2 } },
+      { id: 10, text: 'Tôi cảm thấy thoải mái khi nói trước đám đông hoặc thuyết trình.', type: 'scale10', dims: { E: 0.2, leadership: 0.15 } },
+      { id: 11, text: 'Tôi thường giữ vững quan điểm của mình kể cả khi bị phản bác.', type: 'scale10', dims: { T: 0.1, J: 0.1, leadership: 0.1 } },
+      { id: 12, text: 'Tôi cảm thấy bứt rứt nếu không hoàn thành công việc đúng hạn.', type: 'agree', dims: { J: 2, T: 1 } },
+      { id: 13, text: 'Tôi thường được bạn bè tìm đến để nhờ tư vấn hoặc lắng nghe.', type: 'agree', dims: { F: 2, social: 2 } },
+      { id: 14, text: 'Tôi dễ thích nghi với quy trình, thủ tục và không ngại công việc lặp đi lặp lại.', type: 'agree', dims: { S: 2, J: 2, conventional: 2 } },
+      { id: 15, text: 'Tôi thích đặt câu hỏi "tại sao" và luôn tìm kiếm lý do, nguyên nhân đằng sau mọi thứ.', type: 'agree', dims: { N: 2, investigative: 2 } },
+    ]
+  },
+  {
+    id: 'thinking',
+    title: 'Tư Duy & Trí Tuệ',
+    icon: '💡',
+    desc: 'Câu 16–30 • Cách bạn học hỏi và giải quyết vấn đề',
+    questions: [
+      { id: 16, text: 'Khả năng tư duy logic và phân tích của bạn so với những người xung quanh.', sub: 'Tự đánh giá 1–10', type: 'scale10', dims: { T: 0.15, investigative: 0.1 } },
+      { id: 17, text: 'Tôi thích giải những bài toán phức tạp hơn là ghi nhớ công thức.', type: 'agree', dims: { N: 2, investigative: 2, T: 1 } },
+      { id: 18, text: 'Tôi có khả năng đọc hiểu và viết tốt, diễn đạt ý tưởng qua ngôn ngữ mạch lạc.', type: 'agree', dims: { artistic: 1, social: 1 } },
+      { id: 19, text: 'Tôi dễ dàng tưởng tượng và hình dung không gian 3 chiều trong đầu.', sub: 'Tư duy không gian', type: 'agree', dims: { realistic: 2, S: 1 } },
+      { id: 20, text: 'Tôi thích làm việc với con số, thống kê và dữ liệu.', type: 'agree', dims: { T: 2, investigative: 2, conventional: 1 } },
+      { id: 21, text: 'Tôi học tốt khi có thể thực hành, sờ tay vào vật thể hơn là nghe giảng.', type: 'agree', dims: { S: 2, realistic: 2 } },
+      { id: 22, text: 'Tôi thường nghĩ ra các giải pháp sáng tạo, khác biệt so với người khác.', type: 'agree', dims: { N: 2, artistic: 2 } },
+      { id: 23, text: 'Tôi có khả năng tập trung cao độ trong thời gian dài mà không bị phân tâm.', type: 'scale10', dims: { J: 0.1, investigative: 0.1 } },
+      { id: 24, text: 'Tôi nhớ tốt các con số, công thức, dữ liệu chính xác.', type: 'agree', dims: { S: 2, T: 1, conventional: 1 } },
+      { id: 25, text: 'Tôi nhìn thấy mối liên hệ giữa các lĩnh vực khác nhau mà người khác không thấy.', type: 'agree', dims: { N: 2, investigative: 2 } },
+      { id: 26, text: 'Khi gặp vấn đề, tôi thường chia nhỏ nó thành các bước có thể giải quyết được.', type: 'agree', dims: { T: 2, J: 1, conventional: 1 } },
+      { id: 27, text: 'Tôi thích nghiên cứu sâu vào một chủ đề hơn là biết rộng nhiều chủ đề.', type: 'agree', dims: { investigative: 2, I: 1 } },
+      { id: 28, text: 'Tôi có trí nhớ thị giác tốt — nhớ hình ảnh, màu sắc, bố cục.', type: 'agree', dims: { artistic: 2, realistic: 1 } },
+      { id: 29, text: 'Tôi giỏi nắm bắt và hiểu cảm xúc, ngôn ngữ cơ thể của người khác.', sub: 'Trí tuệ cảm xúc', type: 'scale10', dims: { F: 0.15, social: 0.2 } },
+      { id: 30, text: 'Tôi có thể học và hiểu nhanh các ngôn ngữ hoặc hệ thống ký hiệu mới.', type: 'agree', dims: { N: 1, investigative: 1 } },
+    ]
+  },
+  {
+    id: 'subjects',
+    title: 'Môn Học & Lĩnh Vực Yêu Thích',
+    icon: '📚',
+    desc: 'Câu 31–45 • Những gì bạn đam mê học hỏi',
+    questions: [
+      { id: 31, text: 'Mức độ bạn yêu thích Toán học và Xác suất thống kê.', type: 'scale10', dims: { investigative: 0.2, T: 0.15, conventional: 0.1 } },
+      { id: 32, text: 'Mức độ bạn yêu thích Vật lý và Kỹ thuật.', type: 'scale10', dims: { realistic: 0.25, investigative: 0.15, T: 0.1 } },
+      { id: 33, text: 'Mức độ bạn yêu thích Hóa học và Sinh học.', type: 'scale10', dims: { investigative: 0.2, realistic: 0.1 } },
+      { id: 34, text: 'Mức độ bạn yêu thích Văn học, Ngôn ngữ và Viết lách.', type: 'scale10', dims: { artistic: 0.25, social: 0.1 } },
+      { id: 35, text: 'Mức độ bạn yêu thích Nghệ thuật: Vẽ, âm nhạc, thiết kế.', type: 'scale10', dims: { artistic: 0.3 } },
+      { id: 36, text: 'Mức độ bạn yêu thích Lịch sử và Địa lý.', type: 'scale10', dims: { investigative: 0.1, social: 0.1 } },
+      { id: 37, text: 'Mức độ bạn yêu thích Kinh tế, Kinh doanh và Quản lý.', type: 'scale10', dims: { enterprising: 0.25, conventional: 0.15 } },
+      { id: 38, text: 'Mức độ bạn yêu thích Tin học, Lập trình và Công nghệ.', type: 'scale10', dims: { investigative: 0.2, realistic: 0.15, T: 0.1 } },
+      { id: 39, text: 'Mức độ bạn yêu thích Tâm lý học và Khoa học xã hội.', type: 'scale10', dims: { social: 0.2, investigative: 0.15, F: 0.1 } },
+      { id: 40, text: 'Mức độ bạn yêu thích Luật và Chính trị học.', type: 'scale10', dims: { enterprising: 0.2, conventional: 0.1, T: 0.1 } },
+      { id: 41, text: 'Mức độ bạn yêu thích Thể dục thể thao và Vận động.', type: 'scale10', dims: { realistic: 0.2, E: 0.1 } },
+      { id: 42, text: 'Mức độ bạn yêu thích Y học và Sức khỏe.', type: 'scale10', dims: { investigative: 0.15, social: 0.15, realistic: 0.1 } },
+      { id: 43, text: 'Mức độ bạn yêu thích Triết học và Đạo đức học.', type: 'scale10', dims: { N: 0.1, investigative: 0.15 } },
+      { id: 44, text: 'Mức độ bạn yêu thích Kiến trúc và Xây dựng.', type: 'scale10', dims: { realistic: 0.2, artistic: 0.1 } },
+      { id: 45, text: 'Mức độ bạn yêu thích Nông nghiệp, Môi trường và Thiên nhiên.', type: 'scale10', dims: { realistic: 0.2 } },
+    ]
+  },
+  {
+    id: 'work',
+    title: 'Phong Cách Làm Việc',
+    icon: '⚙️',
+    desc: 'Câu 46–60 • Bạn làm việc như thế nào',
+    questions: [
+      { id: 46, text: 'Tôi thích làm việc độc lập, tự chịu trách nhiệm về sản phẩm của mình hơn là làm việc nhóm.', type: 'agree', dims: { I: 2, realistic: 1 } },
+      { id: 47, text: 'Tôi thích lãnh đạo, dẫn dắt người khác hơn là thực thi theo chỉ đạo.', type: 'agree', dims: { E: 1, enterprising: 2, leadership: 2 } },
+      { id: 48, text: 'Tôi làm việc tốt nhất với quy trình rõ ràng, ổn định.', type: 'agree', dims: { J: 2, S: 1, conventional: 2 } },
+      { id: 49, text: 'Tôi thích những công việc đòi hỏi sự sáng tạo và tự do thể hiện bản thân.', type: 'agree', dims: { P: 1, N: 1, artistic: 2 } },
+      { id: 50, text: 'Tôi không ngại thực hiện những công việc tay chân, kỹ thuật, đòi hỏi khéo léo.', type: 'agree', dims: { S: 2, realistic: 2 } },
+      { id: 51, text: 'Tôi thích công việc đa dạng, không lặp lại và liên tục thay đổi.', type: 'agree', dims: { P: 2, N: 1, E: 1 } },
+      { id: 52, text: 'Tôi rất chú trọng đến chất lượng và độ hoàn hảo của sản phẩm đầu ra.', type: 'agree', dims: { J: 2, T: 1 } },
+      { id: 53, text: 'Mức độ bạn cảm thấy thoải mái khi phải đưa ra quyết định quan trọng trong thời gian ngắn.', type: 'scale10', dims: { E: 0.1, J: 0.1, leadership: 0.15 } },
+      { id: 54, text: 'Tôi muốn thấy kết quả công việc có tác động rõ ràng đến cuộc sống thực tế.', type: 'agree', dims: { S: 1, realistic: 1, social: 1 } },
+      { id: 55, text: 'Tôi không ngại làm những việc mà người khác cho là nhàm chán nếu nó mang lại sự ổn định.', type: 'agree', dims: { J: 1, conventional: 2, S: 1 } },
+      { id: 56, text: 'Tôi làm việc tốt hơn khi có deadline rõ ràng và áp lực nhẹ.', type: 'agree', dims: { J: 1 } },
+      { id: 57, text: 'Tôi dễ bị cuốn vào công việc đến mức quên thời gian (flow state).', type: 'agree', dims: { investigative: 1, artistic: 1 } },
+      { id: 58, text: 'Mức độ chịu đựng áp lực cao và môi trường cạnh tranh của bạn.', type: 'scale10', dims: { enterprising: 0.15, T: 0.1, J: 0.1 } },
+      { id: 59, text: 'Tôi thích được đánh giá dựa trên kết quả cụ thể, không phải quy trình làm việc.', type: 'agree', dims: { T: 1, enterprising: 1, P: 1 } },
+      { id: 60, text: 'Tôi thích làm việc ngoài trời hoặc có sự di chuyển hơn là ngồi văn phòng cả ngày.', type: 'agree', dims: { realistic: 2, E: 1 } },
+    ]
+  },
+  {
+    id: 'social',
+    title: 'Kỹ Năng Xã Hội & Giao Tiếp',
+    icon: '🤝',
+    desc: 'Câu 61–70 • Cách bạn kết nối với mọi người',
+    questions: [
+      { id: 61, text: 'Tôi giỏi thuyết phục người khác thay đổi quan điểm của họ.', type: 'agree', dims: { E: 1, enterprising: 2, leadership: 1 } },
+      { id: 62, text: 'Mức độ bạn thích dạy học, hướng dẫn, truyền đạt kiến thức cho người khác.', type: 'scale10', dims: { social: 0.25, F: 0.1 } },
+      { id: 63, text: 'Tôi giỏi giải quyết xung đột và làm hòa giữa các bên.', type: 'agree', dims: { F: 2, social: 2 } },
+      { id: 64, text: 'Tôi thích tư vấn, hỗ trợ người khác vượt qua khó khăn cá nhân.', type: 'agree', dims: { F: 2, social: 2 } },
+      { id: 65, text: 'Tôi thoải mái khi phải đàm phán, thương lượng.', type: 'agree', dims: { E: 1, enterprising: 2, T: 1 } },
+      { id: 66, text: 'Tôi xây dựng và duy trì mạng lưới quan hệ chuyên nghiệp tốt.', type: 'agree', dims: { E: 2, enterprising: 1, social: 1 } },
+      { id: 67, text: 'Tôi có khả năng truyền cảm hứng và động lực cho người khác.', type: 'agree', dims: { E: 1, F: 1, social: 1, leadership: 2 } },
+      { id: 68, text: 'Mức độ bạn cảm thấy thoải mái khi tiếp xúc với người từ đủ mọi tầng lớp xã hội.', type: 'scale10', dims: { E: 0.1, social: 0.2 } },
+      { id: 69, text: 'Tôi thích chăm sóc, hỗ trợ người yếu thế: trẻ em, người già, bệnh nhân.', type: 'agree', dims: { F: 2, social: 2 } },
+      { id: 70, text: 'Tôi giỏi đọc hiểu tâm lý khách hàng và đáp ứng nhu cầu của họ.', type: 'agree', dims: { F: 1, social: 1, enterprising: 1 } },
+    ]
+  },
+  {
+    id: 'physical',
+    title: 'Thể Chất & Sức Khỏe',
+    icon: '💪',
+    desc: 'Câu 71–77 • Năng lực thể chất ảnh hưởng đến nghề nghiệp',
+    questions: [
+      { id: 71, text: 'Tôi có sức khỏe tốt và thể lực dẻo dai.', type: 'scale10', dims: { realistic: 0.15 } },
+      { id: 72, text: 'Tôi khéo léo tay chân và làm tốt các công việc đòi hỏi sự tinh tế vật lý.', type: 'agree', dims: { realistic: 2 } },
+      { id: 73, text: 'Thị lực và khả năng nhận biết màu sắc của tôi rất tốt.', type: 'agree', dims: { artistic: 1, realistic: 1 } },
+      { id: 74, text: 'Tôi có giọng nói tốt và khả năng diễn đạt ngôn từ cuốn hút.', type: 'agree', dims: { E: 1, artistic: 1, social: 1, enterprising: 1 } },
+      { id: 75, text: 'Tôi có thể làm việc liên tục nhiều giờ trước máy tính mà không mệt mỏi.', type: 'agree', dims: { investigative: 1, T: 1 } },
+      { id: 76, text: 'Khả năng chịu đựng căng thẳng và áp lực tâm lý dài hạn của tôi.', type: 'scale10', dims: { T: 0.1, enterprising: 0.1 } },
+      { id: 77, text: 'Tôi thích hoạt động ngoài trời, chịu được thời tiết khắc nghiệt.', type: 'agree', dims: { realistic: 2 } },
+    ]
+  },
+  {
+    id: 'values',
+    title: 'Giá Trị Sống & Ưu Tiên',
+    icon: '🌟',
+    desc: 'Câu 78–88 • Điều quan trọng với bạn trong cuộc sống',
+    questions: [
+      { id: 78, text: 'Thu nhập cao là ưu tiên hàng đầu khi lựa chọn nghề nghiệp.', type: 'agree', dims: { enterprising: 1, conventional: 1 } },
+      { id: 79, text: 'Tôi muốn công việc có ý nghĩa xã hội, giúp ích cho cộng đồng nhiều hơn là lương cao.', type: 'agree', dims: { F: 2, social: 2 } },
+      { id: 80, text: 'Sự ổn định và an toàn tài chính quan trọng hơn là phiêu lưu khởi nghiệp.', type: 'agree', dims: { J: 1, S: 1, conventional: 2 } },
+      { id: 81, text: 'Tôi muốn nổi tiếng, được công nhận và có ảnh hưởng rộng rãi.', type: 'agree', dims: { E: 1, enterprising: 2 } },
+      { id: 82, text: 'Sự tự do và linh hoạt trong công việc quan trọng hơn chức vụ hay danh tiếng.', type: 'agree', dims: { P: 2, artistic: 1, N: 1 } },
+      { id: 83, text: 'Tôi muốn tiếp tục học hỏi và phát triển nghề nghiệp suốt đời.', type: 'agree', dims: { N: 1, investigative: 1 } },
+      { id: 84, text: 'Cân bằng công việc – cuộc sống quan trọng hơn thăng tiến nhanh.', type: 'agree', dims: { F: 1, P: 1 } },
+      { id: 85, text: 'Tôi muốn công việc có tác động tích cực đến môi trường thiên nhiên.', type: 'agree', dims: { realistic: 1, social: 1 } },
+      { id: 86, text: 'Tôi muốn được sáng tạo, để lại dấu ấn cá nhân trong tác phẩm/sản phẩm của mình.', type: 'agree', dims: { artistic: 2, N: 1 } },
+      { id: 87, text: 'Tôi muốn làm chủ doanh nghiệp hoặc có quyền tự quyết cao trong công việc.', type: 'agree', dims: { enterprising: 2, leadership: 2, E: 1 } },
+      { id: 88, text: 'Tôi muốn đóng góp vào sự tiến bộ của khoa học, công nghệ hoặc tri thức nhân loại.', type: 'agree', dims: { investigative: 2, N: 1 } },
+    ]
+  },
+  {
+    id: 'pressure',
+    title: 'Phản Ứng Với Áp Lực & Thử Thách',
+    icon: '🔥',
+    desc: 'Câu 89–95 • Bạn đứng vững như thế nào',
+    questions: [
+      { id: 89, text: 'Khi dự án thất bại, tôi phân tích nguyên nhân và thử lại nhanh hơn là mất tinh thần.', type: 'agree', dims: { T: 2, J: 1, enterprising: 1 } },
+      { id: 90, text: 'Tôi làm việc tốt trong môi trường cạnh tranh cao, điều đó thúc đẩy tôi nhiều hơn.', type: 'agree', dims: { T: 1, enterprising: 2 } },
+      { id: 91, text: 'Tôi thường lo lắng và căng thẳng khi đối mặt với tình huống không rõ ràng.', type: 'agree', dims: { J: 1, S: 1 } },
+      { id: 92, text: 'Mức độ chấp nhận rủi ro: tôi sẵn sàng mạo hiểm tài chính để theo đuổi đam mê.', type: 'scale10', dims: { enterprising: 0.2, P: 0.1 } },
+      { id: 93, text: 'Khi bị chỉ trích, tôi tiếp thu và cải thiện hơn là tự ái.', type: 'agree', dims: { T: 1, J: 1 } },
+      { id: 94, text: 'Tôi có khả năng đa nhiệm — xử lý nhiều việc cùng lúc hiệu quả.', type: 'agree', dims: { P: 1, E: 1 } },
+      { id: 95, text: 'Tôi kiên nhẫn với những công việc đòi hỏi nhiều năm để thấy kết quả (như nghiên cứu, xây dựng sự nghiệp dài hạn).', type: 'agree', dims: { I: 1, J: 1, investigative: 1 } },
+    ]
+  },
+  {
+    id: 'dreams',
+    title: 'Ước Mơ & Định Hướng',
+    icon: '🚀',
+    desc: 'Câu 96–100 • Tầm nhìn về cuộc sống bạn muốn',
+    questions: [
+      { id: 96, text: 'Nếu tiền không là vấn đề, tôi sẽ dành cả ngày để làm gì?', type: 'choice', options: ['Nghiên cứu/Học hỏi', 'Tạo ra thứ gì đó', 'Giúp đỡ người khác', 'Kinh doanh/Lãnh đạo', 'Thám hiểm/Vận động', 'Tổ chức/Quản lý'], dims: { 'Nghiên cứu/Học hỏi': { investigative: 3 }, 'Tạo ra thứ gì đó': { artistic: 3 }, 'Giúp đỡ người khác': { social: 3 }, 'Kinh doanh/Lãnh đạo': { enterprising: 3 }, 'Thám hiểm/Vận động': { realistic: 3 }, 'Tổ chức/Quản lý': { conventional: 3 } } },
+      { id: 97, text: 'Thành công với tôi có nghĩa là gì nhất?', type: 'choice', options: ['Được tôn trọng/Chuyên gia', 'Giàu có/Độc lập tài chính', 'Tạo ra tác phẩm bất hủ', 'Thay đổi cuộc sống người khác', 'Xây dựng đế chế kinh doanh', 'Sống bình yên, ổn định'], dims: { 'Được tôn trọng/Chuyên gia': { investigative: 2, conventional: 1 }, 'Giàu có/Độc lập tài chính': { enterprising: 3 }, 'Tạo ra tác phẩm bất hủ': { artistic: 3 }, 'Thay đổi cuộc sống người khác': { social: 3 }, 'Xây dựng đế chế kinh doanh': { enterprising: 3 }, 'Sống bình yên, ổn định': { conventional: 2, S: 1 } } },
+      { id: 98, text: 'Điều bạn sợ nhất trong công việc tương lai là gì?', type: 'choice', options: ['Nhàm chán/Lặp lại', 'Thất bại/Rủi ro cao', 'Cô đơn/Ít kết nối', 'Thiếu sáng tạo/Gò bó', 'Không kiếm đủ tiền', 'Không được công nhận'], dims: { 'Nhàm chán/Lặp lại': { N: 1, P: 1 }, 'Thất bại/Rủi ro cao': { S: 1, conventional: 1 }, 'Cô đơn/Ít kết nối': { E: 1, social: 1 }, 'Thiếu sáng tạo/Gò bó': { artistic: 1, P: 1 }, 'Không kiếm đủ tiền': { enterprising: 1 }, 'Không được công nhận': { E: 1, enterprising: 1 } } },
+      { id: 99, text: 'Bạn muốn được nhớ đến vì điều gì sau 30 năm làm việc?', type: 'choice', options: ['Phát minh/Khám phá mới', 'Đào tạo/Truyền cảm hứng', 'Tác phẩm nghệ thuật', 'Xây dựng tổ chức/công ty', 'Phục vụ cộng đồng', 'Chuyên gia số 1 lĩnh vực'], dims: { 'Phát minh/Khám phá mới': { investigative: 3 }, 'Đào tạo/Truyền cảm hứng': { social: 3 }, 'Tác phẩm nghệ thuật': { artistic: 3 }, 'Xây dựng tổ chức/công ty': { enterprising: 3 }, 'Phục vụ cộng đồng': { social: 3 }, 'Chuyên gia số 1 lĩnh vực': { investigative: 2, conventional: 1 } } },
+      { id: 100, text: 'Nếu có thể chọn một lĩnh vực để trở thành chuyên gia đẳng cấp thế giới, bạn chọn gì?', type: 'choice', options: ['Khoa học & Công nghệ', 'Nghệ thuật & Sáng tạo', 'Kinh doanh & Tài chính', 'Giáo dục & Xã hội', 'Y tế & Sức khỏe', 'Kỹ thuật & Thủ công'], dims: { 'Khoa học & Công nghệ': { investigative: 3, realistic: 1 }, 'Nghệ thuật & Sáng tạo': { artistic: 3 }, 'Kinh doanh & Tài chính': { enterprising: 3, conventional: 1 }, 'Giáo dục & Xã hội': { social: 3 }, 'Y tế & Sức khỏe': { investigative: 2, social: 2 }, 'Kỹ thuật & Thủ công': { realistic: 3 } } },
+    ]
+  }
+];
+
+// Flatten all questions
+const ALL_QUESTIONS = SECTIONS.flatMap(s => s.questions.map(q => ({ ...q, sectionId: s.id })));
+const answers = {};
+
+function startQuiz() {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  renderQuestions();
+  restoreUIAnswers();
+  updateProgress();
+  document.getElementById('fab-current').style.display = 'flex';
+  window.scrollTo(0,0);
+}
+
+function renderQuestions() {
+  const wrap = document.getElementById('questions-wrap');
+  let html = '';
+  SECTIONS.forEach(sec => {
+    html += `<div class="section-header"><span class="s-icon">${sec.icon}</span><div><h2>${sec.title}</h2><span>${sec.desc}</span></div></div>`;
+    sec.questions.forEach(q => {
+      html += buildQuestion(q);
+    });
+  });
+  wrap.innerHTML = html;
+}
+
+function buildQuestion(q) {
+  let input = '';
+  if (q.type === 'scale10') {
+    const labels = ['Rất thấp', 'Rất cao'];
+    input = `<div class="scale-wrap"><div class="scale-labels"><span>${labels[0]}</span><span>${labels[1]}</span></div><div class="scale-btns">`;
+    for (let i = 1; i <= 10; i++) {
+      input += `<button onclick="selectScale(${q.id},${i},this)" id="s${q.id}_${i}">${i}</button>`;
+    }
+    input += `</div></div>`;
+  } else if (q.type === 'agree') {
+    const opts = [
+      {v:'sd', l:'Hoàn toàn không đồng ý', cls:'a-sd'},
+      {v:'d', l:'Không đồng ý', cls:'a-d'},
+      {v:'n', l:'Trung lập', cls:'a-n'},
+      {v:'a', l:'Đồng ý', cls:'a-a'},
+      {v:'sa', l:'Hoàn toàn đồng ý', cls:'a-sa'},
+    ];
+    input = `<div class="agree-wrap">`;
+    opts.forEach(o => {
+      input += `<button class="agree-btn ${o.cls}" onclick="selectAgree(${q.id},'${o.v}',this)">${o.l}</button>`;
+    });
+    input += `</div>`;
+  } else if (q.type === 'choice') {
+    input = `<div class="choice-wrap">`;
+    q.options.forEach(opt => {
+      input += `<button class="choice-btn" onclick="selectChoice(${q.id},'${opt.replace(/'/g, "\\'")}',this)">${opt}</button>`;
+    });
+    input += `</div>`;
+  }
+
+  return `<div class="q-card" id="qcard${q.id}">
+    <div class="q-top">
+      <span class="q-num">Q${q.id}</span>
+      <div><div class="q-text">${q.text}</div>${q.sub ? `<div class="q-sub">${q.sub}</div>` : ''}</div>
+    </div>
+    ${input}
+  </div>`;
+}
+
+function updateProgress() {
+  const done = Object.keys(answers).length;
+  document.getElementById('prog-text').textContent = `Câu ${done} / 100`;
+  const pct = Math.round(done / 100 * 100);
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+  saveAnswers();
+}
+
+function selectScale(qid, val, btn) {
+  answers[qid] = val;
+  document.querySelectorAll(`[id^="s${qid}_"]`).forEach(b => {
+    b.className = '';
+    const bVal = parseInt(b.id.split('_')[1]);
+    b.classList.add(bVal <= val ? `sel-${val}` : '');
+  });
+  document.getElementById(`qcard${qid}`).classList.add('answered');
+  updateProgress();
+}
+
+function selectAgree(qid, val, btn) {
+  answers[qid] = val;
+  btn.closest('.agree-wrap').querySelectorAll('.agree-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(`qcard${qid}`).classList.add('answered');
+  updateProgress();
+}
+
+function selectChoice(qid, val, btn) {
+  answers[qid] = val;
+  btn.closest('.choice-wrap').querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(`qcard${qid}`).classList.add('answered');
+  updateProgress();
+}
+
+function submitQuiz() {
+  if (Object.keys(answers).length < 100) {
+    document.getElementById('incomplete-msg').style.display = 'block';
+    const unanswered = ALL_QUESTIONS.find(q => !answers[q.id]);
+    if (unanswered) {
+      document.getElementById(`qcard${unanswered.id}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast('📍 Câu ' + unanswered.id + ' chưa trả lời');
+    }
+    return;
+  }
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('fab-current').style.display = 'none';
+  calculateResult();
+  document.getElementById('result').style.display = 'block';
+  window.scrollTo(0, 0);
+  saveAnswers();
+}
+
+// ============================================================
+// SCORING ENGINE
+// ============================================================
+function calculateResult() {
+  const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0,
+    realistic: 0, investigative: 0, artistic: 0, social: 0, enterprising: 0, conventional: 0,
+    leadership: 0 };
+
+  const agreeMap = { sd: -2, d: -1, n: 0, a: 1, sa: 2 };
+
+  ALL_QUESTIONS.forEach(q => {
+    const ans = answers[q.id];
+    if (!ans) return;
+
+    if (q.type === 'scale10') {
+      const norm = (ans - 5.5) / 4.5; // -1 to 1
+      Object.entries(q.dims).forEach(([dim, w]) => {
+        if (scores[dim] !== undefined) scores[dim] += norm * w * 10;
+      });
+    } else if (q.type === 'agree') {
+      const val = agreeMap[ans] || 0;
+      Object.entries(q.dims).forEach(([dim, w]) => {
+        if (scores[dim] !== undefined) scores[dim] += val * w;
+      });
+    } else if (q.type === 'choice') {
+      const choiceDims = q.dims[ans];
+      if (choiceDims) {
+        Object.entries(choiceDims).forEach(([dim, w]) => {
+          if (scores[dim] !== undefined) scores[dim] += w;
+        });
+      }
+    }
+  });
+
+  // MBTI
+  const mbti =
+    (scores.E >= scores.I ? 'E' : 'I') +
+    (scores.S >= scores.N ? 'S' : 'N') +
+    (scores.T >= scores.F ? 'T' : 'F') +
+    (scores.J >= scores.P ? 'J' : 'P');
+
+  // Holland RIASEC percentages
+  const riasec = ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional'];
+  const raw = riasec.map(r => Math.max(0, scores[r]));
+  const maxRaw = Math.max(...raw, 1);
+  const holland = {};
+  riasec.forEach((r, i) => { holland[r] = raw[i] / maxRaw; });
+
+  renderResult(scores, mbti, holland);
+}
+
+const MBTI_DESCRIPTIONS = {
+  'INTJ': ['Kiến Trúc Sư', 'Tư duy chiến lược, độc lập, cầu toàn — đặc biệt phù hợp với vai trò xây dựng hệ thống và chiến lược dài hạn.'],
+  'INTP': ['Nhà Tư Duy', 'Yêu thích lý thuyết, phân tích logic sắc bén, say mê tìm kiếm sự thật trong mọi vấn đề.'],
+  'ENTJ': ['Tư Lệnh', 'Lãnh đạo bẩm sinh, quyết đoán, tư duy chiến lược và có khả năng tổ chức tuyệt vời.'],
+  'ENTP': ['Người Tranh Luận', 'Sáng tạo, linh hoạt, thích thách thức ý tưởng và tìm kiếm giải pháp đột phá.'],
+  'INFJ': ['Người Vận Động', 'Có tầm nhìn dài hạn, quan tâm sâu sắc đến con người và thúc đẩy thay đổi tích cực.'],
+  'INFP': ['Nhà Hòa Giải', 'Lý tưởng, sáng tạo, trung thành với giá trị bản thân và quan tâm đến ý nghĩa cuộc sống.'],
+  'ENFJ': ['Người Chủ Trì', 'Lãnh đạo bằng sự đồng cảm, thúc đẩy và truyền cảm hứng cho người khác.'],
+  'ENFP': ['Người Truyền Cảm Hứng', 'Nhiệt tình, sáng tạo, giỏi kết nối người và khám phá tiềm năng.'],
+  'ISTJ': ['Nhà Hậu Cần', 'Đáng tin cậy, cẩn thận, tuân thủ quy trình — trụ cột vững chắc của mọi tổ chức.'],
+  'ISFJ': ['Người Bảo Hộ', 'Tận tụy, chú ý chi tiết và luôn đặt nhu cầu người khác lên hàng đầu.'],
+  'ESTJ': ['Người Giám Sát', 'Thực tế, kiên quyết và xuất sắc trong việc quản lý, thực thi quy trình.'],
+  'ESFJ': ['Lãnh Sự', 'Quan tâm và trách nhiệm cao, tạo ra môi trường hài hòa và hỗ trợ mọi người.'],
+  'ISTP': ['Nhà Ảo Thuật', 'Thực tế, linh hoạt, giỏi xử lý vấn đề kỹ thuật và làm việc độc lập.'],
+  'ISFP': ['Nhà Phiêu Lưu', 'Nghệ sĩ thầm lặng, nhạy cảm với cái đẹp và thế giới cảm xúc xung quanh.'],
+  'ESTP': ['Doanh Nhân', 'Năng động, thực dụng và xuất sắc trong việc xử lý tình huống nhanh nhạy.'],
+  'ESFP': ['Người Biểu Diễn', 'Vui vẻ, tự phát và tạo ra niềm vui cho những người xung quanh.'],
+};
+
+const CAREER_DATABASE = {
+  investigative: {
+    top: [
+      { title: 'Nhà Khoa Học / Nghiên Cứu Viên', icon: '🔬', tags: ['STEM', 'Nghiên cứu', 'Phân tích'], desc: 'Làm việc với dữ liệu, thực nghiệm và phát triển tri thức. Phù hợp với tính cách thích đặt câu hỏi và giải quyết vấn đề phức tạp.' },
+      { title: 'Kỹ Sư Phần Mềm / AI', icon: '💻', tags: ['Công nghệ', 'Lập trình', 'Tương lai'], desc: 'Xây dựng hệ thống và giải pháp công nghệ. Ngành có nhu cầu cao và khả năng sáng tạo lớn.' },
+      { title: 'Bác Sĩ / Dược Sĩ', icon: '🏥', tags: ['Y tế', 'Khoa học', 'Cộng đồng'], desc: 'Ứng dụng kiến thức khoa học để chẩn đoán và điều trị bệnh, kết hợp tư duy phân tích với sự quan tâm con người.' },
+      { title: 'Nhà Phân Tích Dữ Liệu', icon: '📊', tags: ['Data', 'Analytics', 'Tư duy'], desc: 'Khám phá thông tin ẩn trong dữ liệu để hỗ trợ quyết định kinh doanh.' },
+    ]
+  },
+  artistic: {
+    top: [
+      { title: 'Nhà Thiết Kế UX/UI', icon: '🎨', tags: ['Thiết kế', 'Sáng tạo', 'Công nghệ'], desc: 'Kết hợp tư duy sáng tạo với hiểu biết người dùng để tạo ra trải nghiệm số tuyệt vời.' },
+      { title: 'Nhà Văn / Content Creator', icon: '✍️', tags: ['Viết lách', 'Sáng tạo', 'Truyền thông'], desc: 'Tạo ra nội dung có tác động và giá trị cho đông đảo độc giả.' },
+      { title: 'Kiến Trúc Sư', icon: '🏛️', tags: ['Nghệ thuật', 'Kỹ thuật', 'Không gian'], desc: 'Thiết kế không gian sống và làm việc, kết hợp thẩm mỹ với kỹ thuật.' },
+      { title: 'Nghệ Sĩ / Nhạc Sĩ / Diễn Viên', icon: '🎭', tags: ['Nghệ thuật', 'Biểu diễn', 'Sáng tạo'], desc: 'Biểu đạt cảm xúc và ý tưởng qua các hình thức nghệ thuật.' },
+    ]
+  },
+  social: {
+    top: [
+      { title: 'Giáo Viên / Giảng Viên', icon: '👨‍🏫', tags: ['Giáo dục', 'Ảnh hưởng', 'Cộng đồng'], desc: 'Truyền đạt kiến thức và truyền cảm hứng cho thế hệ tiếp theo.' },
+      { title: 'Chuyên Viên Tâm Lý', icon: '🧠', tags: ['Tâm lý', 'Chăm sóc', 'Trị liệu'], desc: 'Giúp mọi người vượt qua khó khăn tâm lý và phát triển bản thân.' },
+      { title: 'Nhân Viên Xã Hội / NGO', icon: '🤲', tags: ['Xã hội', 'Nhân đạo', 'Cộng đồng'], desc: 'Làm việc trực tiếp để cải thiện điều kiện sống của người dễ bị tổn thương.' },
+      { title: 'Bác Sĩ / Y Tá / Điều Dưỡng', icon: '🩺', tags: ['Y tế', 'Chăm sóc', 'Cứu người'], desc: 'Chăm sóc sức khỏe và phục hồi của bệnh nhân với sự đồng cảm.' },
+    ]
+  },
+  enterprising: {
+    top: [
+      { title: 'Doanh Nhân / Founder', icon: '🚀', tags: ['Kinh doanh', 'Lãnh đạo', 'Đổi mới'], desc: 'Xây dựng công ty từ ý tưởng, chịu rủi ro và tạo ra giá trị mới cho thị trường.' },
+      { title: 'Quản Lý Dự Án / Product Manager', icon: '📱', tags: ['Quản lý', 'Chiến lược', 'Tech'], desc: 'Dẫn dắt nhóm và sản phẩm từ ý tưởng đến thị trường.' },
+      { title: 'Chuyên Viên Marketing / Sales', icon: '📣', tags: ['Marketing', 'Kinh doanh', 'Giao tiếp'], desc: 'Kết nối sản phẩm với khách hàng qua chiến lược và nghệ thuật thuyết phục.' },
+      { title: 'Luật Sư / Tư Vấn', icon: '⚖️', tags: ['Pháp lý', 'Tư duy', 'Đàm phán'], desc: 'Bảo vệ quyền lợi khách hàng và điều hướng hệ thống pháp luật phức tạp.' },
+    ]
+  },
+  realistic: {
+    top: [
+      { title: 'Kỹ Sư Cơ Khí / Điện / Xây Dựng', icon: '⚙️', tags: ['Kỹ thuật', 'Thực hành', 'Xây dựng'], desc: 'Thiết kế và xây dựng cơ sở hạ tầng, máy móc phục vụ xã hội.' },
+      { title: 'Bác Sĩ Phẫu Thuật / Nha Khoa', icon: '🔧', tags: ['Y tế', 'Kỹ thuật tay', 'Chính xác'], desc: 'Kết hợp kiến thức y học với kỹ năng thực hành tinh tế.' },
+      { title: 'Vận Động Viên / HLV Thể Thao', icon: '🏆', tags: ['Thể thao', 'Thể chất', 'Cạnh tranh'], desc: 'Phát triển và thể hiện kỹ năng thể chất ở đỉnh cao.' },
+      { title: 'Kỹ Thuật Viên / Thợ Chuyên Nghiệp', icon: '🛠️', tags: ['Tay nghề', 'Chính xác', 'Thực tế'], desc: 'Làm chủ kỹ năng thực hành trong lĩnh vực kỹ thuật chuyên biệt.' },
+    ]
+  },
+  conventional: {
+    top: [
+      { title: 'Kế Toán / Kiểm Toán', icon: '📒', tags: ['Tài chính', 'Chính xác', 'Ổn định'], desc: 'Quản lý và kiểm soát tài chính, đảm bảo tính chính xác và minh bạch.' },
+      { title: 'Chuyên Viên Hành Chính / HR', icon: '🗂️', tags: ['Tổ chức', 'Quy trình', 'Con người'], desc: 'Vận hành bộ máy tổ chức hiệu quả và quản lý nguồn nhân lực.' },
+      { title: 'Chuyên Viên Pháp Chế / Tuân Thủ', icon: '📋', tags: ['Pháp lý', 'Quy trình', 'Rủi ro'], desc: 'Đảm bảo tổ chức hoạt động đúng pháp luật và quy định.' },
+      { title: 'Ngân Hàng / Tài Chính Doanh Nghiệp', icon: '🏦', tags: ['Tài chính', 'Phân tích', 'Ổn định'], desc: 'Quản lý dòng tiền, đầu tư và rủi ro tài chính.' },
+    ]
+  }
+};
+
+function getTopHolland(holland) {
+  return Object.entries(holland).sort((a,b) => b[1]-a[1]).slice(0,3).map(e=>e[0]);
+}
+
+function renderResult(scores, mbti, holland) {
+  const topHolland = getTopHolland(holland);
+  const mbtiInfo = MBTI_DESCRIPTIONS[mbti] || ['Nhà Khám Phá', 'Tính cách độc đáo với nhiều tiềm năng chưa được khai phá.'];
+
+  const allCareers = [];
+  topHolland.forEach((h, hi) => {
+    const db = CAREER_DATABASE[h];
+    if (db) {
+      db.top.forEach((c, ci) => {
+        const matchPct = Math.round((1 - hi * 0.12 - ci * 0.04) * (0.85 + holland[h] * 0.15) * 100);
+        allCareers.push({ ...c, match: matchPct, domain: h });
+      });
+    }
+  });
+  allCareers.sort((a,b) => b.match - a.match);
+  const topCareers = allCareers.slice(0, 6);
+
+  const domainLabels = { realistic: 'R - Thực Tế', investigative: 'I - Nghiên Cứu', artistic: 'A - Nghệ Thuật', social: 'S - Xã Hội', enterprising: 'E - Kinh Doanh', conventional: 'C - Quy Củ' };
+
+  // Trait scores
+  const traitData = [
+    { name: 'Hướng ngoại', val: clamp01((scores.E - scores.I + 30) / 60) },
+    { name: 'Trực giác', val: clamp01((scores.N - scores.S + 20) / 40) },
+    { name: 'Lý trí', val: clamp01((scores.T - scores.F + 20) / 40) },
+    { name: 'Ngăn nắp', val: clamp01((scores.J - scores.P + 20) / 40) },
+    { name: 'Lãnh đạo', val: clamp01((scores.leadership + 10) / 20) },
+  ];
+
+  const hollandDims = ['realistic','investigative','artistic','social','enterprising','conventional'];
+  const dimBars = hollandDims.map(h => `
+    <div class="dim-card">
+      <h4>${domainLabels[h]}</h4>
+      <div class="dim-bar-wrap">
+        <span class="dim-label left" style="opacity:0.5">0</span>
+        <div class="dim-bar"><div class="dim-fill" id="dfill-${h}" style="width:0%;background:${getDimColor(h)}"></div></div>
+        <span class="dim-pct" id="dpct-${h}">0%</span>
+      </div>
+    </div>`).join('');
+
+  const careerCards = topCareers.map((c, i) => `
+    <div class="career-card">
+      <div class="rank">${c.icon}</div>
+      <h4>#${i+1} ${c.title}</h4>
+      <div class="match">✓ ${c.match}% phù hợp</div>
+      <p>${c.desc}</p>
+      <div class="tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+
+  const traitPills = traitData.map(t => `
+    <div class="trait-pill">
+      <div class="t-name">${t.name}</div>
+      <div class="t-bar-wrap">
+        <div class="t-bar"><div class="t-fill" style="width:${Math.round(t.val*100)}%"></div></div>
+        <span class="t-val">${Math.round(t.val*100)}%</span>
+      </div>
+    </div>`).join('');
+
+  const topLabel = domainLabels[topHolland[0]];
+
+  document.getElementById('result').innerHTML = `
+    <div class="result-hero">
+      <div class="mbti-badge">${mbti}</div>
+      <h2>${mbtiInfo[0]}</h2>
+      <p>${mbtiInfo[1]}</p>
+      <p style="margin-top:12px;color:#6c63ff;font-weight:600">Nhóm nghề nổi bật: ${topLabel}</p>
+    </div>
+
+    <div class="dimension-grid">
+      ${dimBars}
+    </div>
+
+    <div class="careers-section">
+      <h3>🎯 Top 6 Nghề Nghiệp Phù Hợp Nhất</h3>
+      <div class="career-cards">${careerCards}</div>
+    </div>
+
+    <div class="traits-section">
+      <h3>⚡ Hồ Sơ Năng Lực</h3>
+      <div class="traits-grid">${traitPills}</div>
+    </div>
+
+    <div class="advice-section">
+      <h3>💬 Lời Khuyên Định Hướng</h3>
+      ${getAdvice(topHolland[0], mbti)}
+    </div>
+
+    <div id="seed-panel">
+      <h4>🔑 Seed ID — Lưu & Chia Sẻ Kết Quả</h4>
+      <p style="font-size:0.8em;color:var(--muted);margin-bottom:10px">Mã base-89 lưu đầy đủ 100 câu trả lời (41 ký tự + 1 checksum). Có thể dùng trên cùng thiết bị hoặc sao chép thủ công.</p>
+      <div class="seed-row">
+        <div id="seed-display">——</div>
+        <button class="seed-btn copy" onclick="copySeedId()">📋 Sao chép</button>
+        <button class="seed-btn" onclick="openSeedModalResult(document.getElementById('seed-display').textContent)" style="background:var(--primary)">🔑 Mã & QR</button>
+      </div>
+      <canvas id="qr-canvas" width="120" height="120"></canvas>
+      <div class="seed-input-wrap">
+        <span style="font-size:0.82em;color:var(--muted)">Nhập Seed ID để tải lại:</span>
+        <input id="seed-import-box" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="this.value=this.value.toUpperCase()"/>
+        <button class="seed-btn load" onclick="importSeedId()">↩ Tải</button>
+      </div>
+      <div id="seed-status"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-retry" onclick="confirmReset()">🔄 Làm Lại Từ Đầu</button>
+      <button class="btn-retry" style="background:linear-gradient(135deg,var(--green),#00a085)" onclick="openReviewModal()">📋 Xem Toàn Bộ Câu Trả Lời</button>
+    </div>
+  `;
+
+  // Animate bars
+  setTimeout(() => {
+    hollandDims.forEach(h => {
+      const pct = Math.round(holland[h] * 100);
+      document.getElementById(`dfill-${h}`).style.width = pct + '%';
+      document.getElementById(`dpct-${h}`).textContent = pct + '%';
+    });
+    // Generate seed ID
+    const seed = generateSeedId();
+    document.getElementById('seed-display').textContent = seed;
+    // QR visual in seed panel
+    const qrCanvas = document.getElementById('qr-canvas');
+    if (qrCanvas) {
+      const img = new Image();
+      img.onload = () => qrCanvas.getContext('2d').drawImage(img, 0, 0, 120, 120);
+      img.src = generateQRDataURL(seed);
+    }
+    showToast('✅ Seed ID: ' + seed, 3000);
+  }, 200);
+}
+
+function copySeedId() {
+  const seed = document.getElementById('seed-display')?.textContent;
+  if (seed && seed !== '——') {
+    copyToClipboard(seed);
+    openSeedModalResult(seed);
+  }
+}
+
+function importSeedId() { doImportSeed(); }
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+function getDimColor(h) {
+  const map = { realistic: '#f4845f', investigative: '#6c63ff', artistic: '#e94560', social: '#00c9a7', enterprising: '#ffd166', conventional: '#5e81ac' };
+  return map[h] || '#888';
+}
+
+function getAdvice(topDomain, mbti) {
+  const adviceMap = {
+    investigative: [
+      { icon: '🎓', title: 'Đầu tư vào học thuật', text: 'Bạn có thiên hướng nghiên cứu mạnh. Hãy theo đuổi học cao hơn (thạc sĩ, tiến sĩ) hoặc các chứng chỉ chuyên sâu trong lĩnh vực bạn yêu thích.' },
+      { icon: '🔗', title: 'Xây dựng mạng lưới học thuật', text: 'Tham gia hội thảo, câu lạc bộ nghiên cứu và kết nối với các giáo sư, chuyên gia trong ngành để mở ra cơ hội internship và mentorship.' },
+      { icon: '⚠️', title: 'Chú ý kỹ năng mềm', text: 'Người thiên về nghiên cứu đôi khi bỏ qua giao tiếp và thuyết trình. Đây là kỹ năng cần bổ sung để thăng tiến.' },
+    ],
+    artistic: [
+      { icon: '💼', title: 'Xây dựng portfolio', text: 'Trong ngành sáng tạo, portfolio mạnh hơn bằng cấp. Hãy tạo ra tác phẩm cá nhân ngay từ bây giờ.' },
+      { icon: '💡', title: 'Học kỹ năng kinh doanh nghệ thuật', text: 'Kết hợp tài năng sáng tạo với khả năng marketing bản thân và kiếm tiền từ nghề sẽ giúp bạn bền vững hơn.' },
+      { icon: '🌐', title: 'Kết hợp với công nghệ', text: 'Digital art, UX design, motion graphics — nghệ thuật kết hợp công nghệ đang rất thiếu nhân tài có kỹ năng cả hai.' },
+    ],
+    social: [
+      { icon: '📚', title: 'Nền tảng kiến thức chuyên ngành', text: 'Dù làm trong lĩnh vực xã hội, bạn cần kiến thức tâm lý học, giáo dục học hoặc xã hội học vững chắc.' },
+      { icon: '🌱', title: 'Chăm sóc bản thân', text: 'Người làm nghề giúp đỡ người khác dễ bị kiệt sức. Hãy xây dựng thói quen tự chăm sóc sức khỏe tâm lý.' },
+      { icon: '🔧', title: 'Học kỹ năng quản lý', text: 'Để có tác động lớn hơn, bạn cần phát triển khả năng lãnh đạo tổ chức và quản lý nguồn lực.' },
+    ],
+    enterprising: [
+      { icon: '📖', title: 'Học từ thực chiến', text: 'Kinh nghiệm làm việc thực tế quan trọng hơn lý thuyết. Intern sớm, tham gia dự án thực và học từ thất bại.' },
+      { icon: '🤝', title: 'Network là tài sản', text: 'Trong kinh doanh, mối quan hệ đúng người đúng thời điểm có thể thay đổi tất cả. Đầu tư vào mạng lưới từ sớm.' },
+      { icon: '⚡', title: 'Hiểu tài chính cơ bản', text: 'Dù là lãnh đạo hay doanh nhân, am hiểu tài chính và đọc báo cáo kinh doanh là kỹ năng không thể thiếu.' },
+    ],
+    realistic: [
+      { icon: '🏆', title: 'Trở thành chuyên gia kỹ thuật', text: 'Tay nghề cao trong lĩnh vực kỹ thuật là tài sản bền vững. Hãy tập trung làm chủ kỹ năng một cách thành thạo.' },
+      { icon: '📱', title: 'Kết hợp kỹ thuật và công nghệ', text: 'Kỹ sư và thợ kỹ thuật có nền tảng coding hoặc IoT đang được trả lương cao hơn nhiều trong kỷ nguyên Industry 4.0.' },
+      { icon: '📊', title: 'Học về quản lý dự án', text: 'Để thăng tiến từ kỹ thuật viên lên quản lý, bạn cần thêm kỹ năng lên kế hoạch, giao tiếp và quản lý nhóm.' },
+    ],
+    conventional: [
+      { icon: '🏅', title: 'Chứng chỉ chuyên nghiệp', text: 'CPA, CFA, PMP hay các chứng chỉ chuyên môn sẽ giúp bạn nổi bật và tăng thu nhập đáng kể.' },
+      { icon: '💻', title: 'Công nghệ hóa kỹ năng', text: 'Kế toán viết Excel giỏi đang dần bị thay thế. Học Power BI, Python, hoặc SAP để duy trì giá trị trong thị trường.' },
+      { icon: '🌟', title: 'Mạo hiểm có kiểm soát', text: 'Bạn giỏi quản lý rủi ro — hãy áp dụng kỹ năng này để thỉnh thoảng thử những cơ hội mới có tiềm năng lớn.' },
+    ],
+  };
+
+  const items = adviceMap[topDomain] || adviceMap.investigative;
+  return items.map(a => `<div class="advice-item"><span class="a-icon">${a.icon}</span><div><h4>${a.title}</h4><p>${a.text}</p></div></div>`).join('');
+}
+</script>
+</body>
+</html>
