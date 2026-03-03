@@ -819,9 +819,11 @@
   /* ── REVIEW MODAL ── */
   #review-modal .modal-panel { max-width: 680px; }
   #review-modal .modal-body { max-height: 60vh; overflow-y: auto; padding-top: 10px; }
-  #review-modal .modal-body::-webkit-scrollbar { width: 6px; }
-  #review-modal .modal-body::-webkit-scrollbar-track { background: transparent; }
-  #review-modal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  #review-modal .modal-body::-webkit-scrollbar { width: 12px; }
+  #review-modal .modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+  #review-modal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 10px; border: 2px solid rgba(255,255,255,0.05); transition: background 0.2s ease; }
+  #review-modal .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.55); }
+  #review-modal .modal-body::-webkit-scrollbar-thumb:active { background: rgba(255,255,255,0.75); }
   .review-item { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.83em; align-items: flex-start; }
   body.light-mode .review-item { border-color: rgba(0,0,0,0.07); }
   .review-item .rq { flex: 1; color: var(--text); line-height: 1.4; }
