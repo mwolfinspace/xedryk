@@ -1361,37 +1361,72 @@
         // 8. FORWARD-COMPATIBLE STORAGE, SCHEMA MIGRATION & JSON BACKUP ENGINE
         function migrateAndSanitizeState(raw) {
             const base = createFreshDefaultState((raw && raw.lang === 'vi') ? 'vi' : 'en');
-            if (!raw || typeof raw !== 'object') return base;
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return base;
+
+            const blockedKeys = new Set(['__proto__', 'constructor', 'prototype']);
+            const stripUnsafe = (src) => {
+                const out = {};
+                if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+                Object.keys(src).forEach(k => {
+                    if (!blockedKeys.has(k)) out[k] = src[k];
+                });
+                return out;
+            };
+            const copyUnknown = (src, knownKeys) => {
+                const out = {};
+                if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+                Object.keys(src).forEach(k => {
+                    if (!knownKeys.includes(k) && !blockedKeys.has(k)) out[k] = src[k];
+                });
+                return out;
+            };
+            const numOr = (val, fallback) => {
+                const n = Number(val);
+                return Number.isFinite(n) ? n : fallback;
+            };
 
             const oldVer = Number(raw.schemaVersion) || 1;
+
+            // Preserve unknown future top-level fields; sanitized known values win below.
+            Object.assign(base, copyUnknown(raw, [
+                'schemaVersion', 'lang', 'gear', 'ingredients', 'schedule',
+                'history', 'customExtensions', '_migratedFrom'
+            ]));
             base.lang = raw.lang === 'vi' ? 'vi' : 'en';
 
-            // Migrate Gear safely
+            // Migrate Gear safely, preserving unknown gear and per-flask fields.
             if (raw.gear && typeof raw.gear === 'object') {
+                Object.assign(base.gear, copyUnknown(raw.gear, [
+                    'iceMode', 'steelBoxes', 'meltingTeaRatio', 'warmCupMl', 'flasks'
+                ]));
                 base.gear.iceMode = raw.gear.iceMode === 'melting' ? 'melting' : 'steel';
-                base.gear.steelBoxes = Math.max(1, Number(raw.gear.steelBoxes) || DEFAULT_GEAR.steelBoxes);
-                base.gear.meltingTeaRatio = Math.min(90, Math.max(30, Number(raw.gear.meltingTeaRatio) || DEFAULT_GEAR.meltingTeaRatio));
-                base.gear.warmCupMl = Math.max(0, Number(raw.gear.warmCupMl) ?? DEFAULT_GEAR.warmCupMl);
+                base.gear.steelBoxes = Math.max(1, numOr(raw.gear.steelBoxes, DEFAULT_GEAR.steelBoxes));
+                base.gear.meltingTeaRatio = Math.min(90, Math.max(30, numOr(raw.gear.meltingTeaRatio, DEFAULT_GEAR.meltingTeaRatio)));
+                base.gear.warmCupMl = Math.max(0, numOr(raw.gear.warmCupMl, DEFAULT_GEAR.warmCupMl));
                 if (Array.isArray(raw.gear.flasks) && raw.gear.flasks.length > 0) {
-                    base.gear.flasks = raw.gear.flasks.map((f, idx) => ({
-                        id: f.id || `flask_${idx + 1}`,
-                        name: f.name || `Flask ${idx + 1}`,
-                        nameVi: f.nameVi || f.name || `Bình ${idx + 1}`,
-                        capacityMl: Math.max(150, Number(f.capacityMl) || 800)
-                    }));
+                    base.gear.flasks = raw.gear.flasks.map((f, idx) => {
+                        const src = f && typeof f === 'object' ? f : {};
+                        return {
+                            ...copyUnknown(src, ['id', 'name', 'nameVi', 'capacityMl']),
+                            id: src.id || `flask_${idx + 1}`,
+                            name: src.name || `Flask ${idx + 1}`,
+                            nameVi: src.nameVi || src.name || `Bình ${idx + 1}`,
+                            capacityMl: Math.max(150, numOr(src.capacityMl, 800))
+                        };
+                    });
                 }
             }
 
-            // Migrate Ingredients & Backfill New Herbs
+            // Migrate Ingredients & Backfill New Herbs (extra per-herb fields survive).
             if (Array.isArray(raw.ingredients)) {
-                const rawMap = new Map(raw.ingredients.map(item => [item.id, item]));
+                const rawMap = new Map(raw.ingredients.map(item => [item && item.id, item]));
                 base.ingredients = DEFAULT_INGREDIENTS.map(defIng => {
                     const saved = rawMap.get(defIng.id);
                     if (!saved) return { ...defIng };
-                    const grams = Math.max(0, Number(saved.currentGrams) || 0);
+                    const grams = Math.max(0, numOr(saved.currentGrams, 0));
                     return {
                         ...defIng,
-                        ...saved,
+                        ...stripUnsafe(saved),
                         currentGrams: grams,
                         isOutOfStock: typeof saved.isOutOfStock === 'boolean' ? saved.isOutOfStock : (grams <= 0)
                     };
@@ -1399,31 +1434,34 @@
                 // Preserve any custom herbs added by the user
                 raw.ingredients.forEach(saved => {
                     if (saved && saved.id && !base.ingredients.some(b => b.id === saved.id)) {
-                        base.ingredients.push(saved);
+                        base.ingredients.push(stripUnsafe(saved));
                     }
                 });
             }
 
-            // Migrate Schedule
+            // Migrate Schedule, preserving unknown schedule and daily-check fields.
             if (raw.schedule && typeof raw.schedule === 'object') {
+                Object.assign(base.schedule, copyUnknown(raw.schedule, [
+                    'todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime',
+                    'lastUpdatedDate', 'dailyChecks'
+                ]));
                 base.schedule.todayRecipeId = raw.schedule.todayRecipeId || 'rec_1';
                 base.schedule.tomorrowRecipeId = raw.schedule.tomorrowRecipeId || 'rec_2';
                 base.schedule.tomorrowStrainTime = raw.schedule.tomorrowStrainTime || '08:00';
                 base.schedule.lastUpdatedDate = raw.schedule.lastUpdatedDate || '';
                 if (raw.schedule.dailyChecks && typeof raw.schedule.dailyChecks === 'object') {
-                    base.schedule.dailyChecks = {
-                        date: raw.schedule.dailyChecks.date || '',
-                        flasks: raw.schedule.dailyChecks.flasks || {}
-                    };
+                    Object.assign(base.schedule.dailyChecks, copyUnknown(raw.schedule.dailyChecks, ['date', 'flasks']));
+                    base.schedule.dailyChecks.date = raw.schedule.dailyChecks.date || '';
+                    base.schedule.dailyChecks.flasks = stripUnsafe(raw.schedule.dailyChecks.flasks || {});
                 }
             }
 
             // Migrate History & Custom Extensions
             if (Array.isArray(raw.history)) {
-                base.history = raw.history;
+                base.history = raw.history.map(stripUnsafe);
             }
             if (raw.customExtensions && typeof raw.customExtensions === 'object') {
-                base.customExtensions = { ...raw.customExtensions };
+                base.customExtensions = stripUnsafe(raw.customExtensions);
             }
 
             base.schemaVersion = SCHEMA_VERSION;
