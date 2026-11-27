@@ -516,12 +516,6 @@
       background: #6b3d7c;
   }
 
-  .age-gate__note {
-      margin-top: 1.5rem;
-      font-size: 1.05rem;
-      color: #d6b8e6;
-  }
-
   @media screen and (max-width: 575px) {
       .age-gate__dialog { padding: 2rem 1.25rem 1.5rem; }
       .age-gate__title { font-size: 2rem; }
