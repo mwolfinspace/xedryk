@@ -672,10 +672,75 @@
             </div>
         </section>
 
+        <!-- SHARE / SYNC PANEL -->
+        <section id="section-share" class="mt-6">
+            <div class="apothecary-card rounded-2xl p-5 sm:p-6">
+                <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+                    <div>
+                        <span data-i18n="shareBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-500">🔗 Chia sẻ & Đồng bộ</span>
+                        <h3 data-i18n="shareTitle" class="font-serif text-xl font-bold text-gray-900 mt-0.5">Chia sẻ dữ liệu máy này</h3>
+                        <p data-i18n="shareDesc" class="text-[11px] text-gray-500 mt-1 max-w-3xl leading-relaxed">Tạo mã dùng 3 ngày. Máy khác kéo xuống đây, nhập mã rồi đồng bộ tay. Không cần đăng nhập.</p>
+                    </div>
+                    <button type="button" onclick="openShareScanner()" data-i18n="shareScan" class="px-3 py-2 rounded-xl bg-botanical-700 hover:bg-botanical-900 text-white text-xs font-bold shadow transition">📷 Quét QR</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="block">
+                                <span data-i18n="shareCodeLabel" class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mã chia sẻ</span>
+                                <input id="share-code-input" maxlength="8" autocomplete="off" spellcheck="false" placeholder="AB3D7K2M" class="mt-1 w-full px-3 py-2 rounded-xl border border-gray-300 bg-white font-mono font-bold tracking-widest uppercase text-sm text-gray-900 outline-none focus:ring-2 focus:ring-botanical-500">
+                            </label>
+                            <label class="block">
+                                <span data-i18n="sharePinLabel" class="text-[10px] font-bold uppercase tracking-wider text-gray-500">PIN</span>
+                                <input id="share-pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" class="mt-1 w-full px-3 py-2 rounded-xl border border-gray-300 bg-white font-mono font-bold tracking-widest text-sm text-gray-900 outline-none focus:ring-2 focus:ring-botanical-500">
+                                <span data-i18n="sharePinHint" class="text-[10px] text-gray-400">Hiện cùng mã; QR đã chứa sẵn PIN</span>
+                            </label>
+                        </div>
+
+                        <div class="flex flex-wrap gap-1.5 mt-3">
+                            <button type="button" onclick="createShareCode()" data-i18n="shareCreate" class="px-3 py-2 rounded-xl bg-botanical-700 hover:bg-botanical-900 text-white text-xs font-bold shadow transition">🔗 Tạo mã + QR</button>
+                            <button type="button" onclick="loadShareData()" data-i18n="shareLoad" class="px-3 py-2 rounded-xl bg-white hover:bg-botanical-50 border border-botanical-300 text-botanical-800 text-xs font-bold transition">⬇️ Tải từ mã</button>
+                            <button type="button" onclick="pushShareData()" data-i18n="sharePush" class="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-300 text-amber-800 text-xs font-bold transition">🔄 Đồng bộ lên</button>
+                            <button type="button" onclick="renewShareCode()" data-i18n="shareRenew" class="px-3 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold transition">⏳ Gia hạn 3 ngày</button>
+                            <button type="button" onclick="deleteShareCode()" data-i18n="shareDelete" class="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold transition">🗑️ Xóa mã</button>
+                        </div>
+
+                        <div class="mt-3 p-3 rounded-xl bg-cream border border-gray-200 text-[11px] leading-relaxed">
+                            <span data-i18n="shareStatus" class="font-bold text-gray-500">Trạng thái</span>:
+                            <span id="share-status" class="text-gray-800">—</span>
+                            <span id="share-expiry" class="block text-gray-400 mt-0.5"></span>
+                        </div>
+                    </div>
+
+                    <div id="share-qr-wrap" class="hidden rounded-2xl border border-dashed border-botanical-300 bg-botanical-50/40 p-3 flex flex-col items-center justify-center gap-2">
+                        <div id="share-qr" class="bg-white p-2 rounded-xl shadow-2xs"></div>
+                        <p data-i18n="shareQRHint" class="text-[10px] text-gray-500 text-center leading-relaxed">Quét QR bằng máy khác, hoặc dùng camera máy tính quét màn hình điện thoại.</p>
+                        <code id="share-qr-caption" class="text-[10px] font-mono text-botanical-800 break-all text-center"></code>
+                    </div>
+                </div>
+
+                <div id="share-scanner" class="hidden fixed inset-0 z-50 bg-black/80 p-4 flex items-center justify-center">
+                    <div class="w-full max-w-lg rounded-2xl bg-white p-4 shadow-2xl">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="font-bold text-sm text-gray-900">📷 QR scanner</span>
+                            <button type="button" onclick="closeShareScanner()" data-i18n="shareStopScan" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold">✕ Tắt camera</button>
+                        </div>
+                        <video id="share-scanner-video" playsinline muted class="w-full rounded-xl bg-black" style="max-height:55vh"></video>
+                        <p id="share-scanner-status" class="text-[11px] text-gray-500 mt-2">…</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- TOAST NOTIFICATION BANNER -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
+
+    <!-- Local QR libraries: no third-party QR service, no data leaves the device except the share API -->
+    <script src="assets/js/qrcode.min.js"></script>
+    <script src="assets/js/jsQR.min.js"></script>
 
     <!-- ========================================================= -->
     <!-- JAVASCRIPT APPLICATION LOGIC & DATA ENGINE (v6)           -->
@@ -782,6 +847,37 @@
                 statStreak: 'Streak',
                 statTopHerb: 'Top herb',
                 statLastBrew: 'Last brew',
+                shareBadge: '🔗 Share & Sync',
+                shareTitle: 'Share this device data',
+                shareDesc: 'Create a 3-day code. Another device scrolls here, enters the code, then syncs manually. No sign-in.',
+                shareCodeLabel: 'Share code',
+                sharePinLabel: 'PIN',
+                shareCreate: '🔗 Create code + QR',
+                shareLoad: '⬇️ Load from code',
+                sharePush: '🔄 Sync up',
+                shareRenew: '⏳ Extend 3 days',
+                shareDelete: '🗑️ Delete code',
+                shareScan: '📷 Scan QR',
+                shareStopScan: '✕ Close camera',
+                shareStatus: 'Status',
+                shareExpiry: 'Expires',
+                shareQRHint: 'Scan this QR on another device, or let a desktop camera scan the phone screen.',
+                shareNeedCode: 'Enter a share code first',
+                shareBadCode: 'Invalid code',
+                shareWrongPin: 'Wrong PIN or locked code',
+                shareCreated: 'Share code created',
+                shareLoaded: 'Shared data loaded',
+                sharePushed: 'Synced up',
+                shareRenewed: 'Extended 3 days',
+                shareDeleted: 'Share code deleted',
+                shareNoApi: 'Share API is not available on this host',
+                shareConfirmOverwrite: 'This device already has data. Replace it with the shared data?',
+                sharePinHint: 'Shown with the code; QR already contains it',
+                shareConfirmDelete: 'Delete this share code now?',
+                shareApiReady: 'API ready • 3-day TTL',
+                shareQrDetected: 'QR detected — loading…',
+                shareCameraError: 'Camera unavailable — enter the code manually',
+                shareBusy: 'Connecting…',
                 todayShort: 'Today',
                 tomorrowShort: 'Tomorrow',
                 outOfStockLabel: 'Out of stock',
@@ -902,6 +998,37 @@
                 statStreak: 'Chuỗi ngày',
                 statTopHerb: 'Vị dùng nhiều',
                 statLastBrew: 'Mẻ gần nhất',
+                shareBadge: '🔗 Chia sẻ & Đồng bộ',
+                shareTitle: 'Chia sẻ dữ liệu máy này',
+                shareDesc: 'Tạo mã dùng 3 ngày. Máy khác kéo xuống đây, nhập mã rồi đồng bộ tay. Không cần đăng nhập.',
+                shareCodeLabel: 'Mã chia sẻ',
+                sharePinLabel: 'PIN',
+                shareCreate: '🔗 Tạo mã + QR',
+                shareLoad: '⬇️ Tải từ mã',
+                sharePush: '🔄 Đồng bộ lên',
+                shareRenew: '⏳ Gia hạn 3 ngày',
+                shareDelete: '🗑️ Xóa mã',
+                shareScan: '📷 Quét QR',
+                shareStopScan: '✕ Tắt camera',
+                shareStatus: 'Trạng thái',
+                shareExpiry: 'Hết hạn',
+                shareQRHint: 'Quét QR bằng máy khác, hoặc dùng camera máy tính quét màn hình điện thoại.',
+                shareNeedCode: 'Nhập mã chia sẻ trước',
+                shareBadCode: 'Mã không hợp lệ',
+                shareWrongPin: 'Sai PIN hoặc mã đang bị khóa',
+                shareCreated: 'Đã tạo mã chia sẻ',
+                shareLoaded: 'Đã tải dữ liệu chia sẻ',
+                sharePushed: 'Đã đồng bộ lên',
+                shareRenewed: 'Đã gia hạn 3 ngày',
+                shareDeleted: 'Đã xóa mã chia sẻ',
+                shareNoApi: 'Máy chủ này chưa có API chia sẻ',
+                shareConfirmOverwrite: 'Máy này đã có dữ liệu. Thay bằng dữ liệu từ mã chia sẻ?',
+                sharePinHint: 'Hiện cùng mã; QR đã chứa sẵn PIN',
+                shareConfirmDelete: 'Xóa mã chia sẻ này ngay bây giờ?',
+                shareApiReady: 'API sẵn sàng • giữ 3 ngày',
+                shareQrDetected: 'Đã đọc QR — đang tải…',
+                shareCameraError: 'Không mở được camera — nhập mã thủ công',
+                shareBusy: 'Đang kết nối…',
                 todayShort: 'Hôm nay',
                 tomorrowShort: 'Ngày mai',
                 outOfStockLabel: 'Đã hết hàng',
@@ -3570,12 +3697,393 @@
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3200);
         }
 
+        // 10b. SHARE / SYNC — no login, 3-day server TTL, code + PIN + QR
+        // Tests can override with window.BOTANICALAB_SHARE_API before this script runs.
+        function getShareApiEndpoint() {
+            if (typeof window !== 'undefined' && window.BOTANICALAB_SHARE_API) return window.BOTANICALAB_SHARE_API;
+            try {
+                const override = localStorage.getItem('botanicalab_share_api');
+                if (override) return override;
+            } catch (e) {}
+            return 'api/share';
+        }
+
+        function normalizeShareCode(value) {
+            const code = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return /^[2-9A-HJ-NP-Z]{8}$/.test(code) ? code : '';
+        }
+        function normalizeSharePin(value) {
+            return String(value || '').replace(/\D/g, '').slice(0, 4);
+        }
+        function shareText(key, fallback) {
+            const keyed = t(key);
+            return keyed && keyed !== key ? keyed : fallback;
+        }
+
+        function setShareBusy(busy) {
+            const section = document.getElementById('section-share');
+            if (!section) return;
+            section.querySelectorAll('button').forEach(btn => { btn.disabled = !!busy; });
+        }
+        function setShareStatus(text, expiresAt) {
+            const status = document.getElementById('share-status');
+            const expiry = document.getElementById('share-expiry');
+            if (status) status.textContent = text || '—';
+            if (expiry) expiry.textContent = expiresAt
+                ? `${t('shareExpiry')}: ${formatShareTime(expiresAt)}`
+                : '';
+        }
+        function formatShareTime(ts) {
+            const d = new Date(ts);
+            if (!Number.isFinite(d.getTime())) return '—';
+            return d.toLocaleString(appState.lang === 'en' ? 'en-GB' : 'vi-VN', { hour12: false });
+        }
+
+        async function shareRequest(action, extra) {
+            const endpoint = getShareApiEndpoint();
+            let res;
+            try {
+                res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'omit',
+                    cache: 'no-store',
+                    body: JSON.stringify(Object.assign({ action }, extra || {}))
+                });
+            } catch (e) {
+                throw new Error(shareText('shareNoApi', 'Share API is not available on this host'));
+            }
+            let json;
+            try { json = await res.json(); }
+            catch (e) { throw new Error(shareText('shareNoApi', 'Share API is not available on this host')); }
+            if (!res.ok || json.ok === false) {
+                const err = new Error(json.error || `HTTP ${res.status}`);
+                err.status = res.status;
+                err.retryAfterMs = json.retryAfterMs;
+                throw err;
+            }
+            return json;
+        }
+
+        function sharePayload() {
+            return {
+                appName: 'BotanicaLab Overnight Infusion Tracker',
+                schemaVersion: SCHEMA_VERSION,
+                data: appState
+            };
+        }
+        function hasLocalTrackerData() {
+            const stocked = Array.isArray(appState.ingredients)
+                && appState.ingredients.some(i => Number(i.currentGrams) > 0);
+            const logged = Array.isArray(appState.history) && appState.history.length > 0;
+            return !!(appState.setupComplete || stocked || logged);
+        }
+
+        function getShareInputs() {
+            const codeEl = document.getElementById('share-code-input');
+            const pinEl = document.getElementById('share-pin-input');
+            return {
+                codeEl,
+                pinEl,
+                code: normalizeShareCode(codeEl && codeEl.value),
+                pin: normalizeSharePin(pinEl && pinEl.value)
+            };
+        }
+        function fillShareInputs(code, pin) {
+            const codeEl = document.getElementById('share-code-input');
+            const pinEl = document.getElementById('share-pin-input');
+            const cleanCode = normalizeShareCode(code);
+            const cleanPin = normalizeSharePin(pin);
+            if (codeEl) codeEl.value = cleanCode;
+            if (pinEl) pinEl.value = cleanPin;
+            return { code: cleanCode, pin: cleanPin };
+        }
+        function updateShareMeta(meta) {
+            if (!meta) return;
+            fillShareInputs(meta.code, getShareInputs().pin);
+            setShareStatus(`${t('shareCodeLabel')}: ${meta.code}`, meta.expiresAt);
+        }
+
+        function renderShareQR(code, pin) {
+            const wrap = document.getElementById('share-qr-wrap');
+            const host = document.getElementById('share-qr');
+            const caption = document.getElementById('share-qr-caption');
+            if (!wrap || !host || !caption) return;
+            if (!code) { wrap.classList.add('hidden'); host.innerHTML = ''; caption.textContent = ''; return; }
+            wrap.classList.remove('hidden');
+            caption.textContent = `${code}${pin ? ` • PIN ${pin}` : ''}`;
+            if (typeof QRCode !== 'function') return;
+            let base;
+            try { base = `${location.origin}${location.pathname}`; }
+            catch (e) { base = 'https://about.xedryk.top/herbal-brew-tracker.html'; }
+            const url = `${base}#share=${code}&pin=${pin || ''}`;
+            host.innerHTML = '';
+            try {
+                new QRCode(host, {
+                    text: url,
+                    width: 176,
+                    height: 176,
+                    colorDark: '#14532d',
+                    colorLight: '#ffffff',
+                    correctLevel: (typeof QRCode !== 'undefined' && QRCode.CorrectLevel) ? QRCode.CorrectLevel.M : undefined
+                });
+            } catch (e) {
+                caption.textContent = `${code}${pin ? ` • PIN ${pin}` : ''} (QR unavailable)`;
+            }
+        }
+
+        async function createShareCode() {
+            const { pin } = getShareInputs();
+            setShareBusy(true);
+            setShareStatus(t('shareBusy'));
+            try {
+                const res = await shareRequest('create', { payload: sharePayload(), pin });
+                fillShareInputs(res.code, res.pin);
+                renderShareQR(res.code, res.pin);
+                updateShareMeta(res);
+                setShareStatus(`${t('shareCreated')}: ${res.code}`, res.expiresAt);
+                showToast(`${t('shareCreated')} • ${res.code} • PIN ${res.pin}`);
+                return res;
+            } catch (err) {
+                setShareStatus(err.message || t('shareNoApi'));
+                showToast(`❌ ${err.message || t('shareNoApi')}`);
+                return null;
+            } finally {
+                setShareBusy(false);
+            }
+        }
+
+        async function loadShareData(options) {
+            const opts = options || {};
+            const { code, pin } = getShareInputs();
+            if (!code) {
+                showToast(t('shareNeedCode'));
+                return null;
+            }
+            if (!opts.auto && hasLocalTrackerData() && !window.confirm(t('shareConfirmOverwrite'))) return null;
+            setShareBusy(true);
+            setShareStatus(t('shareBusy'));
+            try {
+                const res = await shareRequest('read', { code, pin });
+                const payload = res.payload;
+                const data = (payload && payload.data && typeof payload.data === 'object') ? payload.data : payload;
+                if (!data || typeof data !== 'object' || (!Array.isArray(data.ingredients) && !data.schedule && !data.gear)) {
+                    throw new Error(shareText('shareNoApi', 'Invalid shared data'));
+                }
+                appState = migrateAndSanitizeState(data);
+                saveState();
+                applyStaticTranslations();
+                updateClockAndDates();
+                renderAll();
+                fillShareInputs(res.code, pin);
+                renderShareQR(res.code, pin);
+                setShareStatus(`${t('shareLoaded')}: ${res.code}`, res.expiresAt);
+                showToast(`${t('shareLoaded')} • ${res.code}`);
+                if (opts.clearHash) clearShareHash();
+                return res;
+            } catch (err) {
+                const message = (err.status === 401) ? t('shareWrongPin')
+                    : (err.status === 400 ? t('shareBadCode') : (err.message || t('shareNoApi')));
+                setShareStatus(message);
+                showToast(`❌ ${message}`);
+                return null;
+            } finally {
+                setShareBusy(false);
+            }
+        }
+
+        async function pushShareData() {
+            const { code, pin } = getShareInputs();
+            if (!code) { showToast(t('shareNeedCode')); return null; }
+            setShareBusy(true);
+            setShareStatus(t('shareBusy'));
+            try {
+                const res = await shareRequest('update', { code, pin, payload: sharePayload() });
+                updateShareMeta(res);
+                setShareStatus(`${t('sharePushed')}: ${res.code}`, res.expiresAt);
+                showToast(`${t('sharePushed')} • ${res.code}`);
+                return res;
+            } catch (err) {
+                const message = (err.status === 401) ? t('shareWrongPin')
+                    : (err.status === 400 ? t('shareBadCode') : (err.message || t('shareNoApi')));
+                setShareStatus(message);
+                showToast(`❌ ${message}`);
+                return null;
+            } finally {
+                setShareBusy(false);
+            }
+        }
+
+        async function renewShareCode() {
+            const { code, pin } = getShareInputs();
+            if (!code) { showToast(t('shareNeedCode')); return null; }
+            setShareBusy(true);
+            try {
+                const res = await shareRequest('renew', { code, pin });
+                updateShareMeta(res);
+                setShareStatus(t('shareRenewed'), res.expiresAt);
+                showToast(t('shareRenewed'));
+                return res;
+            } catch (err) {
+                const message = (err.status === 401) ? t('shareWrongPin') : (err.message || t('shareNoApi'));
+                setShareStatus(message);
+                showToast(`❌ ${message}`);
+                return null;
+            } finally {
+                setShareBusy(false);
+            }
+        }
+
+        async function deleteShareCode() {
+            const { code, pin } = getShareInputs();
+            if (!code) { showToast(t('shareNeedCode')); return null; }
+            if (!window.confirm(t('shareConfirmDelete'))) return null;
+            setShareBusy(true);
+            try {
+                const res = await shareRequest('delete', { code, pin });
+                renderShareQR('', '');
+                setShareStatus(t('shareDeleted'));
+                showToast(t('shareDeleted'));
+                return res;
+            } catch (err) {
+                const message = (err.status === 401) ? t('shareWrongPin') : (err.message || t('shareNoApi'));
+                setShareStatus(message);
+                showToast(`❌ ${message}`);
+                return null;
+            } finally {
+                setShareBusy(false);
+            }
+        }
+
+        function parseShareQRText(rawText) {
+            const raw = String(rawText || '').trim();
+            try {
+                const url = new URL(raw);
+                const params = new URLSearchParams(url.hash.replace(/^#/, ''));
+                const code = normalizeShareCode(params.get('share') || params.get('code'));
+                if (code) return { code, pin: normalizeSharePin(params.get('pin')) };
+            } catch (e) {}
+            const compact = raw.match(/BOTANICALAB1[:|]([2-9A-HJ-NP-Z]{8})[:|]?(\d{0,4})/i);
+            if (compact) return { code: normalizeShareCode(compact[1]), pin: normalizeSharePin(compact[2]) };
+            const parts = raw.split(/[\s,:;|]+/).filter(Boolean);
+            for (let i = 0; i < parts.length; i++) {
+                const code = normalizeShareCode(parts[i]);
+                if (code) return { code, pin: normalizeSharePin(parts.slice(i + 1).join('')) };
+            }
+            return null;
+        }
+
+        let shareCameraStream = null;
+        let shareScanFrame = 0;
+        function closeShareScanner() {
+            if (shareScanFrame) { cancelAnimationFrame(shareScanFrame); shareScanFrame = 0; }
+            if (shareCameraStream) {
+                shareCameraStream.getTracks().forEach(track => { try { track.stop(); } catch (e) {} });
+                shareCameraStream = null;
+            }
+            const modal = document.getElementById('share-scanner');
+            const video = document.getElementById('share-scanner-video');
+            if (video) video.srcObject = null;
+            if (modal) modal.classList.add('hidden');
+        }
+        async function openShareScanner() {
+            if (typeof jsQR !== 'function' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast(t('shareCameraError'));
+                return;
+            }
+            const modal = document.getElementById('share-scanner');
+            const video = document.getElementById('share-scanner-video');
+            const status = document.getElementById('share-scanner-status');
+            if (!modal || !video || !status) return;
+            modal.classList.remove('hidden');
+            status.textContent = t('shareBusy');
+            try {
+                shareCameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } }, audio: false
+                });
+            } catch (e) {
+                try {
+                    shareCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                } catch (e2) {
+                    status.textContent = t('shareCameraError');
+                    showToast(t('shareCameraError'));
+                    return;
+                }
+            }
+            video.srcObject = shareCameraStream;
+            try { await video.play(); } catch (e) {}
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const scan = () => {
+                if (!shareCameraStream) return;
+                if (video.readyState === video.HAVE_ENOUGH_DATA && ctx) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const found = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' });
+                    if (found && found.data) {
+                        const parsed = parseShareQRText(found.data);
+                        if (parsed && parsed.code) {
+                            status.textContent = t('shareQrDetected');
+                            fillShareInputs(parsed.code, parsed.pin);
+                            closeShareScanner();
+                            loadShareData({ auto: true, clearHash: true });
+                            return;
+                        }
+                    }
+                }
+                shareScanFrame = requestAnimationFrame(scan);
+            };
+            shareScanFrame = requestAnimationFrame(scan);
+        }
+
+        function clearShareHash() {
+            try {
+                if (window.history && typeof history.replaceState === 'function') {
+                    history.replaceState(null, '', `${location.pathname}${location.search}`);
+                } else {
+                    location.hash = '';
+                }
+            } catch (e) {}
+        }
+        async function checkShareApi() {
+            try {
+                const res = await shareRequest('ping');
+                setShareStatus(t('shareApiReady'));
+                return true;
+            } catch (e) {
+                setShareStatus(t('shareNoApi'));
+                return false;
+            }
+        }
+        async function initShareFromHash() {
+            const hash = String(location.hash || '').replace(/^#/, '');
+            if (!hash) return;
+            let parsed = null;
+            try {
+                const params = new URLSearchParams(hash);
+                const code = normalizeShareCode(params.get('share') || params.get('code'));
+                if (code) parsed = { code, pin: normalizeSharePin(params.get('pin')) };
+            } catch (e) {}
+            if (!parsed) parsed = parseShareQRText(hash);
+            if (!parsed || !parsed.code) return;
+            fillShareInputs(parsed.code, parsed.pin);
+            loadShareData({ auto: true, clearHash: true });
+        }
+        async function initShare() {
+            await checkShareApi();
+            await initShareFromHash();
+        }
+
         // 11. BOOTSTRAP
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
+            initShare();
+            window.addEventListener('hashchange', () => { initShareFromHash(); });
             setInterval(updateClockAndDates, 1000);
             setInterval(renderScheduleSection, 30000);
         });

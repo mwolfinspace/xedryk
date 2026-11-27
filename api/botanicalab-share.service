@@ -1,0 +1,20 @@
+[Unit]
+Description=BotanicaLab 3-day share API
+After=network.target
+
+[Service]
+Type=simple
+User=xedryk
+Group=xedryk
+Environment=PORT=4317
+Environment=HOST=127.0.0.1
+Environment=BOTANICALAB_SHARE_DATA=/mnt/data/botanicalab-share
+Environment=ALLOWED_ORIGIN=https://about.xedryk.top
+ExecStart=/opt/node24/bin/node /mnt/data/www/about/api/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

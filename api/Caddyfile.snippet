@@ -1,0 +1,5 @@
+# Add this inside the about.xedryk.top site block.
+# It keeps Gitea/GitHub Pages serving static files and forwards only the share API.
+
+@botanicalab_share path /api/share*
+reverse_proxy @botanicalab_share 127.0.0.1:4317
