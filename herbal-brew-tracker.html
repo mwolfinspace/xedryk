@@ -205,6 +205,22 @@
 
                     <!-- Action Button -->
                     <div class="pt-3 border-t border-gray-100">
+                        <!-- Quick Strain Time Picker for Tomorrow Morning -->
+                        <div class="mb-3 p-2.5 rounded-xl bg-botanical-50/70 border border-botanical-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div class="flex items-center gap-1.5 font-semibold text-botanical-900">
+                                <span>⏰</span>
+                                <span data-i18n="strainTimeLabel">Tomorrow Strain Time:</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <input type="time" id="input-tomorrow-strain-time" value="08:00" onchange="updateTomorrowStrainTime(this.value)" class="px-2 py-1 rounded-lg border border-botanical-300 bg-white font-bold text-botanical-900 text-xs outline-none focus:ring-2 focus:ring-botanical-500">
+                                <div class="flex items-center gap-1">
+                                    <button type="button" onclick="updateTomorrowStrainTime('07:00')" class="px-1.5 py-1 rounded-md bg-white hover:bg-botanical-100 border border-botanical-200 text-[11px] font-semibold text-botanical-800 transition">07:00</button>
+                                    <button type="button" onclick="updateTomorrowStrainTime('08:00')" class="px-1.5 py-1 rounded-md bg-white hover:bg-botanical-100 border border-botanical-200 text-[11px] font-semibold text-botanical-800 transition">08:00</button>
+                                    <button type="button" onclick="updateTomorrowStrainTime('09:00')" class="px-1.5 py-1 rounded-md bg-white hover:bg-botanical-100 border border-botanical-200 text-[11px] font-semibold text-botanical-800 transition">09:00</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="tonight-water-summary" class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
                             <!-- Populated dynamically from vessel/ice config -->
                         </div>
@@ -533,6 +549,7 @@
                 shopIceTopupLabel: 'Top up at shop with ice',
                 cubesDropLabel: 'steel cubes',
                 totalBoilLabel: 'Boiled Water (22:00)',
+                strainTimeLabel: 'Tomorrow Strain Time:',
                 steepDurationLabel: 'Steep: 10h (22:00–08:00)',
                 logBadge: 'Auto-Log',
                 logTitle: 'Brewing History',
@@ -618,6 +635,7 @@
                 shopIceTopupLabel: 'Ra tiệm thêm đá tới đầy',
                 cubesDropLabel: 'viên đá inox',
                 totalBoilLabel: 'Nước đun sôi (22h00)',
+                strainTimeLabel: 'Giờ rót bỏ xác ngày mai:',
                 steepDurationLabel: 'Ủ: 10 tiếng (22h–8h)',
                 logBadge: 'Nhật ký tự động',
                 logTitle: 'Lịch Sử Pha Chế',
@@ -965,29 +983,30 @@
                 tagEn: 'Metabolic Detox', tagVi: 'Tiêu hóa & Giải độc',
                 colorTheme: '#65a30d', bgBadge: 'bg-lime-50 text-lime-900 border-lime-200',
                 ingredients: [
-                    { id: 'lemongrass', grams: 6, visualEn: '1.5 tbsp', visualVi: '1.5 muỗng canh' },
-                    { id: 'chenpi', grams: 3, visualEn: '2 peel strips', visualVi: '2 mảnh vỏ' },
-                    { id: 'ginger', grams: 3, visualEn: '2 thin slices', visualVi: '2 lát mỏng' },
-                    { id: 'jujube', grams: 8, visualEn: '4 slices', visualVi: '4 lát' }
+                    { id: 'lemongrass', grams: 6, visualEn: '1 tbsp slices', visualVi: '1 muỗng canh sả' },
+                    { id: 'chenpi', grams: 4, visualEn: '2 peel strips', visualVi: '2 miếng trần bì' },
+                    { id: 'orange', grams: 6, visualEn: '2 slices', visualVi: '2 lát cam' },
+                    { id: 'stevia', grams: 1.5, visualEn: 'tiny pinch', visualVi: 'nhúm nhỏ' }
                 ],
-                mechanismEn: 'Lemongrass Citral + Aged Tangerine Nobiletin relieve bloating and support gentle hepatic clearance.',
-                mechanismVi: 'Citral trong Sả + Nobiletin trong Trần bì giảm đầy hơi và hỗ trợ thanh lọc gan nhẹ nhàng.'
+                mechanismEn: 'Lemongrass Citral + Aged Tangerine Nobiletin accelerate hepatic lipid clearance and soothe digestion.',
+                mechanismVi: 'Citral trong sả + Nobiletin từ trần bì hỗ trợ chuyển hóa mỡ gan và làm dịu đầy hơi tiêu hóa.'
             }
         ];
 
-        // 5. DEFAULT GEAR & THERMODYNAMICS CONFIG
+        // 5. DEFAULT GEAR, STORAGE KEY & GLOBAL APPLICATION STATE
+        const STORAGE_KEY = 'botanical_infusion_tracker_v2';
+
         const DEFAULT_GEAR = {
             iceMode: 'steel', // 'steel' | 'melting'
-            steelBoxes: 3, // 8 cubes per box (2.7cm^3 = 19.683ml/cube)
-            meltingTeaRatio: 60, // % of flask filled with tea at home before topping up with melting ice at shop
-            warmCupMl: 200,
+            steelBoxes: 3,    // 8 cubes per box (2.7cm x 2.7cm x 2.7cm)
+            meltingTeaRatio: 60, // % concentrated tea filled at home before shop ice
+            warmCupMl: 250,
             flasks: [
-                { id: 'f1', name: 'Flask 1 (AM)', nameVi: 'Bình 1 (Sáng)', capacityMl: 800 },
-                { id: 'f2', name: 'Flask 2 (PM)', nameVi: 'Bình 2 (Chiều)', capacityMl: 1200 }
+                { id: 'flask_1', name: 'Morning Flask 1', nameVi: 'Bình 1 (Buổi Sáng)', capacityMl: 800 },
+                { id: 'flask_2', name: 'Afternoon Flask 2', nameVi: 'Bình 2 (Buổi Chiều)', capacityMl: 1200 }
             ]
         };
 
-        const STORAGE_KEY = 'herbal_brew_tracker_v5_clean';
         let appState = {
             lang: 'en',
             gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
@@ -995,6 +1014,7 @@
             schedule: {
                 todayRecipeId: 'rec_1',
                 tomorrowRecipeId: 'rec_2',
+                tomorrowStrainTime: '08:00',
                 lastUpdatedDate: '',
                 dailyChecks: { date: '', flasks: {} }
             },
@@ -1009,22 +1029,77 @@
             recipes: []
         };
 
-        // Helper Localization Getters
         function t(key) {
             return (I18N[appState.lang] && I18N[appState.lang][key]) || I18N.en[key] || key;
         }
+
         function getIngName(ing) {
-            if (!ing) return '';
+            if (!ing) return 'Herb';
             return appState.lang === 'vi' ? ing.nameVi : ing.nameEn;
         }
-        function getRecField(rec, baseField) {
+
+        function getRecField(obj, fieldBase) {
+            if (!obj) return '';
             const suffix = appState.lang === 'vi' ? 'Vi' : 'En';
-            return rec[`${baseField}${suffix}`] || rec[`${baseField}En`] || rec[baseField] || '';
+            return obj[`${fieldBase}${suffix}`] || obj[`${fieldBase}En`] || '';
         }
 
-        // 6. THERMODYNAMICS ENGINE (VESSELS + STEEL/MELTING ICE)
+        // 6. THERMODYNAMICS & REAL-TIME EXTRACTION ENGINE
+        function computeRealTimeSteepMetrics() {
+            const now = new Date();
+            const curH = now.getHours();
+            const curM = now.getMinutes();
+
+            const strainTimeStr = (appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00';
+            const [sHour, sMin] = strainTimeStr.split(':').map(n => parseInt(n, 10) || 0);
+
+            // Compute start time (if user opens between 12:00–23:59 -> steeping tonight; if 00:00–11:59 -> steeping right now until strain time)
+            const start = new Date(now);
+            const end = new Date(now);
+            end.setHours(sHour, sMin, 0, 0);
+            if (end <= start) {
+                end.setDate(end.getDate() + 1);
+            }
+
+            const diffMs = Math.max(30 * 60 * 1000, end - start); // Minimum 30 mins
+            const totalMinutes = Math.round(diffMs / 60000);
+            const steepHours = Math.round((totalMinutes / 60) * 10) / 10;
+
+            const startTimeLabel = `${String(curH).padStart(2, '0')}:${String(curM).padStart(2, '0')}`;
+            const durH = Math.floor(totalMinutes / 60);
+            const durM = totalMinutes % 60;
+            const durStr = durM > 0 ? `${durH}h${String(durM).padStart(2, '0')}m` : `${durH}h`;
+
+            // Extraction curve relative to 10.0h baseline:
+            // Shorter steep (e.g. 7h) -> higher herb dose (~1.16x) for full extraction;
+            // Longer steep (e.g. 12h at 20:00 -> 08:00) -> lower herb dose (~0.90x) to prevent tannin bitterness.
+            const rawSteepFactor = Math.pow(10 / Math.max(2, steepHours), 0.42);
+            const steepDoseFactor = Math.min(1.35, Math.max(0.82, Math.round(rawSteepFactor * 100) / 100));
+
+            // Newton's Law of Cooling in glass carafe (T_initial = 88°C, T_ambient = 27°C, k ≈ 0.22 / hr)
+            const tAmbient = 27;
+            const tInitial = 88;
+            const predictedTempC = Math.round((tAmbient + (tInitial - tAmbient) * Math.exp(-0.22 * steepHours)) * 10) / 10;
+
+            // Ice multiplier: warmer strained tea (>33°C) needs proportionally more cooling capacity
+            const deltaT = Math.max(10, predictedTempC - 6); // Target chilled temp ~6°C
+            const baseDeltaT = 33.5 - 6; // Baseline 10h steep temp (~33.5°C)
+            const iceDemandMultiplier = Math.min(1.5, Math.max(0.95, deltaT / baseDeltaT));
+
+            return {
+                startTimeLabel,
+                strainTimeStr,
+                steepHours,
+                durStr,
+                steepDoseFactor,
+                predictedTempC,
+                iceDemandMultiplier
+            };
+        }
+
         function computeGearThermodynamics() {
             const g = appState.gear || DEFAULT_GEAR;
+            const steepMetrics = computeRealTimeSteepMetrics();
             const CUBE_VOL_ML = 19.683;
             const totalCubesAvailable = (g.steelBoxes || 3) * 8;
             const totalCapacity = g.flasks.reduce((s, f) => s + (Number(f.capacityMl) || 0), 0);
@@ -1035,7 +1110,8 @@
             const flaskPlans = g.flasks.map(f => {
                 const cap = Math.max(100, Number(f.capacityMl) || 500);
                 if (g.iceMode === 'steel') {
-                    const idealCubes = Math.max(1, Math.round((cap * 0.10) / CUBE_VOL_ML));
+                    // Scale ideal cubes by iceDemandMultiplier when strained tea is warmer
+                    const idealCubes = Math.max(1, Math.round(((cap * 0.10) / CUBE_VOL_ML) * steepMetrics.iceDemandMultiplier));
                     const shareCap = totalCapacity > 0 ? Math.max(1, Math.floor((cap / totalCapacity) * totalCubesAvailable)) : idealCubes;
                     const cubes = Math.min(idealCubes, shareCap);
                     const iceVol = Math.round(cubes * CUBE_VOL_ML);
@@ -1044,11 +1120,14 @@
                     totalCubesUsed += cubes;
                     return { ...f, capacityMl: cap, teaMl, iceVol, cubes };
                 } else {
-                    const ratio = Math.min(85, Math.max(40, Number(g.meltingTeaRatio) || 60)) / 100;
+                    // For melting water ice, warmer tea melts more ice -> adjust home tea fill % slightly lower
+                    const baseRatio = Math.min(85, Math.max(40, Number(g.meltingTeaRatio) || 60));
+                    const adjustedRatio = Math.max(40, Math.round(baseRatio / Math.pow(steepMetrics.iceDemandMultiplier, 0.45)));
+                    const ratio = adjustedRatio / 100;
                     const teaMl = Math.round((cap * ratio) / 10) * 10;
                     const iceVol = cap - teaMl;
                     totalTeaForFlasks += teaMl;
-                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes: 0 };
+                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes: 0, effectiveTeaRatio: adjustedRatio };
                 }
             });
 
@@ -1059,7 +1138,7 @@
 
             const volumeRatio = boiledWaterMl / 2200;
             const concentrationBoost = g.iceMode === 'melting' ? 1.25 : 1.0;
-            const herbScaleFactor = volumeRatio * concentrationBoost;
+            const herbScaleFactor = volumeRatio * concentrationBoost * steepMetrics.steepDoseFactor;
 
             return {
                 iceMode: g.iceMode,
@@ -1073,7 +1152,8 @@
                 absorptionBuffer,
                 boiledWaterMl,
                 herbScaleFactor,
-                flaskPlans
+                flaskPlans,
+                steepMetrics
             };
         }
 
@@ -1569,13 +1649,17 @@
 
             if (appState.schedule.dailyChecks.date !== today.iso) {
                 appState.schedule.dailyChecks = { date: today.iso, flasks: {} };
-            }
-            if (!appState.schedule.dailyChecks.flasks) {
-                appState.schedule.dailyChecks.flasks = {};
+                saveState();
             }
 
-            saveState();
+            if (!lastMinuteTick) lastMinuteTick = now.getMinutes();
+            if (now.getMinutes() !== lastMinuteTick) {
+                lastMinuteTick = now.getMinutes();
+                renderAll();
+            }
         }
+
+        let lastMinuteTick = null;
 
         // 10. UI LANGUAGE APPLICATION & RENDERING
         function applyStaticTranslations() {
@@ -1660,36 +1744,62 @@
                     const bgClass = idx % 2 === 0 ? 'bg-blue-50/60 border-blue-100 hover:bg-blue-50' : 'bg-indigo-50/60 border-indigo-100 hover:bg-indigo-50';
                     const detailText = gearPlan.iceMode === 'steel'
                         ? (isVi
-                            ? `Rót <strong>~${fp.teaMl}ml</strong> trà + thả <strong>${fp.cubes} viên đá inox</strong> (~${fp.iceVol}ml).`
-                            : `Pour <strong>~${fp.teaMl}ml</strong> brew + <strong>${fp.cubes} steel cubes</strong> (~${fp.iceVol}ml).`)
+                            ? `Rót <strong>~${fp.teaMl}ml</strong> trà (${gearPlan.steepMetrics.predictedTempC}°C) + thả <strong>${fp.cubes} viên đá inox</strong> (~${fp.iceVol}ml).`
+                            : `Pour <strong>~${fp.teaMl}ml</strong> brew (${gearPlan.steepMetrics.predictedTempC}°C) + <strong>${fp.cubes} steel cubes</strong> (~${fp.iceVol}ml).`)
                         : (isVi
-                            ? `Ở nhà rót <strong>~${fp.teaMl}ml</strong> trà cốt (${gearPlan.meltingTeaRatio}%), ra tiệm thêm <strong>~${fp.iceVol}ml đá viên</strong> tới đầy bình.`
-                            : `At home pour <strong>~${fp.teaMl}ml</strong> tea (${gearPlan.meltingTeaRatio}%), then top up <strong>~${fp.iceVol}ml shop ice</strong> to brim.`);
+                            ? `Ở nhà rót <strong>~${fp.teaMl}ml</strong> trà cốt (${fp.effectiveTeaRatio || gearPlan.meltingTeaRatio}%), ra tiệm thêm <strong>~${fp.iceVol}ml đá viên</strong> tới đầy bình.`
+                            : `At home pour <strong>~${fp.teaMl}ml</strong> tea (${fp.effectiveTeaRatio || gearPlan.meltingTeaRatio}%), then top up <strong>~${fp.iceVol}ml shop ice</strong> to brim.`);
 
                     return `
                         <label class="flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition ${bgClass}">
                             <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFlaskCheck('${fp.id}', this.checked)" class="mt-0.5 w-4 h-4 text-botanical-700 rounded focus:ring-botanical-500">
-                            <div class="text-xs sm:text-sm">
-                                <span class="font-semibold text-gray-900">${fName} (${fp.capacityMl}ml):</span>
-                                <span class="text-gray-600"> ${detailText}</span>
+                            <div class="text-xs leading-relaxed">
+                                <span class="font-bold text-gray-900 block">${fName} (${fp.capacityMl}ml)</span>
+                                <span class="text-gray-600">${detailText}</span>
                             </div>
                         </label>
                     `;
-                }).join('') + (gearPlan.warmCupMl > 0 ? `
-                    <div class="px-3 py-1.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900">
-                        ☕ ${isVi ? `Phần dư uống ấm tại nhà buổi sáng: <strong>~${gearPlan.warmCupMl}ml</strong>` : `Morning warm cup at home: <strong>~${gearPlan.warmCupMl}ml</strong>`}
-                    </div>
-                ` : '');
+                }).join('');
             }
 
-            // Tonight's water summary
+            // Tonight's water summary & real-time dynamic steep duration from current clock
+            const sm = gearPlan.steepMetrics;
+            const strainInput = document.getElementById('input-tomorrow-strain-time');
+            if (strainInput) strainInput.value = sm.strainTimeStr;
+
             const waterSummaryEl = document.getElementById('tonight-water-summary');
             if (waterSummaryEl) {
                 const liters = (gearPlan.boiledWaterMl / 1000).toFixed(2).replace(/\.00$/, '');
-                waterSummaryEl.innerHTML = `
-                    <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
-                    <span>⏳ ${t('steepDurationLabel')}</span>
-                `;
+                const dosePct = Math.round((sm.steepDoseFactor - 1) * 100);
+                const doseBadge = dosePct === 0
+                    ? (isVi ? '100% chuẩn' : '100% standard')
+                    : (dosePct > 0 ? `+${dosePct}%` : `${dosePct}%`);
+
+                waterSummaryEl.innerHTML = isVi
+                    ? `
+                        <div class="w-full p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-gray-700 space-y-1">
+                            <div class="flex flex-wrap items-center justify-between gap-1">
+                                <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
+                                <span>⏱️ Ủ ngay (<strong>${sm.startTimeLabel} → ${sm.strainTimeStr}</strong>): <strong class="text-botanical-900">${sm.durStr}</strong></span>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] text-amber-900 pt-1 border-t border-amber-200/60">
+                                <span>🌡️ Nhiệt độ trà lúc rót: <strong>~${sm.predictedTempC}°C</strong></span>
+                                <span>⚖️ Điều chỉnh thảo mộc theo giờ ủ: <strong>${doseBadge}</strong></span>
+                            </div>
+                        </div>
+                    `
+                    : `
+                        <div class="w-full p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-gray-700 space-y-1">
+                            <div class="flex flex-wrap items-center justify-between gap-1">
+                                <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
+                                <span>⏱️ Steep now (<strong>${sm.startTimeLabel} → ${sm.strainTimeStr}</strong>): <strong class="text-botanical-900">${sm.durStr}</strong></span>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] text-amber-900 pt-1 border-t border-amber-200/60">
+                                <span>🌡️ Est. tea temp at strain: <strong>~${sm.predictedTempC}°C</strong></span>
+                                <span>⚖️ Time-based herb scaling: <strong>${doseBadge}</strong></span>
+                            </div>
+                        </div>
+                    `;
             }
 
             const brewBtn = document.getElementById('btn-brew-tonight');
@@ -2071,6 +2181,17 @@
             showToast(appState.lang === 'vi' ? '📅 Đã cập nhật lịch pha chế' : '📅 Schedule updated');
         }
 
+        function updateTomorrowStrainTime(timeVal) {
+            if (!timeVal) return;
+            appState.schedule.tomorrowStrainTime = timeVal;
+            saveState();
+            renderScheduleSection();
+            showToast(appState.lang === 'vi'
+                ? `⏰ Đã đặt giờ rót bỏ xác trà ngày mai: ${timeVal}`
+                : `⏰ Tomorrow strain time set to ${timeVal}`
+            );
+        }
+
         function setRecipeForTomorrow(recipeId) {
             appState.schedule.tomorrowRecipeId = recipeId;
             saveState();
@@ -2186,12 +2307,16 @@
             const locale = isVi ? 'vi-VN' : 'en-US';
             const stamp = now.toLocaleString(locale, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
             const recTitle = getRecField(rec, 'name');
+            const sm = gearPlan.steepMetrics;
+            const steepTag = isVi
+                ? `Ủ ${sm.startTimeLabel}→${sm.strainTimeStr} (${sm.durStr}, ~${sm.predictedTempC}°C)`
+                : `Steep ${sm.startTimeLabel}→${sm.strainTimeStr} (${sm.durStr}, ~${sm.predictedTempC}°C)`;
 
             appState.history.unshift({
                 id: Date.now(),
                 recipeCode: rec.code,
                 recipeName: recTitle,
-                summaryText: `[${gearPlan.boiledWaterMl}ml] ` + deductedDetails.join(', '),
+                summaryText: `[${gearPlan.boiledWaterMl}ml • ${steepTag}] ` + deductedDetails.join(', '),
                 timestamp: stamp
             });
 
@@ -2325,6 +2450,7 @@
                 schedule: {
                     todayRecipeId: 'rec_1',
                     tomorrowRecipeId: 'rec_2',
+                    tomorrowStrainTime: '08:00',
                     lastUpdatedDate: getFormattedDate(0).iso,
                     dailyChecks: { date: getFormattedDate(0).iso, flasks: {} }
                 },
