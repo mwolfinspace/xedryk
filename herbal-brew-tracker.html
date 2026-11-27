@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herbal Brew & Inventory Tracker — Overnight Botanical Infusion</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Playfair Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        botanical: {
+                            50: '#f2f7f4',
+                            100: '#e1ede5',
+                            200: '#c3dbcc',
+                            500: '#3d7a5a',
+                            700: '#244d38',
+                            900: '#132a1e',
+                        },
+                        cream: '#faf9f6',
+                        ambertea: '#d97706',
+                        hibiscus: '#be123c',
+                        butterfly: '#1d4ed8',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #faf9f6;
+            color: #1f2937;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c3dbcc;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3d7a5a;
+        }
+        .glass-nav {
+            background: rgba(250, 249, 246, 0.90);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .apothecary-card {
+            background: #ffffff;
+            border: 1px solid rgba(61, 122, 90, 0.14);
+            box-shadow: 0 4px 20px -2px rgba(19, 42, 30, 0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .apothecary-card:hover {
+            box-shadow: 0 10px 25px -5px rgba(19, 42, 30, 0.08);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        select {
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-botanical-200 selection:text-botanical-900 pb-20">
+
+    <!-- STICKY TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 glass-nav border-b border-botanical-200/70">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14 sm:h-16 gap-2">
+                <!-- Brand Logo -->
+                <a href="#section-schedule" class="flex items-center gap-2 shrink-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-botanical-700 text-white flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="font-serif font-bold text-base sm:text-lg text-botanical-900 tracking-tight block leading-none">BotanicaLab</span>
+                        <span data-i18n="brandSub" class="text-[10px] uppercase tracking-widest text-botanical-500 font-semibold hidden sm:inline">Overnight Infusion</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs lg:text-sm font-medium text-gray-600">
+                    <a href="#section-schedule" data-i18n="navSchedule" class="px-2.5 py-2 rounded-lg hover:bg-botanical-50 hover:text-botanical-700 transition whitespace-nowrap">📅 Schedule</a>
+                    <a href="#section-recipes" data-i18n="navRecipes" class="px-2.5 py-2 rounded-lg hover:bg-botanical-50 hover:text-botanical-700 transition whitespace-nowrap">🧪 Formulas</a>
+                    <a href="#section-inventory" data-i18n="navInventory" class="px-2.5 py-2 rounded-lg hover:bg-botanical-50 hover:text-botanical-700 transition whitespace-nowrap">📦 Pantry</a>
+                    <a href="#section-science" data-i18n="navScience" class="px-2.5 py-2 rounded-lg hover:bg-botanical-50 hover:text-botanical-700 transition whitespace-nowrap">🔬 Phytochemistry</a>
+                    <a href="#section-history" data-i18n="navHistory" class="px-2.5 py-2 rounded-lg hover:bg-botanical-50 hover:text-botanical-700 transition whitespace-nowrap">📜 Logs & Gear</a>
+                </nav>
+
+                <!-- Right Controls: Language Toggle & Sync Badge -->
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <button id="lang-toggle-btn" onclick="toggleLanguage()" class="px-2.5 py-1.5 rounded-xl bg-botanical-50 hover:bg-botanical-100 text-botanical-900 border border-botanical-300 text-xs font-bold transition flex items-center gap-1 whitespace-nowrap shadow-xs">
+                        <span>🌐</span>
+                        <span id="lang-toggle-label">EN ➔ VI</span>
+                    </button>
+                    <span id="storage-status-badge" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-botanical-100 text-botanical-700 whitespace-nowrap">
+                        <span class="w-1.5 h-1.5 rounded-full bg-botanical-500 animate-pulse"></span>
+                        <span data-i18n="syncedBadge">Synced</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Mobile Horizontal Scroll Sub-Nav -->
+            <div class="flex md:hidden items-center gap-1.5 overflow-x-auto no-scrollbar py-2 border-t border-botanical-100 text-xs font-medium">
+                <a href="#section-schedule" data-i18n="navSchedule" class="shrink-0 px-3 py-1.5 rounded-full bg-botanical-700 text-white shadow-xs whitespace-nowrap">📅 Schedule</a>
+                <a href="#section-recipes" data-i18n="navRecipes" class="shrink-0 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-700 whitespace-nowrap">🧪 Formulas</a>
+                <a href="#section-inventory" data-i18n="navInventory" class="shrink-0 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-700 whitespace-nowrap">📦 Pantry</a>
+                <a href="#section-science" data-i18n="navScience" class="shrink-0 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-700 whitespace-nowrap">🔬 Science</a>
+                <a href="#section-history" data-i18n="navHistory" class="shrink-0 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-gray-700 whitespace-nowrap">📜 Gear</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-12 sm:space-y-14">
+
+        <!-- ========================================================= -->
+        <!-- SECTION 1: DAILY BREW SCHEDULE (TODAY & TOMORROW)         -->
+        <!-- ========================================================= -->
+        <section id="section-schedule" class="scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-5">
+                <div>
+                    <span data-i18n="sec1Tag" class="text-xs font-bold uppercase tracking-wider text-botanical-500">22:00 – 08:00 Thermal Schedule</span>
+                    <h1 data-i18n="sec1Title" class="font-serif text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Daily Infusion Schedule</h1>
+                </div>
+                <div class="text-xs sm:text-sm text-gray-500 bg-white px-3 py-1.5 rounded-xl border border-gray-200/80 shadow-2xs self-start sm:self-auto" id="live-clock-display">
+                    Loading clock...
+                </div>
+            </div>
+
+            <!-- Two-Column Grid for Today & Tonight/Tomorrow -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                
+                <!-- CARD A: TODAY'S ACTIVE BREW -->
+                <div class="apothecary-card rounded-2xl p-5 sm:p-6 border-l-4 border-l-amber-500 flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+                            <div>
+                                <span data-i18n="todayBadge" class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">☀️ Drinking Today</span>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 mt-1.5" id="today-date-label">Loading...</h3>
+                            </div>
+                            <select id="select-today-recipe" onchange="updateScheduleSelection('today', this.value)" class="w-full sm:w-auto sm:max-w-[215px] text-xs border border-gray-300 rounded-xl px-2.5 py-2 bg-gray-50 font-semibold text-gray-800 focus:ring-2 focus:ring-botanical-500 outline-none">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+
+                        <div id="today-recipe-display" class="bg-cream rounded-xl p-4 border border-gray-200/70 mb-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Daily Thermal & Ice Checklist -->
+                    <div class="space-y-2.5 pt-3 border-t border-gray-100">
+                        <div class="flex items-center justify-between gap-2">
+                            <p data-i18n="dailyCheckHeader" class="text-xs font-bold text-gray-500 uppercase tracking-wider">Daily Thermal & Ice Allocation:</p>
+                            <a href="#section-history" data-i18n="editGearLink" class="text-[11px] font-semibold text-botanical-700 hover:underline">⚙️ Configure Flasks & Ice</a>
+                        </div>
+                        <div id="daily-flasks-checklist" class="space-y-2">
+                            <!-- Populated dynamically from vessel/ice config -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD B: TONIGHT STEEPING -->
+                <div class="apothecary-card rounded-2xl p-5 sm:p-6 border-l-4 border-l-botanical-700 flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+                            <div>
+                                <span data-i18n="tonightBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-700 bg-botanical-50 px-2.5 py-1 rounded-md border border-botanical-200">🌙 Steep Tonight (For Tomorrow)</span>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 mt-1.5" id="tomorrow-date-label">Loading...</h3>
+                            </div>
+                            <select id="select-tomorrow-recipe" onchange="updateScheduleSelection('tomorrow', this.value)" class="w-full sm:w-auto sm:max-w-[215px] text-xs border border-botanical-300 rounded-xl px-2.5 py-2 bg-botanical-50/50 font-semibold text-botanical-900 focus:ring-2 focus:ring-botanical-500 outline-none">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+
+                        <div id="tomorrow-recipe-display" class="bg-botanical-50/40 rounded-xl p-4 border border-botanical-200/70 mb-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div class="pt-3 border-t border-gray-100">
+                        <div id="tonight-water-summary" class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
+                            <!-- Populated dynamically from vessel/ice config -->
+                        </div>
+                        <button id="btn-brew-tonight" onclick="confirmBrewTonight()" class="w-full py-3 px-4 bg-botanical-700 hover:bg-botanical-900 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99]">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span data-i18n="btnConfirmBrew">Confirm Tonight's Brew (Auto-Deduct Stock)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Day Forecast Strip -->
+            <div class="mt-6 bg-white rounded-2xl p-4 border border-gray-200/80 shadow-2xs">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <span data-i18n="forecastHeader" class="text-xs font-bold uppercase tracking-wider text-gray-500">5-Day Balanced Rotation Forecast</span>
+                    <span data-i18n="forecastSub" class="text-[11px] text-gray-400">Auto-adapts to pantry levels</span>
+                </div>
+                <div id="five-day-forecast" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- SECTION 2: ADAPTIVE FORMULAS (AUTO-FILTERED BY STOCK)     -->
+        <!-- ========================================================= -->
+        <section id="section-recipes" class="scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+                <div>
+                    <span data-i18n="sec2Tag" class="text-xs font-bold uppercase tracking-wider text-botanical-500">Synergistic Phytochemistry</span>
+                    <h2 data-i18n="sec2Title" class="font-serif text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Adaptive Infusion Formulas</h2>
+                </div>
+                <div id="hidden-recipes-count" class="text-xs font-medium text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200 self-start sm:self-auto">
+                    Loading...
+                </div>
+            </div>
+
+            <!-- Adaptive Engine Status Banner -->
+            <div id="adaptive-status-banner" class="mb-4 p-4 rounded-2xl border shadow-2xs transition-all">
+                <!-- Populated dynamically by computeAdaptiveEngine() -->
+            </div>
+
+            <!-- Biochemical Safety Guardrail Banner -->
+            <div class="mb-6 p-3.5 rounded-xl bg-botanical-50/80 border border-botanical-200 flex items-start sm:items-center gap-3 text-xs sm:text-sm text-botanical-900">
+                <span class="text-lg shrink-0">🛡️</span>
+                <p id="dynamic-guardrail-banner" data-i18n="safetyGuardrailText"><strong>Biochemical Guardrails:</strong> Total dry herbs auto-scale with your boiled water volume (<strong>0.6%–1.1% infusion</strong>); Stevia & Rosemary stay capped within safe daily thresholds.</p>
+            </div>
+
+            <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- SECTION 3: INTERACTIVE PANTRY & INVENTORY TRACKER         -->
+        <!-- ========================================================= -->
+        <section id="section-inventory" class="scroll-mt-24">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-5">
+                <div>
+                    <span data-i18n="sec3Tag" class="text-xs font-bold uppercase tracking-wider text-botanical-500">Stock Management & Auto-Hide</span>
+                    <h2 data-i18n="sec3Title" class="font-serif text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Botanical Pantry Stock</h2>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="restockAllDefault()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-botanical-50 text-botanical-700 border border-botanical-200 hover:bg-botanical-100 transition whitespace-nowrap">
+                        🔄 <span data-i18n="btnRestockCore">Restock 9 Core Herbs</span>
+                    </button>
+                    <button onclick="exportDataJSON()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 transition whitespace-nowrap">
+                        💾 <span data-i18n="btnExport">Export JSON</span>
+                    </button>
+                    <label class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 transition cursor-pointer whitespace-nowrap">
+                        📂 <span data-i18n="btnImport">Import</span>
+                        <input type="file" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Scenario Simulator Bar -->
+            <div class="mb-6 p-4 rounded-2xl bg-white border border-gray-200/90 shadow-2xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <span data-i18n="simTitle" class="text-xs font-bold uppercase tracking-wider text-gray-600">🧪 Quick Stock Depletion Simulator (Test Auto-Adaptation):</span>
+                    <span data-i18n="simHint" class="text-[11px] text-gray-400">1-tap test for low/missing herbs</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="simulateScenario('full')" data-i18n="simFull" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-botanical-50 text-botanical-800 border border-botanical-200 hover:bg-botanical-100 transition whitespace-nowrap">✅ 9 Core Ready</button>
+                    <button onclick="simulateScenario('expanded')" data-i18n="simExpanded" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition whitespace-nowrap">✨ All 16 Stocked</button>
+                    <button onclick="simulateScenario('missing2')" data-i18n="simMissing2" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition whitespace-nowrap">⚠️ Out: Stevia & Hibiscus</button>
+                    <button onclick="simulateScenario('missing4')" data-i18n="simMissing4" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100 transition whitespace-nowrap">⚡ Only 5 Herbs Left</button>
+                    <button onclick="simulateScenario('conflict2')" data-i18n="simConflict2" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition whitespace-nowrap">🔥 Only Mint & Ginger (Clash)</button>
+                    <button onclick="simulateScenario('onlyStevia')" data-i18n="simOnlyStevia" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 text-red-800 border border-red-200 hover:bg-red-100 transition whitespace-nowrap">🚫 Only Stevia Left</button>
+                </div>
+            </div>
+
+            <!-- Inventory Grid -->
+            <div id="inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Zero-Calorie Sweeteners Reference Card -->
+            <div class="mt-6 bg-white rounded-2xl p-5 border border-gray-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <h3 data-i18n="sweetenerTitle" class="font-bold text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                        <span>🍯</span> Zero-Calorie Sweeteners (Added in the morning after straining)
+                    </h3>
+                    <span data-i18n="sweetenerBadge" class="text-xs text-botanical-700 font-medium bg-botanical-50 px-2.5 py-1 rounded-full self-start sm:self-auto">Zero-GI & Tooth-Friendly</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-gray-600">
+                    <div class="p-3.5 rounded-xl bg-cream border border-gray-100">
+                        <strong class="text-gray-900 block mb-1">Stevia Extract (Rebaudioside A)</strong>
+                        <span data-i18n="steviaDesc">GI = 0, zero calories. Best for balancing Hibiscus or Dried Orange tartness without raising insulin.</span>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-cream border border-gray-100">
+                        <strong class="text-gray-900 block mb-1">Tropical Slim (Erythritol + Stevia)</strong>
+                        <span data-i18n="tropicalDesc">Clean sucrose-like sweetness with zero bitter aftertaste; ideal for Butterfly Pea or Rosemary blends.</span>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-cream border border-gray-100">
+                        <strong class="text-gray-900 block mb-1">Sorbitol (Polyol)</strong>
+                        <span data-i18n="sorbitolDesc">Low glycemic index (GI ≈ 9), adds cooling mouthfeel and gentle body. Cap under 15g/day to avoid osmotic laxative effect.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- SECTION 4: PHYTOCHEMISTRY & SCIENTIFIC MONOGRAPHS         -->
+        <!-- ========================================================= -->
+        <section id="section-science" class="scroll-mt-24">
+            <div class="mb-6">
+                <span data-i18n="sec4Tag" class="text-xs font-bold uppercase tracking-wider text-botanical-500">Evidence-Based Phytochemistry</span>
+                <h2 data-i18n="sec4Title" class="font-serif text-2xl sm:text-3xl font-bold text-gray-900 mt-1">Bioactive Compounds & Pharmacology</h2>
+                <p data-i18n="sec4Sub" class="text-xs sm:text-sm text-gray-600 mt-1 max-w-3xl">Mechanisms of action and biochemical synergies for all 16 botanicals (9 core herbs + 7 clean expansion herbs) under 10-hour overnight extraction.</p>
+            </div>
+
+            <div id="science-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- SECTION 5: BREW LOGS & THERMODYNAMIC GEAR SPECS           -->
+        <!-- ========================================================= -->
+        <section id="section-history" class="scroll-mt-24">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left 5 Cols: Interactive Thermodynamics & Gear Configurator -->
+                <div class="lg:col-span-5 space-y-5">
+                    <div class="apothecary-card rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-white to-botanical-50/40">
+                        <div class="flex items-center justify-between gap-2">
+                            <span data-i18n="gearBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-700 bg-botanical-100 px-2.5 py-1 rounded-full">Thermodynamics</span>
+                            <button onclick="resetGearDefaults()" data-i18n="btnResetGear" class="text-[11px] font-semibold text-gray-500 hover:text-botanical-700 underline">Reset Default</button>
+                        </div>
+                        <h3 data-i18n="gearTitle" class="font-serif text-xl font-bold text-gray-900 mt-2 mb-4">Flasks & Ice Configurator</h3>
+                        
+                        <div class="space-y-4 text-xs sm:text-sm text-gray-700">
+                            <!-- Ice Type Toggle -->
+                            <div class="p-3.5 bg-white rounded-xl border border-gray-200/80 space-y-2.5">
+                                <div data-i18n="iceModeLabel" class="font-bold text-gray-900">🧊 Ice Mode:</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" id="btn-ice-steel" onclick="setIceMode('steel')" class="py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5">
+                                        <span>🧊</span> <span data-i18n="iceModeSteel">316 Steel Cubes</span>
+                                    </button>
+                                    <button type="button" id="btn-ice-melting" onclick="setIceMode('melting')" class="py-2 px-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5">
+                                        <span>💧</span> <span data-i18n="iceModeMelting">Melting Water Ice</span>
+                                    </button>
+                                </div>
+
+                                <!-- Steel Cubes Controls -->
+                                <div id="steel-ice-controls" class="pt-1 space-y-2 text-xs text-gray-600">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span data-i18n="steelBoxesLabel">Steel Ice Boxes (8 cubes/box):</span>
+                                        <input type="number" min="1" max="10" id="input-steel-boxes" onchange="updateSteelBoxes(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
+                                    </div>
+                                    <p id="steel-ice-summary" class="text-[11px] text-gray-500"></p>
+                                </div>
+
+                                <!-- Melting Ice Controls -->
+                                <div id="melting-ice-controls" class="hidden pt-1 space-y-2 text-xs text-gray-600">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span data-i18n="teaFillRatioLabel">Home Tea Fill % (Before Shop Ice):</span>
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" min="40" max="85" step="5" id="input-tea-ratio" onchange="updateMeltingRatio(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
+                                            <span class="font-bold">%</span>
+                                        </div>
+                                    </div>
+                                    <p data-i18n="meltingIceHint" class="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                                        💡 <strong>Shop Ice Workflow:</strong> Fill flasks to ~60% concentrated tea at home, then top up to 100% with melting ice at the shop. Herb dosage automatically concentrates (+25%) so melted ice never dilutes flavor!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Flasks List -->
+                            <div class="p-3.5 bg-white rounded-xl border border-blue-200/80 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span data-i18n="flasksListTitle" class="font-bold text-gray-900">🥤 Active Flasks:</span>
+                                    <button type="button" onclick="addFlask()" class="px-2.5 py-1 rounded-lg bg-botanical-50 hover:bg-botanical-100 text-botanical-800 border border-botanical-200 text-xs font-bold transition">
+                                        + <span data-i18n="btnAddFlask">Add Flask</span>
+                                    </button>
+                                </div>
+                                <div id="flasks-config-list" class="space-y-2">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Morning Warm Cup & Carafe Summary -->
+                            <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 space-y-2 text-xs">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span data-i18n="warmCupLabel" class="font-bold text-amber-900">☕ Warm Morning Cup (Home):</span>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" min="0" max="600" step="50" id="input-warm-cup" onchange="updateWarmCup(this.value)" class="w-20 text-center font-bold border border-amber-300 rounded-lg py-1 bg-white text-gray-900">
+                                        <span class="font-bold text-amber-900">ml</span>
+                                    </div>
+                                </div>
+                                <div id="carafe-water-calculation" class="text-gray-700 leading-relaxed pt-1 border-t border-amber-200/70">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right 7 Cols: Brew History Log -->
+                <div class="lg:col-span-7">
+                    <div class="apothecary-card rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-4">
+                                <div>
+                                    <span data-i18n="logBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-500">Auto-Log</span>
+                                    <h3 data-i18n="logTitle" class="font-serif text-xl font-bold text-gray-900 mt-0.5">Brewing History</h3>
+                                </div>
+                                <button onclick="clearHistoryLog()" data-i18n="btnClearLogs" class="text-xs text-red-600 hover:text-red-800 font-medium px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
+                                    Clear Logs
+                                </button>
+                            </div>
+
+                            <div id="history-list-container" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-400">
+                            <span data-i18n="storageNote">Data auto-saves to LocalStorage & Device Cookie.</span>
+                            <button onclick="resetAllData()" data-i18n="btnFactoryReset" class="text-gray-500 hover:text-gray-800 underline text-left sm:text-right">Factory Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- TOAST NOTIFICATION BANNER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT APPLICATION LOGIC & DATA ENGINE                -->
+    <!-- ========================================================= -->
+    <script>
+        // 1. BILINGUAL UI DICTIONARY (ENGLISH DEFAULT + VIETNAMESE TOGGLE)
+        const I18N = {
+            en: {
+                brandSub: 'Overnight Infusion',
+                navSchedule: '📅 Schedule',
+                navRecipes: '🧪 Formulas',
+                navInventory: '📦 Pantry',
+                navScience: '🔬 Phytochemistry',
+                navHistory: '📜 Logs & Gear',
+                syncedBadge: 'Synced',
+                sec1Tag: '22:00 – 08:00 Thermal Schedule',
+                sec1Title: 'Daily Infusion Schedule',
+                todayBadge: '☀️ Drinking Today',
+                dailyCheckHeader: 'Daily Thermal & Ice Allocation:',
+                editGearLink: '⚙️ Configure Flasks & Ice',
+                tonightBadge: '🌙 Steep Tonight (For Tomorrow)',
+                btnConfirmBrew: "Confirm Tonight's Brew (Auto-Deduct Stock)",
+                forecastHeader: '5-Day Balanced Rotation Forecast',
+                forecastSub: 'Auto-adapts to pantry levels',
+                sec2Tag: 'Synergistic Phytochemistry',
+                sec2Title: 'Adaptive Infusion Formulas',
+                safetyGuardrailText: '<strong>Biochemical Guardrails:</strong> Total dry herbs auto-scale with your boiled water volume (<strong>0.6%–1.1% infusion</strong>); Stevia & Rosemary stay capped within safe daily thresholds.',
+                sec3Tag: 'Stock Management & Auto-Hide',
+                sec3Title: 'Botanical Pantry Stock',
+                btnRestockCore: 'Restock 9 Core Herbs',
+                btnExport: 'Export JSON',
+                btnImport: 'Import',
+                simTitle: '🧪 Quick Stock Depletion Simulator (Test Auto-Adaptation):',
+                simHint: '1-tap test for low/missing herbs',
+                simFull: '✅ 9 Core Ready',
+                simExpanded: '✨ All 16 Stocked',
+                simMissing2: '⚠️ Out: Stevia & Hibiscus',
+                simMissing4: '⚡ Only 5 Herbs Left',
+                simConflict2: '🔥 Only Mint & Ginger (Clash)',
+                simOnlyStevia: '🚫 Only Stevia Left',
+                sweetenerTitle: 'Zero-Calorie Sweeteners (Added in the morning after straining)',
+                sweetenerBadge: 'Zero-GI & Tooth-Friendly',
+                steviaDesc: 'GI = 0, zero calories. Best for balancing Hibiscus or Dried Orange tartness without raising insulin.',
+                tropicalDesc: 'Clean sucrose-like sweetness with zero bitter aftertaste; ideal for Butterfly Pea or Rosemary blends.',
+                sorbitolDesc: 'Low glycemic index (GI ≈ 9), adds cooling mouthfeel and gentle body. Cap under 15g/day to avoid osmotic laxative effect.',
+                sec4Tag: 'Evidence-Based Phytochemistry',
+                sec4Title: 'Bioactive Compounds & Pharmacology',
+                sec4Sub: 'Mechanisms of action and biochemical synergies for all 16 botanicals (9 core herbs + 7 clean expansion herbs) under 10-hour overnight extraction.',
+                gearBadge: 'Thermodynamics',
+                btnResetGear: 'Reset Default',
+                gearTitle: 'Flasks & Ice Configurator',
+                iceModeLabel: '🧊 Ice Mode:',
+                iceModeSteel: '316 Steel Cubes',
+                iceModeMelting: 'Melting Water Ice',
+                steelBoxesLabel: 'Steel Ice Boxes (8 cubes/box):',
+                teaFillRatioLabel: 'Home Tea Fill % (Before Shop Ice):',
+                meltingIceHint: '💡 <strong>Shop Ice Workflow:</strong> Fill flasks to ~60% concentrated tea at home, then top up to 100% with melting ice at the shop. Herb dosage automatically concentrates (+25%) so melted ice never dilutes flavor!',
+                flasksListTitle: '🥤 Active Flasks:',
+                btnAddFlask: 'Add Flask',
+                warmCupLabel: '☕ Warm Morning Cup (Home):',
+                flaskNamePlaceholder: 'Flask Name',
+                teaToPourLabel: 'Tea to pour',
+                shopIceTopupLabel: 'Top up at shop with ice',
+                cubesDropLabel: 'steel cubes',
+                totalBoilLabel: 'Boiled Water (22:00)',
+                steepDurationLabel: 'Steep: 10h (22:00–08:00)',
+                logBadge: 'Auto-Log',
+                logTitle: 'Brewing History',
+                btnClearLogs: 'Clear Logs',
+                storageNote: 'Data auto-saves to LocalStorage & Device Cookie.',
+                btnFactoryReset: 'Factory Reset',
+                todayShort: 'Today',
+                tomorrowShort: 'Tomorrow',
+                outOfStockLabel: 'Out of stock',
+                markOutLabel: 'Mark Out',
+                coreBadge: 'Core',
+                expansionBadge: 'Expansion',
+                remainingLabel: 'Remaining:',
+                setTonightBtn: 'Set Tonight',
+                mechLabel: 'Synergy:',
+                leftLabel: 'Left',
+                shortLabel: 'Short',
+                totalLabel: 'Total',
+                activeCompoundsLabel: 'Key Bioactives:',
+                scienceFocusLabel: 'Pharmacology:',
+                steepNoteLabel: '10h Steep Note:',
+                emptyStockTitle: 'Pantry Empty',
+                emptyStockDesc: 'Restock herbs in Pantry section to generate safe formulas.',
+                noLogsYet: 'No brews logged yet. Click <strong>"Confirm Tonight\'s Brew"</strong> above to auto-deduct stock and record your batch.'
+            },
+            vi: {
+                brandSub: 'Ủ Thảo Mộc Qua Đêm',
+                navSchedule: '📅 Lịch Pha',
+                navRecipes: '🧪 Công Thức',
+                navInventory: '📦 Kho Nguyên Liệu',
+                navScience: '🔬 Hoạt Chất',
+                navHistory: '📜 Lịch Sử & Bình',
+                syncedBadge: 'Đã lưu',
+                sec1Tag: 'Lịch trình nhiệt học 22h00 – 08h00',
+                sec1Title: 'Lịch Pha Chế Hôm Nay & Ngày Mai',
+                todayBadge: '☀️ Hôm nay đang uống',
+                dailyCheckHeader: 'Checklist phân bổ nhiệt & đá hôm nay:',
+                editGearLink: '⚙️ Tùy chỉnh Bình & Đá',
+                tonightBadge: '🌙 Tối nay ủ (Cho Ngày Mai)',
+                btnConfirmBrew: 'Xác nhận đã ủ mẻ tối nay (Trừ kho tự động)',
+                forecastHeader: 'Dự báo xoay vòng cân bằng 5 ngày tới',
+                forecastSub: 'Tự thích ứng theo tồn kho',
+                sec2Tag: 'Hóa sinh tương hỗ',
+                sec2Title: 'Công Thức Thích Ứng Tự Động',
+                safetyGuardrailText: '<strong>Ràng buộc An toàn Hóa sinh:</strong> Tổng thảo mộc tự co giãn theo lượng nước đun sôi (<strong>0.6%–1.1%</strong>); Cỏ ngọt & Hương thảo luôn khóa trần an toàn.',
+                sec3Tag: 'Quản lý tồn kho & Tự ẩn công thức',
+                sec3Title: 'Kho Nguyên Liệu Thảo Mộc',
+                btnRestockCore: 'Nạp 9 món cơ bản',
+                btnExport: 'Xuất JSON',
+                btnImport: 'Nhập file',
+                simTitle: '🧪 Mô phỏng nhanh các kịch bản thiếu nguyên liệu:',
+                simHint: 'Bấm thử 1 chạm',
+                simFull: '✅ Đủ 9 món cơ bản',
+                simExpanded: '✨ Đủ cả 16 món',
+                simMissing2: '⚠️ Hết Cỏ ngọt & Hibiscus',
+                simMissing4: '⚡ Chỉ còn 5 món',
+                simConflict2: '🔥 Chỉ còn Bạc hà & Gừng (Khắc)',
+                simOnlyStevia: '🚫 Chỉ còn Cỏ ngọt',
+                sweetenerTitle: 'Đường ăn kiêng bổ trợ (Thêm buổi sáng sau khi lọc bã)',
+                sweetenerBadge: 'Không tăng đường huyết (Zero-GI)',
+                steviaDesc: 'GI = 0, không calo. Dùng cân bằng vị chua của Hibiscus hoặc Cam lát mà không kích thích insulin.',
+                tropicalDesc: 'Vị ngọt thanh giống đường mía, không hậu đắng; rất hợp khi pha Hoa đậu biếc hoặc Hương thảo.',
+                sorbitolDesc: 'Chỉ số đường huyết thấp (GI ≈ 9), tạo độ sánh và vị ngọt mát. Không dùng quá 15g/ngày để tránh nhuận tràng.',
+                sec4Tag: 'Dược lý học thực vật',
+                sec4Title: 'Hoạt Chất & Cơ Chế Khoa Học',
+                sec4Sub: 'Phân tích dược tính chuyên sâu của toàn bộ 16 loại thảo mộc (9 món cơ bản + 7 món sạch mở rộng) khi ủ qua đêm 10 tiếng.',
+                gearBadge: 'Nhiệt động lực học',
+                btnResetGear: 'Mặc định',
+                gearTitle: 'Tùy Chỉnh Bình Đựng & Loại Đá',
+                iceModeLabel: '🧊 Chọn Loại Đá:',
+                iceModeSteel: 'Đá Inox Không Tan',
+                iceModeMelting: 'Nước Đá Tan (Ra Tiệm)',
+                steelBoxesLabel: 'Số hộp đá inox (8 viên/hộp):',
+                teaFillRatioLabel: 'Tỷ lệ rót trà ở nhà (Trước khi thêm đá):',
+                meltingIceHint: '💡 <strong>Quy trình Nước Đá Tan:</strong> Ở nhà rót trà cốt đến ~60% bình, sau đó ra tiệm đổ đầy đá viên tới nắp. Hệ thống tự tăng đậm đặc thảo mộc (+25%) để khi đá tan trà vẫn đậm vị!',
+                flasksListTitle: '🥤 Danh Sách Bình Đựng:',
+                btnAddFlask: 'Thêm bình',
+                warmCupLabel: '☕ Uống ấm buổi sáng tại nhà:',
+                flaskNamePlaceholder: 'Tên bình',
+                teaToPourLabel: 'Rót trà cốt',
+                shopIceTopupLabel: 'Ra tiệm thêm đá tới đầy',
+                cubesDropLabel: 'viên đá inox',
+                totalBoilLabel: 'Nước đun sôi (22h00)',
+                steepDurationLabel: 'Ủ: 10 tiếng (22h–8h)',
+                logBadge: 'Nhật ký tự động',
+                logTitle: 'Lịch Sử Pha Chế',
+                btnClearLogs: 'Xóa lịch sử',
+                storageNote: 'Dữ liệu tự lưu trên trình duyệt & Cookie thiết bị.',
+                btnFactoryReset: 'Khôi phục gốc',
+                todayShort: 'Hôm nay',
+                tomorrowShort: 'Ngày mai',
+                outOfStockLabel: 'Đã hết hàng',
+                markOutLabel: 'Đánh dấu hết',
+                coreBadge: 'Cơ bản',
+                expansionBadge: 'Mở rộng',
+                remainingLabel: 'Còn lại:',
+                setTonightBtn: 'Chọn tối nay',
+                mechLabel: 'Cơ chế:',
+                leftLabel: 'Còn',
+                shortLabel: 'Thiếu',
+                totalLabel: 'Tổng',
+                activeCompoundsLabel: 'Hoạt chất chính:',
+                scienceFocusLabel: 'Tác dụng:',
+                steepNoteLabel: 'Lưu ý ủ 10h:',
+                emptyStockTitle: 'Kho Đã Cạn Nguyên Liệu',
+                emptyStockDesc: 'Vui lòng nhập thêm gram trong mục Kho Nguyên Liệu để tạo công thức.',
+                noLogsYet: 'Chưa có lịch sử mẻ ủ nào. Nhấn <strong>"Xác nhận đã ủ mẻ tối nay"</strong> ở mục Lịch Pha để tự động trừ kho và ghi nhật ký.'
+            }
+        };
+
+        // 2. VECTOR SVG ARTWORK FOR ALL 16 BOTANICALS
+        const BOTANICAL_SVGS = {
+            hibiscus: `<svg viewBox="0 0 100 100" class="w-full h-full"><defs><radialGradient id="hibGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#881337"/><stop offset="60%" stop-color="#be123c"/><stop offset="100%" stop-color="#fb7185"/></radialGradient></defs><circle cx="50" cy="50" r="44" fill="#fff1f2"/><g transform="translate(50,50)"><path d="M0,-36 C15,-36 22,-18 10,-5 C25,-12 38,2 28,16 C18,28 5,18 0,8 C-5,18 -18,28 -28,16 C-38,2 -25,-12 -10,-5 C-22,-18 -15,-36 0,-36 Z" fill="url(#hibGrad)"/><circle cx="0" cy="0" r="7" fill="#4c0519"/><path d="M0,0 L12,-18" stroke="#fde047" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="-18" r="3" fill="#facc15"/><circle cx="15" cy="-14" r="2" fill="#facc15"/><circle cx="9" cy="-21" r="2" fill="#facc15"/></g></svg>`,
+            butterfly: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#eff6ff"/><g transform="translate(50,52)"><path d="M0,-8 C-22,-32 -38,-10 -24,12 C-16,24 -4,18 0,10 C4,18 16,24 24,12 C38,-10 22,-32 0,-8 Z" fill="#1d4ed8"/><path d="M0,-4 C-14,-20 -24,-6 -15,8 C-10,16 -2,12 0,6 C2,12 10,16 15,8 C24,-6 14,-20 0,-4 Z" fill="#3b82f6"/><ellipse cx="0" cy="2" rx="6" ry="10" fill="#fef08a"/><path d="M-6,-22 Q0,-32 6,-22" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round"/></g></svg>`,
+            rosemary: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#f0fdf4"/><g stroke-linecap="round"><path d="M25,78 Q50,50 76,22" fill="none" stroke="#78350f" stroke-width="3"/><path d="M35,67 L22,52 M35,67 L48,74 M44,57 L30,40 M44,57 L60,64 M53,47 L40,28 M53,47 L70,53 M62,37 L50,18 M62,37 L78,41 M70,28 L62,14 M70,28 L82,30" stroke="#15803d" stroke-width="3.2"/></g></svg>`,
+            orange: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fffbeb"/><circle cx="50" cy="50" r="34" fill="#ea580c"/><circle cx="50" cy="50" r="30" fill="#fef3c7"/><g fill="#f59e0b"><path d="M50,50 L50,23 A27,27 0 0,1 73,36 Z"/><path d="M50,50 L75,41 A27,27 0 0,1 71,67 Z"/><path d="M50,50 L67,71 A27,27 0 0,1 42,76 Z"/><path d="M50,50 L37,74 A27,27 0 0,1 24,53 Z"/><path d="M50,50 L24,47 A27,27 0 0,1 45,23 Z"/></g><circle cx="50" cy="50" r="4" fill="#fef3c7"/></svg>`,
+            jujube: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fef2f2"/><g transform="translate(50,50) rotate(-18)"><rect x="-26" y="-20" width="52" height="40" rx="20" fill="#991b1b"/><rect x="-21" y="-15" width="42" height="30" rx="15" fill="#fde68a"/><ellipse cx="0" cy="0" rx="9" ry="5" fill="#78350f"/></g></svg>`,
+            ginger: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fefce8"/><path d="M26,56 C22,42 34,32 46,36 C50,24 66,24 68,38 C78,40 80,56 68,62 C64,74 46,74 42,64 C32,68 28,62 26,56 Z" fill="#d97706"/><path d="M30,55 C27,44 36,36 46,39 C50,29 63,29 65,41 C73,42 75,55 65,60 C61,69 47,69 43,61 C35,64 32,59 30,55 Z" fill="#fde047"/><path d="M42,46 Q52,44 58,52 M38,54 Q48,56 54,52" fill="none" stroke="#ca8a04" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+            pandan: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#ecfdf5"/><g transform="translate(50,50)"><path d="M-28,24 Q-10,-10 26,-28 Q12,6 -22,28 Z" fill="#16a34a"/><path d="M-18,30 Q4,-4 32,-16 Q16,14 -12,32 Z" fill="#22c55e"/><path d="M-25,26 L24,-24" stroke="#bbf7d0" stroke-width="1.5"/></g></svg>`,
+            stevia: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#f7fee7"/><g transform="translate(50,52)"><path d="M0,26 L0,-22" stroke="#4d7c0f" stroke-width="2.5" stroke-linecap="round"/><path d="M0,10 C-18,12 -24,-2 -10,-8 C-4,-10 0,-2 0,10 Z" fill="#65a30d"/><path d="M0,4 C18,6 24,-8 10,-14 C4,-16 0,-8 0,4 Z" fill="#84cc16"/><path d="M0,-12 C-12,-24 0,-34 8,-22 C12,-16 4,-12 0,-12 Z" fill="#4d7c0f"/></g></svg>`,
+            mint: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#ecfeff"/><g transform="translate(50,50)"><ellipse cx="-10" cy="4" rx="16" ry="11" transform="rotate(-30 -10 4)" fill="#0d9488"/><ellipse cx="10" cy="-4" rx="16" ry="11" transform="rotate(-30 10 -4)" fill="#14b8a6"/><path d="M-20,14 L18,-14" stroke="#ccfbf1" stroke-width="2" stroke-linecap="round"/></g></svg>`,
+            chrysanthemum: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fefce8"/><g transform="translate(50,50)"><circle cx="0" cy="0" r="26" fill="#facc15"/><circle cx="0" cy="0" r="20" fill="#fde047"/><circle cx="0" cy="0" r="13" fill="#eab308"/><circle cx="0" cy="0" r="7" fill="#ca8a04"/></g></svg>`,
+            jasmine: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#f8fafc"/><g transform="translate(50,50)"><path d="M0,-28 C10,-28 12,-10 0,-4 C-12,-10 -10,-28 0,-28 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/><path d="M26,-8 C28,2 10,8 4,0 C8,-12 24,-16 26,-8 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/><path d="M16,22 C8,28 -4,14 2,4 C14,4 22,16 16,22 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/><path d="M-16,22 C-22,16 -14,4 -2,4 C4,14 -8,28 -16,22 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/><path d="M-26,-8 C-24,-16 -8,-12 -4,0 C-10,8 -28,2 -26,-8 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/><circle cx="0" cy="0" r="5" fill="#fef08a"/></g></svg>`,
+            cassia: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fdf8f6"/><g transform="translate(50,50)"><rect x="-22" y="-14" width="18" height="12" rx="4" transform="rotate(-25 -13 -8)" fill="#78350f"/><rect x="4" y="-18" width="18" height="12" rx="4" transform="rotate(20 13 -12)" fill="#92400e"/><rect x="-14" y="6" width="18" height="12" rx="4" transform="rotate(15 -5 12)" fill="#451a03"/><rect x="6" y="6" width="18" height="12" rx="4" transform="rotate(-15 15 12)" fill="#78350f"/></g></svg>`,
+            goji: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fff1f2"/><g transform="translate(50,50)"><ellipse cx="-12" cy="-8" rx="11" ry="6" transform="rotate(-30 -12 -8)" fill="#dc2626"/><ellipse cx="12" cy="-6" rx="11" ry="6" transform="rotate(25 12 -6)" fill="#b91c1c"/><ellipse cx="0" cy="12" rx="11" ry="6" transform="rotate(-10 0 12)" fill="#ef4444"/></g></svg>`,
+            chenpi: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fff7ed"/><g transform="translate(50,50)"><path d="M-24,-10 C-10,-28 18,-22 24,-4 C28,12 10,26 -8,22 C-22,18 -30,2 -24,-10 Z" fill="#9a3412"/><path d="M-16,-6 C-6,-18 12,-14 16,-2 C18,8 6,18 -6,14 C-14,12 -20,2 -16,-6 Z" fill="#c2410c"/></g></svg>`,
+            lemongrass: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#f7fee7"/><g transform="translate(50,50) rotate(-35)"><ellipse cx="-10" cy="-6" rx="14" ry="7" fill="#bef264" stroke="#65a30d" stroke-width="2"/><ellipse cx="8" cy="4" rx="14" ry="7" fill="#ecfccb" stroke="#65a30d" stroke-width="2"/><ellipse cx="-2" cy="14" rx="12" ry="6" fill="#d9f99d" stroke="#65a30d" stroke-width="2"/></g></svg>`,
+            cleistocalyx: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="44" fill="#fef3c7"/><g transform="translate(50,50)"><circle cx="-10" cy="-8" r="7" fill="#78350f"/><circle cx="10" cy="-6" r="7" fill="#92400e"/><circle cx="-4" cy="10" r="7" fill="#451a03"/><circle cx="12" cy="10" r="6" fill="#78350f"/></g></svg>`
+        };
+
+        // 3. DEFAULT INVENTORY DATA (9 CORE + 7 CLEAN EXPANSION HERBS AT 0G DEFAULT)
+        const DEFAULT_INGREDIENTS = [
+            {
+                id: 'hibiscus', isExpansion: false,
+                nameEn: 'Dried Red Hibiscus', nameVi: 'Hoa Hibiscus đỏ khô', latin: 'Hibiscus sabdariffa',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 20, maxSafeGrams: 10,
+                color: '#be123c', badgeBg: 'bg-rose-50 text-rose-800 border-rose-200',
+                compounds: 'Anthocyanins (Delphinidin-3-sambubioside), Hibiscus acid, Malic acid, Polyphenols',
+                benefitsEn: 'Inhibits ACE enzyme to support healthy blood pressure, lowers LDL oxidation, and provides deep ruby tartness.',
+                benefitsVi: 'Ức chế men chuyển ACE giúp hạ huyết áp nhẹ, giảm cholesterol xấu LDL và tạo vị chua thanh màu đỏ ruby.',
+                steepNoteEn: 'High acidity shifts Butterfly Pea blue into violet; pair with Dried Orange to stabilize anthocyanins.',
+                steepNoteVi: 'Tính axit cao làm đổi màu xanh đậu biếc sang tím; kết hợp Cam lát giúp bảo vệ anthocyanin suốt 10h.'
+            },
+            {
+                id: 'butterfly', isExpansion: false,
+                nameEn: 'Dried Butterfly Pea', nameVi: 'Hoa đậu biếc khô', latin: 'Clitoria ternatea',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 20, maxSafeGrams: 8,
+                color: '#1d4ed8', badgeBg: 'bg-blue-50 text-blue-800 border-blue-200',
+                compounds: 'Ternatins (polyacylated anthocyanins), Kaempferol, Quercetin, Cyclotides',
+                benefitsEn: 'Boosts brain acetylcholine (nootropic focus), supports retinal microcirculation, and slows post-meal glucose spikes.',
+                benefitsVi: 'Tăng Acetylcholine hỗ trợ trí nhớ, tăng lưu thông máu mao mạch mắt và làm chậm hấp thu đường.',
+                steepNoteEn: 'Yields vivid sapphire blue in neutral pH water; turns amethyst purple when lightly acidulated.',
+                steepNoteVi: 'Cho màu xanh sapphire rực rỡ trong nước trung tính; chuyển sang tím thạch anh khi gặp axit nhẹ.'
+            },
+            {
+                id: 'rosemary', isExpansion: false,
+                nameEn: 'Dried Rosemary Leaf', nameVi: 'Lá hương thảo khô', latin: 'Salvia rosmarinus',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 20, maxSafeGrams: 3.5,
+                color: '#15803d', badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                compounds: 'Rosmarinic acid, Carnosic acid, Carnosol, 1,8-Cineole, α-Pinene',
+                benefitsEn: '1,8-Cineole prevents acetylcholine breakdown for mental clarity; Carnosic acid protects neurons from oxidative stress.',
+                benefitsVi: '1,8-Cineole duy trì sự tỉnh táo tập trung; Axit carnosic bảo vệ tế bào thần kinh và hỗ trợ tiêu hóa.',
+                steepNoteEn: 'Capped at ≤ 3.5g per 2.2L overnight steep to avoid resinous bitterness.',
+                steepNoteVi: 'Khóa trần ≤ 3.5g cho 2.2L nước ủ qua đêm để tránh chiết xuất quá mức gây đắng nhựa thông.'
+            },
+            {
+                id: 'orange', isExpansion: false,
+                nameEn: 'Dried Orange Slices', nameVi: 'Cam thái lát sấy khô', latin: 'Citrus sinensis',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 25, maxSafeGrams: 12,
+                color: '#ea580c', badgeBg: 'bg-orange-50 text-orange-800 border-orange-200',
+                compounds: 'Ascorbic acid (Vitamin C), Hesperidin, Naringin, D-Limonene, Pectin',
+                benefitsEn: 'Bio-enhancer: Vitamin C protects polyphenols during 10h steeping; Hesperidin supports vascular endothelial health.',
+                benefitsVi: 'Chất cường hóa hấp thu: Vitamin C bảo vệ polyphenol suốt 10h ủ; Hesperidin bảo vệ thành mạch máu.',
+                steepNoteEn: 'Balances earthy roots and softens herbal astringency naturally.',
+                steepNoteVi: 'Cân bằng vị nồng của thảo mộc và làm dịu độ chát tự nhiên.'
+            },
+            {
+                id: 'jujube', isExpansion: false,
+                nameEn: 'Dried Red Jujube Slices', nameVi: 'Táo đỏ cắt lát khô', latin: 'Ziziphus jujuba',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 25, maxSafeGrams: 15,
+                color: '#991b1b', badgeBg: 'bg-red-50 text-red-800 border-red-200',
+                compounds: 'Jujube polysaccharides, Jujuboside A & B, Spinosin, Cyclic AMP (cAMP)',
+                benefitsEn: 'Modulates GABA/serotonin for calm focus without daytime drowsiness; high cAMP supports cellular energy.',
+                benefitsVi: 'Điều hòa GABA/serotonin giúp thư thái tinh thần mà không gây buồn ngủ; giàu cAMP phục hồi năng lượng.',
+                steepNoteEn: 'Releases natural fruit sugars slowly over 10 hours, acting as a natural sweet base.',
+                steepNoteVi: 'Giải phóng vị ngọt tự nhiên từ từ trong 10 tiếng, làm nền ngọt thanh cho cả bình.'
+            },
+            {
+                id: 'ginger', isExpansion: false,
+                nameEn: 'Dried Ginger Slices', nameVi: 'Gừng cắt lát sấy khô', latin: 'Zingiber officinale',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 15, maxSafeGrams: 6,
+                color: '#d97706', badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
+                compounds: '6-Shogaol (concentrated when dried), 6-Gingerol, Zingerone',
+                benefitsEn: 'Enhances gut mucosal absorption (bioavailability) of companion herbs, warms circulation, and soothes digestion.',
+                benefitsVi: 'Tăng sinh khả dụng giúp hấp thu tối đa hoạt chất thảo mộc đi kèm, làm ấm tuần hoàn và êm dạ dày.',
+                steepNoteEn: 'Do not combine with Peppermint in high doses (thermal clash).',
+                steepNoteVi: 'Không phối chung với Bạc hà liều cao (xung đột tính Hàn – Nhiệt).'
+            },
+            {
+                id: 'pandan', isExpansion: false,
+                nameEn: 'Dried Pandan Leaf', nameVi: 'Lá dứa khô (Lá nếp)', latin: 'Pandanus amaryllifolius',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 25, maxSafeGrams: 8,
+                color: '#16a34a', badgeBg: 'bg-green-50 text-green-800 border-green-200',
+                compounds: '2-Acetyl-1-pyrroline (2AP), Pandamarilactones, Flavonoids',
+                benefitsEn: '2AP aroma calms heart rate; leaf extracts gently inhibit intestinal alpha-glucosidase to support blood sugar.',
+                benefitsVi: 'Hương thơm 2AP giúp dịu nhịp tim; chiết xuất lá dứa hỗ trợ ổn định đường huyết sau ăn.',
+                steepNoteEn: 'Acts as an aromatic bridge that rounds out Rosemary and Roasted Cassia notes.',
+                steepNoteVi: 'Đóng vai trò cầu nối hương thơm làm mềm mùi nhựa thông của Hương thảo và Hạt muồng.'
+            },
+            {
+                id: 'stevia', isExpansion: false,
+                nameEn: 'Dried Stevia Leaf', nameVi: 'Cỏ ngọt lá khô', latin: 'Stevia rebaudiana',
+                defaultGrams: 100, currentGrams: 100, isOutOfStock: false, lowThreshold: 25, maxSafeGrams: 2.5,
+                color: '#65a30d', badgeBg: 'bg-lime-50 text-lime-800 border-lime-200',
+                compounds: 'Stevioside, Rebaudioside A (250x sweeter than sucrose, 0 kcal)',
+                benefitsEn: 'Zero glycemic index sweetener that provides gentle vasodilation without insulin spikes.',
+                benefitsVi: 'Tạo ngọt không calo (GI = 0), không gây tăng insulin và hỗ trợ giãn mạch nhẹ.',
+                steepNoteEn: 'Strictly capped ≤ 2.5g per 2.2L batch; excess causes metallic licorice aftertaste.',
+                steepNoteVi: 'Khóa trần nghiêm ngặt ≤ 2.5g cho 2.2L nước; dùng dư sẽ gây hậu vị ngọt gắt.'
+            },
+            {
+                id: 'mint', isExpansion: false,
+                nameEn: 'Rolled Peppermint Leaf', nameVi: 'Bạc hà cuộn khô', latin: 'Mentha piperita',
+                defaultGrams: 50, currentGrams: 50, isOutOfStock: false, lowThreshold: 10, maxSafeGrams: 3,
+                color: '#0d9488', badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
+                compounds: 'Menthol, Menthone, Rosmarinic acid, Eriocitrin',
+                benefitsEn: 'Activates TRPM8 cold receptors for instant mental refreshment and relaxes gastrointestinal smooth muscle.',
+                benefitsVi: 'Kích hoạt thụ thể lạnh TRPM8 tạo sảng khoái tức thì và chống co thắt cơ trơn tiêu hóa.',
+                steepNoteEn: '50g pouch balanced at 2–3g/brew so all pantry bags deplete evenly.',
+                steepNoteVi: 'Túi 50g được chia định lượng 2–3g/lần để hết cùng nhịp với các túi 100g.'
+            },
+            // 7 CLEAN EXPANSION HERBS (DEFAULT 0G / OUT OF STOCK UNTIL PURCHASED)
+            {
+                id: 'chrysanthemum', isExpansion: true,
+                nameEn: 'Golden Chrysanthemum', nameVi: 'Hoa cúc chi vàng', latin: 'Chrysanthemum indicum',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 20, maxSafeGrams: 8,
+                color: '#eab308', badgeBg: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                compounds: 'Luteolin, Apigenin, Bisabolol, Chlorogenic acid',
+                benefitsEn: 'Apigenin binds GABA receptors to reduce eye strain and mental tension; supports liver heat clearance.',
+                benefitsVi: 'Apigenin gắn thụ thể GABA giúp giảm mỏi mắt, thư giãn thần kinh và thanh nhiệt gan.',
+                steepNoteEn: 'Choose freeze-dried whole yellow buds (sulfur-free). Pairs wonderfully with Jujube & Goji.',
+                steepNoteVi: 'Chọn loại cúc chi sấy lạnh nguyên bông không xông lưu huỳnh. Rất hợp với Táo đỏ & Kỷ tử.'
+            },
+            {
+                id: 'jasmine', isExpansion: true,
+                nameEn: 'Dried Jasmine Buds', nameVi: 'Hoa nhài khô (Hoa lài)', latin: 'Jasminum sambac',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 15, maxSafeGrams: 4,
+                color: '#64748b', badgeBg: 'bg-slate-50 text-slate-800 border-slate-200',
+                compounds: 'Linalool, Benzyl acetate, Indole, Methyl jasmonate',
+                benefitsEn: 'Linalool promotes parasympathetic nervous relaxation and lowers stress-induced heart rate.',
+                benefitsVi: 'Linalool kích hoạt hệ thần kinh phó giao cảm giúp thư giãn sâu và ổn định nhịp tim.',
+                steepNoteEn: 'Use 2–3g with Butterfly Pea + Pandan for a floral emerald infusion.',
+                steepNoteVi: 'Chỉ cần 2–3g phối cùng Hoa đậu biếc + Lá dứa cho bình trà xanh ngọc hương nhài.'
+            },
+            {
+                id: 'cassia', isExpansion: true,
+                nameEn: 'Roasted Cassia Seeds', nameVi: 'Hạt muồng rang (Thảo quyết minh)', latin: 'Senna obtusifolia',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 25, maxSafeGrams: 12,
+                color: '#78350f', badgeBg: 'bg-amber-50 text-amber-900 border-amber-200',
+                compounds: 'Chrysophanol, Emodin, Obtusin, Aurantio-obtusin',
+                benefitsEn: 'Roasted coffee-like aroma (0 caffeine); supports lipid metabolism, eye clarity, and gentle motility.',
+                benefitsVi: 'Hương rang giống cà phê (0 caffeine); hỗ trợ hạ mỡ máu, sáng mắt và nhuận tràng nhẹ.',
+                steepNoteEn: 'Hard roasted seeds hold up remarkably well over a 10h steep with Pandan.',
+                steepNoteVi: 'Hạt rang chín cực kỳ bền vị khi ủ qua đêm 10 tiếng cùng Lá dứa.'
+            },
+            {
+                id: 'goji', isExpansion: true,
+                nameEn: 'Organic Red Goji Berry', nameVi: 'Kỷ tử đỏ hữu cơ', latin: 'Lycium barbarum',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 20, maxSafeGrams: 10,
+                color: '#dc2626', badgeBg: 'bg-red-50 text-red-800 border-red-200',
+                compounds: 'Zeaxanthin dipalmitate, Lycium barbarum polysaccharides (LBP), Betaine',
+                benefitsEn: 'Concentrates Zeaxanthin in the ocular macula to filter blue light; LBP boosts antioxidant enzymes.',
+                benefitsVi: 'Tập trung Zeaxanthin tại điểm vàng võng mạc chống ánh sáng xanh; LBP tăng cường miễn dịch.',
+                steepNoteEn: 'Select deep dark-red matte berries (avoid glossy sulfur-bleached berries).',
+                steepNoteVi: 'Chọn hạt màu đỏ sẫm tự nhiên, khô ráo (tránh loại đỏ tươi bóng loáng dễ tẩm lưu huỳnh).'
+            },
+            {
+                id: 'chenpi', isExpansion: true,
+                nameEn: 'Aged Tangerine Peel', nameVi: 'Trần bì (Vỏ quýt khô lâu năm)', latin: 'Citrus reticulata',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 20, maxSafeGrams: 5,
+                color: '#c2410c', badgeBg: 'bg-orange-50 text-orange-900 border-orange-200',
+                compounds: 'Nobiletin, Tangeretin (polymethoxyflavones), Hesperidin',
+                benefitsEn: 'Polymethoxyflavones support hepatic lipid clearance and relieve post-meal bloating.',
+                benefitsVi: 'Polymethoxyflavones hỗ trợ chuyển hóa mỡ gan và giảm đầy hơi khó tiêu.',
+                steepNoteEn: 'Provides a warm, complex aromatic depth distinct from fresh-tart orange slices.',
+                steepNoteVi: 'Tạo tầng hương trầm ấm khác biệt hẳn so với vị chua thanh của cam lát.'
+            },
+            {
+                id: 'lemongrass', isExpansion: true,
+                nameEn: 'Dried Lemongrass Slices', nameVi: 'Sả khô thái lát', latin: 'Cymbopogon citratus',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 25, maxSafeGrams: 8,
+                color: '#4d7c0f', badgeBg: 'bg-lime-50 text-lime-900 border-lime-200',
+                compounds: 'Citral (Geranial & Neral), Myrcene, Luteolin',
+                benefitsEn: 'Citral offers antimicrobial and mild diuretic support; naturally pest-free clean crop.',
+                benefitsVi: 'Citral kháng khuẩn, lợi tiểu nhẹ giải độc; cây sả tự nhiên không cần thuốc trừ sâu.',
+                steepNoteEn: 'Pairs cleanly with Ginger + Orange or Hibiscus + Mint for a spa-grade infusion.',
+                steepNoteVi: 'Phối hợp hoàn hảo với Gừng + Cam hoặc Hibiscus + Bạc hà như trà detox spa.'
+            },
+            {
+                id: 'cleistocalyx', isExpansion: true,
+                nameEn: 'Dried Voi Flower Buds', nameVi: 'Nụ vối khô', latin: 'Cleistocalyx operculatus',
+                defaultGrams: 100, currentGrams: 0, isOutOfStock: true, lowThreshold: 25, maxSafeGrams: 8,
+                color: '#92400e', badgeBg: 'bg-amber-50 text-amber-900 border-amber-200',
+                compounds: '2′,4′-Dihydroxy-6′-methoxy-3′,5′-dimethylchalcone (DMC), Tannins, Beta-sitosterol',
+                benefitsEn: 'DMC chalcone inhibits alpha-glucosidase to blunt postprandial blood glucose and support liver health.',
+                benefitsVi: 'Hoạt chất DMC ức chế alpha-glucosidase giúp ổn định đường huyết sau ăn và bảo vệ gan.',
+                steepNoteEn: 'Brew at 4–6g with Stevia or Jujube to balance its pleasant amber astringency.',
+                steepNoteVi: 'Dùng 4–6g phối cùng Cỏ ngọt hoặc Táo đỏ để cân bằng vị chát dịu màu hổ phách.'
+            }
+        ];
+
+        // 4. BASE FORMULAS (5 CORE + 4 EXPANSION FORMULAS)
+        const BASE_RECIPES = [
+            {
+                id: 'rec_1', code: 'CT-01',
+                nameEn: 'Ruby Citrus Mint', nameVi: 'Ruby Cam Bạc Hà',
+                tagEn: 'Antioxidant & Refresh', tagVi: 'Thanh lọc & Sảng khoái',
+                colorTheme: '#be123c', bgBadge: 'bg-rose-50 text-rose-800 border-rose-200',
+                ingredients: [
+                    { id: 'hibiscus', grams: 6, visualEn: '5–6 petals', visualVi: '5–6 cánh' },
+                    { id: 'orange', grams: 8, visualEn: '3 slices', visualVi: '3 lát cam' },
+                    { id: 'stevia', grams: 2, visualEn: '1 small pinch', visualVi: '1 nhúm nhỏ' },
+                    { id: 'mint', grams: 2.5, visualEn: '1 tbsp', visualVi: '1 muỗng canh' }
+                ],
+                mechanismEn: 'Vitamin C from Orange stabilizes Hibiscus anthocyanins over 10h; Menthol activates TRPM8 cooling receptors.',
+                mechanismVi: 'Vitamin C từ Cam bảo vệ anthocyanin của Hibiscus suốt 10h ủ; Menthol kích hoạt thụ thể lạnh sảng khoái.'
+            },
+            {
+                id: 'rec_2', code: 'CT-02',
+                nameEn: 'Sapphire Focus & Eye', nameVi: 'Sapphire Tập Trung',
+                tagEn: 'Nootropic & Vision', tagVi: 'Trí não & Thị lực',
+                colorTheme: '#1d4ed8', bgBadge: 'bg-blue-50 text-blue-800 border-blue-200',
+                ingredients: [
+                    { id: 'butterfly', grams: 6, visualEn: '22–25 blooms', visualVi: '22–25 bông' },
+                    { id: 'rosemary', grams: 3, visualEn: '1 tbsp', visualVi: '1 muỗng canh' },
+                    { id: 'pandan', grams: 6, visualEn: '4 leaf cuts', visualVi: '4 đoạn lá' },
+                    { id: 'stevia', grams: 2, visualEn: '1 small pinch', visualVi: '1 nhúm nhỏ' }
+                ],
+                mechanismEn: 'Ternatins + 1,8-Cineole elevate brain acetylcholine for sharp memory; Pandan 2AP softens rosemary resin.',
+                mechanismVi: 'Ternatins + 1,8-Cineole tăng cường acetylcholine não bộ; hương 2AP của Lá dứa làm mềm mùi hương thảo.'
+            },
+            {
+                id: 'rec_3', code: 'CT-03',
+                nameEn: 'Golden Jujube Ginger', nameVi: 'Táo Đỏ Gừng Ấm',
+                tagEn: 'Immunity & Bio-Enhance', tagVi: 'Đề kháng & Dẫn thuốc',
+                colorTheme: '#d97706', bgBadge: 'bg-amber-50 text-amber-800 border-amber-200',
+                ingredients: [
+                    { id: 'jujube', grams: 10, visualEn: '4–5 slices', visualVi: '4–5 lát dày' },
+                    { id: 'ginger', grams: 4, visualEn: '3 thin slices', visualVi: '3 lát mỏng' },
+                    { id: 'orange', grams: 6, visualEn: '2 slices', visualVi: '2 lát cam' },
+                    { id: 'pandan', grams: 4, visualEn: '2–3 cuts', visualVi: '2–3 đoạn lá' }
+                ],
+                mechanismEn: '6-Shogaol boosts gut microcirculation to maximize uptake of Jujube polysaccharides and cAMP.',
+                mechanismVi: '6-Shogaol tăng tuần hoàn vi mạch ruột giúp hấp thu trọn vẹn polysaccharides và cAMP từ Táo đỏ.'
+            },
+            {
+                id: 'rec_4', code: 'CT-04',
+                nameEn: 'Amethyst Digest', nameVi: 'Thạch Anh Tím Tiêu Hóa',
+                tagEn: 'pH Shift & Gut Relief', tagVi: 'Đổi màu & Tiêu hóa',
+                colorTheme: '#7e22ce', bgBadge: 'bg-purple-50 text-purple-800 border-purple-200',
+                ingredients: [
+                    { id: 'butterfly', grams: 5, visualEn: '18–20 blooms', visualVi: '18–20 bông' },
+                    { id: 'hibiscus', grams: 2, visualEn: '2 small petals', visualVi: '2 cánh nhỏ' },
+                    { id: 'mint', grams: 2.5, visualEn: '1 tbsp', visualVi: '1 muỗng canh' },
+                    { id: 'stevia', grams: 2, visualEn: '1 small pinch', visualVi: '1 nhúm nhỏ' }
+                ],
+                mechanismEn: 'Trace Hibiscus acid shifts Butterfly Pea blue into amethyst violet while Peppermint relaxes gut smooth muscle.',
+                mechanismVi: 'Lượng nhỏ axit Hibiscus chuyển xanh đậu biếc sang tím thạch anh; Bạc hà giảm đầy hơi co thắt.'
+            },
+            {
+                id: 'rec_5', code: 'CT-05',
+                nameEn: 'Royal Zen Recovery', nameVi: 'Hoàng Gia Thư Giãn',
+                tagEn: 'Calm & Sustained', tagVi: 'Thư thái & Bền vị',
+                colorTheme: '#15803d', bgBadge: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                ingredients: [
+                    { id: 'jujube', grams: 8, visualEn: '4 slices', visualVi: '4 lát' },
+                    { id: 'pandan', grams: 6, visualEn: '4 leaf cuts', visualVi: '4 đoạn lá' },
+                    { id: 'rosemary', grams: 2.5, visualEn: '2 tsp', visualVi: '2 muỗng cà phê' },
+                    { id: 'ginger', grams: 2.5, visualEn: '2 thin slices', visualVi: '2 lát mỏng' }
+                ],
+                mechanismEn: 'Jujubosides & Spinosin soothe nervous tension while trace Ginger keeps afternoon flavor crisp.',
+                mechanismVi: 'Jujubosides & Spinosin làm dịu căng thẳng thần kinh; chút Gừng giữ hậu vị thanh tao tới chiều.'
+            },
+            // EXPANSION FORMULAS (UNLOCK AUTOMATICALLY WHEN EXPANSION HERBS ARE STOCKED)
+            {
+                id: 'rec_exp_1', code: 'EXT-01',
+                nameEn: 'Ocular Amber Nectar', nameVi: 'Cúc Chi Kỷ Tử Sáng Mắt',
+                tagEn: 'Macular & Liver Care', tagVi: 'Bảo vệ mắt & Mát gan',
+                colorTheme: '#eab308', bgBadge: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                ingredients: [
+                    { id: 'chrysanthemum', grams: 5, visualEn: '12–15 buds', visualVi: '12–15 bông' },
+                    { id: 'goji', grams: 7, visualEn: '1 tbsp', visualVi: '1 muỗng canh' },
+                    { id: 'jujube', grams: 8, visualEn: '4 slices', visualVi: '4 lát' }
+                ],
+                mechanismEn: 'Goji Zeaxanthin + Chrysanthemum Luteolin protect the macula from blue light; Jujube adds natural sweetness.',
+                mechanismVi: 'Zeaxanthin từ Kỷ tử + Luteolin từ Cúc chi bảo vệ điểm vàng mắt; Táo đỏ tạo vị ngọt thanh tự nhiên.'
+            },
+            {
+                id: 'rec_exp_2', code: 'EXT-02',
+                nameEn: 'Jade Jasmine Serenity', nameVi: 'Lục Bảo Hoa Nhài',
+                tagEn: 'Parasympathetic Calm', tagVi: 'Thư giãn thần kinh',
+                colorTheme: '#0284c7', bgBadge: 'bg-sky-50 text-sky-800 border-sky-200',
+                ingredients: [
+                    { id: 'butterfly', grams: 5, visualEn: '18 blooms', visualVi: '18 bông' },
+                    { id: 'jasmine', grams: 2.5, visualEn: '1 tbsp', visualVi: '1 muỗng canh' },
+                    { id: 'pandan', grams: 5, visualEn: '3 leaf cuts', visualVi: '3 đoạn lá' },
+                    { id: 'stevia', grams: 1.5, visualEn: 'tiny pinch', visualVi: 'nhúm nhỏ' }
+                ],
+                mechanismEn: 'Jasmine Linalool + Pandan 2AP lower sympathetic stress while Ternatins nourish ocular capillaries.',
+                mechanismVi: 'Linalool hoa nhài + 2AP lá dứa giải tỏa stress sâu; Ternatins nuôi dưỡng mao mạch mắt.'
+            },
+            {
+                id: 'rec_exp_3', code: 'EXT-03',
+                nameEn: 'Roasted Cassia Latte', nameVi: 'Hạt Muồng Rang Lá Dứa',
+                tagEn: '0-Caffeine Roast', tagVi: 'Vị rang 0 Caffeine',
+                colorTheme: '#78350f', bgBadge: 'bg-amber-50 text-amber-900 border-amber-200',
+                ingredients: [
+                    { id: 'cassia', grams: 10, visualEn: '1.5 tbsp', visualVi: '1.5 muỗng canh' },
+                    { id: 'pandan', grams: 6, visualEn: '4 leaf cuts', visualVi: '4 đoạn lá' },
+                    { id: 'stevia', grams: 2, visualEn: '1 small pinch', visualVi: '1 nhúm nhỏ' }
+                ],
+                mechanismEn: 'Roasted Cassia delivers a rich coffee-like aroma without caffeine while Chrysophanol supports lipid balance.',
+                mechanismVi: 'Hạt muồng rang cho hương thơm như cà phê sữa mà 0 caffeine; Chrysophanol hỗ trợ mỡ máu.'
+            },
+            {
+                id: 'rec_exp_4', code: 'EXT-04',
+                nameEn: 'Spa Citrus Lemongrass', nameVi: 'Sả Trần Bì Thanh Lọc',
+                tagEn: 'Metabolic Detox', tagVi: 'Tiêu hóa & Giải độc',
+                colorTheme: '#65a30d', bgBadge: 'bg-lime-50 text-lime-900 border-lime-200',
+                ingredients: [
+                    { id: 'lemongrass', grams: 6, visualEn: '1.5 tbsp', visualVi: '1.5 muỗng canh' },
+                    { id: 'chenpi', grams: 3, visualEn: '2 peel strips', visualVi: '2 mảnh vỏ' },
+                    { id: 'ginger', grams: 3, visualEn: '2 thin slices', visualVi: '2 lát mỏng' },
+                    { id: 'jujube', grams: 8, visualEn: '4 slices', visualVi: '4 lát' }
+                ],
+                mechanismEn: 'Lemongrass Citral + Aged Tangerine Nobiletin relieve bloating and support gentle hepatic clearance.',
+                mechanismVi: 'Citral trong Sả + Nobiletin trong Trần bì giảm đầy hơi và hỗ trợ thanh lọc gan nhẹ nhàng.'
+            }
+        ];
+
+        // 5. DEFAULT GEAR & THERMODYNAMICS CONFIG
+        const DEFAULT_GEAR = {
+            iceMode: 'steel', // 'steel' | 'melting'
+            steelBoxes: 3, // 8 cubes per box (2.7cm^3 = 19.683ml/cube)
+            meltingTeaRatio: 60, // % of flask filled with tea at home before topping up with melting ice at shop
+            warmCupMl: 200,
+            flasks: [
+                { id: 'f1', name: 'Flask 1 (AM)', nameVi: 'Bình 1 (Sáng)', capacityMl: 800 },
+                { id: 'f2', name: 'Flask 2 (PM)', nameVi: 'Bình 2 (Chiều)', capacityMl: 1200 }
+            ]
+        };
+
+        const STORAGE_KEY = 'herbal_brew_tracker_v5_clean';
+        let appState = {
+            lang: 'en',
+            gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
+            ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
+            schedule: {
+                todayRecipeId: 'rec_1',
+                tomorrowRecipeId: 'rec_2',
+                lastUpdatedDate: '',
+                dailyChecks: { date: '', flasks: {} }
+            },
+            history: []
+        };
+
+        let currentAdaptivePlan = {
+            level: 0,
+            levelTitle: '',
+            levelColor: '',
+            explanation: '',
+            recipes: []
+        };
+
+        // Helper Localization Getters
+        function t(key) {
+            return (I18N[appState.lang] && I18N[appState.lang][key]) || I18N.en[key] || key;
+        }
+        function getIngName(ing) {
+            if (!ing) return '';
+            return appState.lang === 'vi' ? ing.nameVi : ing.nameEn;
+        }
+        function getRecField(rec, baseField) {
+            const suffix = appState.lang === 'vi' ? 'Vi' : 'En';
+            return rec[`${baseField}${suffix}`] || rec[`${baseField}En`] || rec[baseField] || '';
+        }
+
+        // 6. THERMODYNAMICS ENGINE (VESSELS + STEEL/MELTING ICE)
+        function computeGearThermodynamics() {
+            const g = appState.gear || DEFAULT_GEAR;
+            const CUBE_VOL_ML = 19.683;
+            const totalCubesAvailable = (g.steelBoxes || 3) * 8;
+            const totalCapacity = g.flasks.reduce((s, f) => s + (Number(f.capacityMl) || 0), 0);
+
+            let totalTeaForFlasks = 0;
+            let totalCubesUsed = 0;
+
+            const flaskPlans = g.flasks.map(f => {
+                const cap = Math.max(100, Number(f.capacityMl) || 500);
+                if (g.iceMode === 'steel') {
+                    const idealCubes = Math.max(1, Math.round((cap * 0.10) / CUBE_VOL_ML));
+                    const shareCap = totalCapacity > 0 ? Math.max(1, Math.floor((cap / totalCapacity) * totalCubesAvailable)) : idealCubes;
+                    const cubes = Math.min(idealCubes, shareCap);
+                    const iceVol = Math.round(cubes * CUBE_VOL_ML);
+                    const teaMl = Math.max(50, cap - iceVol);
+                    totalTeaForFlasks += teaMl;
+                    totalCubesUsed += cubes;
+                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes };
+                } else {
+                    const ratio = Math.min(85, Math.max(40, Number(g.meltingTeaRatio) || 60)) / 100;
+                    const teaMl = Math.round((cap * ratio) / 10) * 10;
+                    const iceVol = cap - teaMl;
+                    totalTeaForFlasks += teaMl;
+                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes: 0 };
+                }
+            });
+
+            const warmCup = Math.max(0, Number(g.warmCupMl) || 0);
+            const netTeaNeeded = totalTeaForFlasks + warmCup;
+            const absorptionBuffer = Math.max(150, Math.round((netTeaNeeded * 0.10) / 50) * 50);
+            const boiledWaterMl = netTeaNeeded + absorptionBuffer;
+
+            const volumeRatio = boiledWaterMl / 2200;
+            const concentrationBoost = g.iceMode === 'melting' ? 1.25 : 1.0;
+            const herbScaleFactor = volumeRatio * concentrationBoost;
+
+            return {
+                iceMode: g.iceMode,
+                steelBoxes: g.steelBoxes,
+                totalCubesAvailable,
+                totalCubesUsed,
+                meltingTeaRatio: g.meltingTeaRatio,
+                warmCupMl: warmCup,
+                totalCapacity,
+                totalTeaForFlasks,
+                absorptionBuffer,
+                boiledWaterMl,
+                herbScaleFactor,
+                flaskPlans
+            };
+        }
+
+        function scaleRecipeGrams(recipe, gearPlan) {
+            const scale = gearPlan.herbScaleFactor;
+            return recipe.ingredients.map(req => {
+                const inv = appState.ingredients.find(i => i.id === req.id);
+                const maxSafe = inv ? inv.maxSafeGrams * Math.max(1, gearPlan.boiledWaterMl / 2200) : req.grams * scale;
+                let scaled = Math.round(req.grams * scale * 2) / 2;
+                scaled = Math.max(1, Math.min(Math.round(maxSafe * 2) / 2, scaled));
+                return { ...req, grams: scaled };
+            });
+        }
+
+        // 7. BIOCHEMICAL COMPATIBILITY & ADAPTIVE FORMULA ENGINE
+        function checkBiochemicalCompatibility(ingsList) {
+            const ids = ingsList.map(x => x.id);
+            const getG = (id) => {
+                const f = ingsList.find(x => x.id === id);
+                return f ? f.grams : 0;
+            };
+            // Rule 1: Hibiscus + Butterfly Pea (only allow micro-acid pH shift <= 2.5g Hibiscus)
+            if (ids.includes('hibiscus') && ids.includes('butterfly') && getG('hibiscus') > 2.5) return false;
+            // Rule 2: Rosemary + Peppermint clash (camphor + menthol overload)
+            if (ids.includes('rosemary') && ids.includes('mint')) return false;
+            // Rule 3: Peppermint + Ginger thermal clash
+            if (ids.includes('mint') && ids.includes('ginger')) return false;
+            // Rule 4: Stevia cannot be brewed alone
+            if (ids.length === 1 && ids[0] === 'stevia') return false;
+            return true;
+        }
+
+        function isStockEnoughForRecipe(recipe) {
+            const gearPlan = computeGearThermodynamics();
+            const scaledIngs = scaleRecipeGrams(recipe, gearPlan);
+            return scaledIngs.every(req => {
+                const inv = appState.ingredients.find(i => i.id === req.id);
+                return inv && !inv.isOutOfStock && inv.currentGrams >= req.grams;
+            });
+        }
+
+        function computeAdaptiveEngine() {
+            const gearPlan = computeGearThermodynamics();
+            const available = appState.ingredients.filter(i => !i.isOutOfStock && i.currentGrams >= 1.0);
+            const availCount = available.length;
+            const isVi = appState.lang === 'vi';
+
+            const coreAvailableCount = available.filter(i => !i.isExpansion).length;
+            const coreMissingCount = 9 - coreAvailableCount;
+            const validBaseRecipes = BASE_RECIPES.filter(isStockEnoughForRecipe);
+
+            let level = 0;
+            let levelTitle = '';
+            let levelColor = '';
+            let explanation = '';
+            let generatedRecipes = [];
+
+            if (availCount === 0) {
+                level = 5;
+                levelTitle = isVi ? 'Cấp độ 5: Kho Đã Cạn Hoàn Toàn (0/16 Nguyên Liệu)' : 'Level 5: Pantry Completely Depleted (0/16 Herbs)';
+                levelColor = 'bg-red-50 border-red-300 text-red-900';
+                explanation = isVi ? 'Tất cả nguyên liệu đều đã hết. Vui lòng nhập thêm gram ở mục Kho Nguyên Liệu.' : 'All botanicals are out of stock. Restock herbs in the Pantry section below.';
+                generatedRecipes = [];
+            } else if (coreMissingCount === 0 && validBaseRecipes.length >= 5) {
+                level = 0;
+                const extraCount = availCount - 9;
+                if (extraCount > 0) {
+                    levelTitle = isVi 
+                        ? `Cấp độ 0+: Kho Mở Rộng (${availCount}/16 Nguyên Liệu • ${validBaseRecipes.length} Công Thức)`
+                        : `Level 0+: Expanded Pantry (${availCount}/16 Herbs • ${validBaseRecipes.length} Formulas Unlocked)`;
+                    explanation = isVi
+                        ? `Bạn đã bổ sung thêm ${extraCount} nguyên liệu mới vào kho! Định lượng đã tự điều chỉnh theo ${gearPlan.boiledWaterMl}ml nước sôi.`
+                        : `You stocked ${extraCount} expansion herbs! Gram ratios are auto-scaled for ${gearPlan.boiledWaterMl}ml boiled water.`;
+                } else {
+                    levelTitle = isVi
+                        ? `Cấp độ 0: Kho Cơ Bản Đầy Đủ (9/9 Sẵn Sàng • ${gearPlan.boiledWaterMl}ml Nước)`
+                        : `Level 0: Core Pantry Ready (9/9 Stocked • ${gearPlan.boiledWaterMl}ml Water)`;
+                    explanation = isVi
+                        ? `9 nguyên liệu sẵn có vận hành 5 công thức chuẩn (${gearPlan.flaskPlans.length} bình, ${gearPlan.iceMode === 'steel' ? 'đá inox' : 'nước đá tan'}). Nhập gram cho 7 món mở rộng để mở công thức mới.`
+                        : `All 9 core herbs ready (${gearPlan.flaskPlans.length} flask(s), ${gearPlan.iceMode === 'steel' ? 'steel cubes' : 'melting shop ice'}). Enter grams on expansion herbs to unlock new blends.`;
+                }
+                levelColor = 'bg-botanical-50 border-botanical-300 text-botanical-900';
+                generatedRecipes = validBaseRecipes.map(r => ({
+                    ...r,
+                    ingredients: scaleRecipeGrams(r, gearPlan),
+                    isAdapted: Boolean(r.id.startsWith('rec_exp_')) || Math.abs(gearPlan.herbScaleFactor - 1) > 0.08,
+                    adaptNote: r.id.startsWith('rec_exp_') 
+                        ? (isVi ? `Công thức mở rộng (${gearPlan.boiledWaterMl}ml)` : `Expansion formula (${gearPlan.boiledWaterMl}ml)`)
+                        : (Math.abs(gearPlan.herbScaleFactor - 1) > 0.08 
+                            ? (isVi ? `Tự chỉnh định lượng cho ${gearPlan.boiledWaterMl}ml (${gearPlan.iceMode === 'melting' ? 'cốt đậm +25%' : 'chuẩn'})` : `Scaled for ${gearPlan.boiledWaterMl}ml (${gearPlan.iceMode === 'melting' ? '+25% ice concentrate' : 'standard'})`)
+                            : (isVi ? 'Công thức chuẩn cân bằng' : 'Balanced baseline formula'))
+                }));
+            } else if (coreMissingCount <= 2 && availCount >= 4) {
+                level = 1;
+                levelTitle = isVi
+                    ? `Cấp độ 1–2: Thiếu ${coreMissingCount} Món Cơ Bản (${availCount}/16 Sẵn Sàng)`
+                    : `Level 1–2: Missing ${coreMissingCount} Core Herb(s) (${availCount}/16 Ready)`;
+                levelColor = 'bg-amber-50 border-amber-300 text-amber-900';
+                explanation = isVi
+                    ? 'Hệ thống tự động giữ các công thức còn đủ đồ và thay thế thông minh các vị bị thiếu (tự tăng Táo đỏ hoặc nhắc bổ sung đường ăn kiêng buổi sáng).'
+                    : 'Retaining intact recipes and substituting missing herbs by functional group (boosting Jujube or flagging morning zero-GI sweeteners).';
+
+                const seenSignatures = new Set();
+                BASE_RECIPES.forEach(base => {
+                    if (isStockEnoughForRecipe(base)) {
+                        const scaledBase = { ...base, ingredients: scaleRecipeGrams(base, gearPlan) };
+                        const sig = scaledBase.ingredients.map(x => `${x.id}:${x.grams}`).sort().join('|');
+                        if (!seenSignatures.has(sig)) {
+                            seenSignatures.add(sig);
+                            generatedRecipes.push({ ...scaledBase, isAdapted: false, adaptNote: isVi ? 'Giữ nguyên chuẩn' : 'Standard formula' });
+                        }
+                    } else if (!base.id.startsWith('rec_exp_')) {
+                        const adapted = adaptRecipeWithSubstitutions(base, available);
+                        if (adapted) {
+                            const sig = adapted.ingredients.map(x => `${x.id}:${x.grams}`).sort().join('|');
+                            if (!seenSignatures.has(sig)) {
+                                seenSignatures.add(sig);
+                                generatedRecipes.push(adapted);
+                            }
+                        }
+                    }
+                });
+                if (generatedRecipes.length === 0) {
+                    generatedRecipes = generateDynamicCombinations(available, 3);
+                }
+            } else if (availCount >= 4) {
+                level = 3;
+                levelTitle = isVi
+                    ? `Cấp độ 3–4: Kho Thu Gọn (${availCount}/16 Nguyên Liệu)`
+                    : `Level 3–4: Auto-Mixer Active (${availCount}/16 Herbs Left)`;
+                levelColor = 'bg-orange-50 border-orange-300 text-orange-900';
+                explanation = isVi
+                    ? 'Bộ máy Auto-Mixer tự động ghép tổ hợp tương hợp từ các nguyên liệu còn lại, loại bỏ cặp xung khắc và cân chỉnh định lượng.'
+                    : 'Auto-Mixer synthesized compatible 3–4 herb blends from remaining stock while filtering out biochemical clashes.';
+
+                const validDirect = BASE_RECIPES.filter(isStockEnoughForRecipe).map(r => ({
+                    ...r,
+                    ingredients: scaleRecipeGrams(r, gearPlan),
+                    isAdapted: false,
+                    adaptNote: isVi ? 'Đủ nguyên liệu từ kho' : 'Available from current stock'
+                }));
+                const dynamicOnes = generateDynamicCombinations(available, 4);
+                generatedRecipes = [...validDirect, ...dynamicOnes].slice(0, 6);
+            } else {
+                level = 5;
+                levelTitle = isVi
+                    ? `Cấp độ 5: Sắp Cạn Kho (Chỉ Còn ${availCount} Món)`
+                    : `Level 5: Critical Low Stock (${availCount} Herb(s) Left)`;
+                levelColor = 'bg-rose-50 border-rose-300 text-rose-900';
+                explanation = isVi
+                    ? 'Tự động chuyển sang chế độ Đơn phương (Single-Origin) hoặc ghép đôi an toàn. Các cặp xung khắc như Bạc hà + Gừng đã được tách riêng.'
+                    : 'Switched to Single-Origin or safe dual-herb infusions. Conflicting pairs (such as Mint + Ginger) are automatically separated.';
+                generatedRecipes = generateLastResortRecipes(available);
+            }
+
+            currentAdaptivePlan = { level, levelTitle, levelColor, explanation, recipes: generatedRecipes };
+        }
+
+        function adaptRecipeWithSubstitutions(baseRecipe, available) {
+            const isVi = appState.lang === 'vi';
+            const gearPlan = computeGearThermodynamics();
+            const scale = gearPlan.herbScaleFactor;
+            let newIngs = [];
+            let notes = [];
+
+            for (const req of baseRecipe.ingredients) {
+                const inv = available.find(a => a.id === req.id);
+                const scaledReq = Math.max(1, Math.round(req.grams * scale * 2) / 2);
+                if (inv && inv.currentGrams >= scaledReq) {
+                    newIngs.push({ ...req, grams: scaledReq });
+                } else {
+                    const sub = findBestSubstitute(req.id, available, newIngs.map(x => x.id));
+                    if (sub) {
+                        newIngs.push(sub.item);
+                        notes.push(sub.note);
+                    } else if (req.id === 'stevia') {
+                        notes.push(isVi ? 'Hết cỏ ngọt → thêm đường ăn kiêng buổi sáng' : 'No Stevia → add morning zero-GI sweetener');
+                    } else {
+                        return null;
+                    }
+                }
+            }
+
+            if (newIngs.length < 2) return null;
+            normalizeQuantities(newIngs, available);
+            if (!checkBiochemicalCompatibility(newIngs)) return null;
+
+            return {
+                ...baseRecipe,
+                id: `${baseRecipe.id}_adapted`,
+                code: `${baseRecipe.code}*`,
+                ingredients: newIngs,
+                isAdapted: true,
+                adaptNote: notes.length > 0 ? notes.join(' • ') : (isVi ? 'Đã điều chỉnh định lượng' : 'Dosage adjusted')
+            };
+        }
+
+        function findBestSubstitute(missingId, available, alreadyUsedIds) {
+            const isVi = appState.lang === 'vi';
+            const priorityMap = {
+                stevia: ['jujube', 'goji', 'pandan'],
+                hibiscus: ['orange', 'lemongrass'],
+                butterfly: ['chrysanthemum', 'jasmine', 'pandan'],
+                rosemary: ['pandan', 'jasmine', 'chenpi'],
+                orange: ['hibiscus', 'lemongrass', 'chenpi'],
+                jujube: ['goji', 'stevia', 'pandan'],
+                ginger: ['chenpi', 'lemongrass', 'rosemary'],
+                pandan: ['jasmine', 'rosemary', 'jujube'],
+                mint: ['lemongrass', 'pandan', 'orange']
+            };
+
+            const candidates = priorityMap[missingId] || [];
+            for (const candId of candidates) {
+                if (alreadyUsedIds.includes(candId)) continue;
+                const inv = available.find(a => a.id === candId && a.currentGrams >= 3);
+                if (inv) {
+                    const dose = Math.min(inv.currentGrams, Math.min(inv.maxSafeGrams, candId === 'stevia' ? 2 : 5));
+                    const missingObj = appState.ingredients.find(i => i.id === missingId);
+                    return {
+                        item: { id: candId, grams: dose, visualEn: 'auto-sub', visualVi: 'thay thế' },
+                        note: isVi
+                            ? `Thay ${getIngName(missingObj)} bằng ${getIngName(inv)} (${dose}g)`
+                            : `Replaced ${getIngName(missingObj)} with ${getIngName(inv)} (${dose}g)`
+                    };
+                }
+            }
+            return null;
+        }
+
+        function generateDynamicCombinations(available, maxResults) {
+            const isVi = appState.lang === 'vi';
+            const results = [];
+            const nonStevia = available.filter(a => a.id !== 'stevia');
+            const stevia = available.find(a => a.id === 'stevia' && a.currentGrams >= 1.5);
+
+            for (let i = 0; i < nonStevia.length; i++) {
+                for (let j = i + 1; j < nonStevia.length; j++) {
+                    const h1 = nonStevia[i];
+                    const h2 = nonStevia[j];
+                    const combo = [
+                        { id: h1.id, grams: Math.min(h1.currentGrams, Math.min(h1.maxSafeGrams, 6)), visualEn: 'base', visualVi: 'nền' },
+                        { id: h2.id, grams: Math.min(h2.currentGrams, Math.min(h2.maxSafeGrams, 5)), visualEn: 'synergy', visualVi: 'bổ trợ' }
+                    ];
+                    const h3 = nonStevia.find((x, idx) => idx > j && checkBiochemicalCompatibility([...combo, { id: x.id, grams: 4 }]));
+                    if (h3) {
+                        combo.push({ id: h3.id, grams: Math.min(h3.currentGrams, Math.min(h3.maxSafeGrams, 4)), visualEn: 'aroma', visualVi: 'hương' });
+                    }
+                    if (stevia && !combo.some(c => c.id === 'jujube')) {
+                        combo.push({ id: 'stevia', grams: Math.min(stevia.currentGrams, 2), visualEn: 'sweet', visualVi: 'ngọt' });
+                    }
+
+                    normalizeQuantities(combo, available);
+                    if (checkBiochemicalCompatibility(combo)) {
+                        const totalG = combo.reduce((s, x) => s + x.grams, 0);
+                        if (totalG >= 8) {
+                            results.push({
+                                id: `dyn_${h1.id}_${h2.id}`,
+                                code: `AUTO-${results.length + 1}`,
+                                nameEn: `${h1.nameEn.split(' ').pop()} & ${h2.nameEn.split(' ').pop()}`,
+                                nameVi: `Phối ${h1.nameVi.replace('khô', '').trim()} & ${h2.nameVi.replace('khô', '').trim()}`,
+                                tagEn: 'Auto-Synthesized', tagVi: 'Tự động ghép vị',
+                                colorTheme: h1.color,
+                                bgBadge: 'bg-teal-50 text-teal-800 border-teal-200',
+                                ingredients: combo,
+                                isAdapted: true,
+                                adaptNote: isVi ? 'Tổ hợp tự động an toàn từ kho hiện tại' : 'Biochemically verified blend from remaining pantry',
+                                mechanismEn: `Combines ${h1.nameEn} (${h1.compounds.split(',')[0]}) with ${h2.nameEn} without antagonist clashes.`,
+                                mechanismVi: `Kết hợp ${h1.nameVi} (${h1.compounds.split(',')[0]}) cùng ${h2.nameVi} đảm bảo tương hợp.`
+                            });
+                            if (results.length >= maxResults) return results;
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
+        function generateLastResortRecipes(available) {
+            const isVi = appState.lang === 'vi';
+            const results = [];
+            const nonStevia = available.filter(a => a.id !== 'stevia');
+
+            if (nonStevia.length === 0) return [];
+
+            if (nonStevia.length >= 2) {
+                for (let i = 0; i < nonStevia.length; i++) {
+                    for (let j = i + 1; j < nonStevia.length; j++) {
+                        const pair = [
+                            { id: nonStevia[i].id, grams: Math.min(nonStevia[i].currentGrams, nonStevia[i].maxSafeGrams), visualEn: 'primary', visualVi: 'chính' },
+                            { id: nonStevia[j].id, grams: Math.min(nonStevia[j].currentGrams, nonStevia[j].maxSafeGrams), visualEn: 'secondary', visualVi: 'phụ' }
+                        ];
+                        if (checkBiochemicalCompatibility(pair)) {
+                            results.push({
+                                id: `last_pair_${i}_${j}`,
+                                code: `DUO-${results.length + 1}`,
+                                nameEn: `${nonStevia[i].nameEn} + ${nonStevia[j].nameEn}`,
+                                nameVi: `Trà Đôi: ${nonStevia[i].nameVi} & ${nonStevia[j].nameVi}`,
+                                tagEn: 'Minimalist Duo', tagVi: 'Công thức tối giản',
+                                colorTheme: nonStevia[i].color,
+                                bgBadge: 'bg-amber-50 text-amber-800 border-amber-200',
+                                ingredients: pair,
+                                isAdapted: true,
+                                adaptNote: isVi ? 'Ghép đôi tối ưu từ nguyên liệu cuối cùng' : 'Safe dual-herb infusion from last stock',
+                                mechanismEn: getRecField(nonStevia[i], 'benefits'),
+                                mechanismVi: getRecField(nonStevia[i], 'benefits')
+                            });
+                        }
+                    }
+                }
+            }
+
+            nonStevia.forEach((herb, idx) => {
+                const dose = Math.min(herb.currentGrams, herb.maxSafeGrams);
+                results.push({
+                    id: `single_${herb.id}`,
+                    code: `SOLO-${idx + 1}`,
+                    nameEn: `Pure ${herb.nameEn}`,
+                    nameVi: `Đơn Phương ${herb.nameVi}`,
+                    tagEn: 'Single-Origin', tagVi: 'Đơn phương dược trà',
+                    colorTheme: herb.color,
+                    bgBadge: 'bg-gray-100 text-gray-800 border-gray-300',
+                    ingredients: [{ id: herb.id, grams: dose, visualEn: 'pure brew', visualVi: 'đơn vị' }],
+                    isAdapted: true,
+                    adaptNote: isVi ? 'Ủ đơn vị an toàn (tách riêng tránh xung khắc)' : 'Pure single-herb infusion (isolated to prevent clashes)',
+                    mechanismEn: getRecField(herb, 'benefits'),
+                    mechanismVi: getRecField(herb, 'benefits')
+                });
+            });
+
+            return results;
+        }
+
+        function normalizeQuantities(ingsList, available) {
+            const gearPlan = computeGearThermodynamics();
+            const scale = gearPlan.herbScaleFactor;
+
+            ingsList.forEach(item => {
+                const inv = available.find(a => a.id === item.id);
+                if (inv) {
+                    const scaledMax = Math.round(inv.maxSafeGrams * Math.max(0.75, scale) * 2) / 2;
+                    const scaledDose = Math.max(1, Math.round(item.grams * scale * 2) / 2);
+                    item.grams = Math.min(scaledDose, inv.currentGrams, scaledMax);
+                }
+            });
+
+            const minTotalTarget = Math.max(8, Math.round(13 * scale));
+            let total = ingsList.reduce((s, x) => s + x.grams, 0);
+            if (total < minTotalTarget) {
+                for (const item of ingsList) {
+                    if (['stevia', 'rosemary', 'mint'].includes(item.id)) continue;
+                    const inv = available.find(a => a.id === item.id);
+                    const scaledMax = inv ? Math.round(inv.maxSafeGrams * Math.max(0.75, scale) * 2) / 2 : item.grams;
+                    if (inv && item.grams < scaledMax && item.grams < inv.currentGrams) {
+                        const add = Math.min(3, scaledMax - item.grams, inv.currentGrams - item.grams);
+                        item.grams = Math.round((item.grams + add) * 2) / 2;
+                        total += add;
+                        if (total >= minTotalTarget + 1) break;
+                    }
+                }
+            }
+        }
+
+        // 8. PERSISTENCE (LOCALSTORAGE + COOKIES)
+        function saveState() {
+            try {
+                const payload = {
+                    lang: appState.lang,
+                    gear: appState.gear,
+                    ingredients: appState.ingredients.map(i => ({
+                        id: i.id,
+                        currentGrams: i.currentGrams,
+                        isOutOfStock: i.isOutOfStock
+                    })),
+                    schedule: appState.schedule,
+                    history: appState.history.slice(0, 50)
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+                const compact = {
+                    lang: appState.lang,
+                    gear: appState.gear,
+                    inv: appState.ingredients.map(i => ({ id: i.id, g: i.currentGrams, o: i.isOutOfStock })),
+                    sch: appState.schedule
+                };
+                const d = new Date();
+                d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
+                document.cookie = `${STORAGE_KEY}_cookie=${encodeURIComponent(JSON.stringify(compact))};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+            } catch (e) {
+                console.error('Save error:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const rawLocal = localStorage.getItem(STORAGE_KEY);
+                if (rawLocal) {
+                    mergeLoadedState(JSON.parse(rawLocal));
+                    return;
+                }
+
+                const cookieName = `${STORAGE_KEY}_cookie=`;
+                const decodedCookie = decodeURIComponent(document.cookie);
+                const ca = decodedCookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i].trim();
+                    if (c.indexOf(cookieName) === 0) {
+                        const compact = JSON.parse(c.substring(cookieName.length, c.length));
+                        if (compact.lang) appState.lang = compact.lang;
+                        if (compact.gear) appState.gear = { ...DEFAULT_GEAR, ...compact.gear };
+                        if (compact.inv) {
+                            compact.inv.forEach(item => {
+                                const target = appState.ingredients.find(x => x.id === item.id);
+                                if (target) {
+                                    target.currentGrams = item.g;
+                                    target.isOutOfStock = item.o;
+                                }
+                            });
+                        }
+                        if (compact.sch) appState.schedule = { ...appState.schedule, ...compact.sch };
+                        saveState();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Load error:', e);
+            }
+        }
+
+        function mergeLoadedState(parsed) {
+            if (parsed.lang) appState.lang = parsed.lang;
+            if (parsed.gear) {
+                appState.gear = {
+                    ...DEFAULT_GEAR,
+                    ...parsed.gear,
+                    flasks: Array.isArray(parsed.gear.flasks) && parsed.gear.flasks.length > 0
+                        ? parsed.gear.flasks
+                        : JSON.parse(JSON.stringify(DEFAULT_GEAR.flasks))
+                };
+            }
+            if (parsed.ingredients && Array.isArray(parsed.ingredients)) {
+                parsed.ingredients.forEach(saved => {
+                    const target = appState.ingredients.find(i => i.id === saved.id);
+                    if (target) {
+                        target.currentGrams = typeof saved.currentGrams === 'number' ? saved.currentGrams : target.defaultGrams;
+                        target.isOutOfStock = Boolean(saved.isOutOfStock);
+                    }
+                });
+            }
+            if (parsed.schedule) appState.schedule = { ...appState.schedule, ...parsed.schedule };
+            if (parsed.history && Array.isArray(parsed.history)) appState.history = parsed.history;
+        }
+
+        // 9. DATE & REAL-TIME SCHEDULE ENGINE
+        function getFormattedDate(offsetDays = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const locale = appState.lang === 'vi' ? 'vi-VN' : 'en-US';
+            const dayName = d.toLocaleDateString(locale, { weekday: 'long' });
+            const dateStr = d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const iso = d.toISOString().split('T')[0];
+            return {
+                iso,
+                display: `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}`,
+                short: `${dayName.slice(0, 3)}, ${d.getDate()}/${d.getMonth() + 1}`
+            };
+        }
+
+        function updateClockAndDates() {
+            const now = new Date();
+            const locale = appState.lang === 'vi' ? 'vi-VN' : 'en-US';
+            const timeStr = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const today = getFormattedDate(0);
+            const tomorrow = getFormattedDate(1);
+
+            document.getElementById('live-clock-display').innerHTML = `🕒 <strong>${timeStr}</strong> • ${today.display}`;
+            document.getElementById('today-date-label').textContent = today.display;
+            document.getElementById('tomorrow-date-label').textContent = tomorrow.display;
+
+            if (appState.schedule.lastUpdatedDate && appState.schedule.lastUpdatedDate !== today.iso) {
+                appState.schedule.todayRecipeId = appState.schedule.tomorrowRecipeId;
+                const availableRecs = currentAdaptivePlan.recipes;
+                if (availableRecs.length > 0) {
+                    const currIdx = availableRecs.findIndex(r => r.id === appState.schedule.todayRecipeId);
+                    const nextRec = availableRecs[(currIdx + 1) % availableRecs.length];
+                    appState.schedule.tomorrowRecipeId = nextRec.id;
+                }
+                appState.schedule.lastUpdatedDate = today.iso;
+                appState.schedule.dailyChecks = { date: today.iso, flasks: {} };
+                saveState();
+            } else if (!appState.schedule.lastUpdatedDate) {
+                appState.schedule.lastUpdatedDate = today.iso;
+            }
+
+            if (appState.schedule.dailyChecks.date !== today.iso) {
+                appState.schedule.dailyChecks = { date: today.iso, flasks: {} };
+            }
+            if (!appState.schedule.dailyChecks.flasks) {
+                appState.schedule.dailyChecks.flasks = {};
+            }
+
+            saveState();
+        }
+
+        // 10. UI LANGUAGE APPLICATION & RENDERING
+        function applyStaticTranslations() {
+            document.documentElement.lang = appState.lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (I18N[appState.lang][key]) {
+                    el.innerHTML = I18N[appState.lang][key];
+                }
+            });
+            const langLabel = document.getElementById('lang-toggle-label');
+            if (langLabel) {
+                langLabel.textContent = appState.lang === 'en' ? 'EN ➔ VI' : 'VI ➔ EN';
+            }
+        }
+
+        function toggleLanguage() {
+            appState.lang = appState.lang === 'en' ? 'vi' : 'en';
+            saveState();
+            applyStaticTranslations();
+            updateClockAndDates();
+            renderAll();
+            showToast(appState.lang === 'en' ? '🌐 Switched to English' : '🌐 Đã chuyển sang Tiếng Việt');
+        }
+
+        function renderAll() {
+            computeAdaptiveEngine();
+
+            if (currentAdaptivePlan.recipes.length > 0) {
+                const stillValid = currentAdaptivePlan.recipes.some(r => r.id === appState.schedule.tomorrowRecipeId);
+                if (!stillValid) appState.schedule.tomorrowRecipeId = currentAdaptivePlan.recipes[0].id;
+            }
+
+            renderScheduleSection();
+            renderGearConfigurator();
+            renderRecipes();
+            renderInventory();
+            renderScience();
+            renderHistory();
+        }
+
+        function renderScheduleSection() {
+            const selToday = document.getElementById('select-today-recipe');
+            const selTomorrow = document.getElementById('select-tomorrow-recipe');
+            const gearPlan = computeGearThermodynamics();
+            const isVi = appState.lang === 'vi';
+
+            const adaptiveRecipes = currentAdaptivePlan.recipes;
+            const allKnownRecipes = [...adaptiveRecipes];
+            BASE_RECIPES.forEach(b => {
+                if (!allKnownRecipes.some(x => x.id === b.id)) {
+                    allKnownRecipes.push({ ...b, ingredients: scaleRecipeGrams(b, gearPlan) });
+                }
+            });
+
+            selToday.innerHTML = allKnownRecipes.map(r => 
+                `<option value="${r.id}">${r.code} • ${getRecField(r, 'name')}</option>`
+            ).join('');
+            selToday.value = allKnownRecipes.some(r => r.id === appState.schedule.todayRecipeId) 
+                ? appState.schedule.todayRecipeId 
+                : allKnownRecipes[0].id;
+
+            if (adaptiveRecipes.length > 0) {
+                selTomorrow.innerHTML = adaptiveRecipes.map(r => 
+                    `<option value="${r.id}">${r.code} • ${getRecField(r, 'name')}</option>`
+                ).join('');
+                selTomorrow.value = appState.schedule.tomorrowRecipeId;
+            } else {
+                selTomorrow.innerHTML = `<option value="">⚠️ ${t('emptyStockTitle')}</option>`;
+            }
+
+            const todayRec = allKnownRecipes.find(r => r.id === selToday.value) || allKnownRecipes[0];
+            document.getElementById('today-recipe-display').innerHTML = buildMiniRecipeHTML(todayRec, false, gearPlan);
+
+            // Render Dynamic Flask Checklist for Today
+            const checklistEl = document.getElementById('daily-flasks-checklist');
+            if (checklistEl) {
+                const checksMap = appState.schedule.dailyChecks.flasks || {};
+                checklistEl.innerHTML = gearPlan.flaskPlans.map((fp, idx) => {
+                    const checked = Boolean(checksMap[fp.id]);
+                    const fName = isVi ? (fp.nameVi || fp.name) : fp.name;
+                    const bgClass = idx % 2 === 0 ? 'bg-blue-50/60 border-blue-100 hover:bg-blue-50' : 'bg-indigo-50/60 border-indigo-100 hover:bg-indigo-50';
+                    const detailText = gearPlan.iceMode === 'steel'
+                        ? (isVi
+                            ? `Rót <strong>~${fp.teaMl}ml</strong> trà + thả <strong>${fp.cubes} viên đá inox</strong> (~${fp.iceVol}ml).`
+                            : `Pour <strong>~${fp.teaMl}ml</strong> brew + <strong>${fp.cubes} steel cubes</strong> (~${fp.iceVol}ml).`)
+                        : (isVi
+                            ? `Ở nhà rót <strong>~${fp.teaMl}ml</strong> trà cốt (${gearPlan.meltingTeaRatio}%), ra tiệm thêm <strong>~${fp.iceVol}ml đá viên</strong> tới đầy bình.`
+                            : `At home pour <strong>~${fp.teaMl}ml</strong> tea (${gearPlan.meltingTeaRatio}%), then top up <strong>~${fp.iceVol}ml shop ice</strong> to brim.`);
+
+                    return `
+                        <label class="flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition ${bgClass}">
+                            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFlaskCheck('${fp.id}', this.checked)" class="mt-0.5 w-4 h-4 text-botanical-700 rounded focus:ring-botanical-500">
+                            <div class="text-xs sm:text-sm">
+                                <span class="font-semibold text-gray-900">${fName} (${fp.capacityMl}ml):</span>
+                                <span class="text-gray-600"> ${detailText}</span>
+                            </div>
+                        </label>
+                    `;
+                }).join('') + (gearPlan.warmCupMl > 0 ? `
+                    <div class="px-3 py-1.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900">
+                        ☕ ${isVi ? `Phần dư uống ấm tại nhà buổi sáng: <strong>~${gearPlan.warmCupMl}ml</strong>` : `Morning warm cup at home: <strong>~${gearPlan.warmCupMl}ml</strong>`}
+                    </div>
+                ` : '');
+            }
+
+            // Tonight's water summary
+            const waterSummaryEl = document.getElementById('tonight-water-summary');
+            if (waterSummaryEl) {
+                const liters = (gearPlan.boiledWaterMl / 1000).toFixed(2).replace(/\.00$/, '');
+                waterSummaryEl.innerHTML = `
+                    <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
+                    <span>⏳ ${t('steepDurationLabel')}</span>
+                `;
+            }
+
+            const brewBtn = document.getElementById('btn-brew-tonight');
+            if (adaptiveRecipes.length === 0) {
+                document.getElementById('tomorrow-recipe-display').innerHTML = `
+                    <div class="text-center py-6 px-3">
+                        <div class="text-2xl mb-1.5">🛒</div>
+                        <p class="text-sm font-bold text-red-800">${t('emptyStockTitle')}</p>
+                        <p class="text-xs text-gray-600 mt-1">${t('emptyStockDesc')}</p>
+                    </div>
+                `;
+                brewBtn.disabled = true;
+                brewBtn.className = 'w-full py-3 px-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2 text-xs sm:text-sm';
+                brewBtn.innerHTML = `<span>🚫 ${t('emptyStockTitle')}</span>`;
+            } else {
+                const tomorrowRec = adaptiveRecipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || adaptiveRecipes[0];
+                document.getElementById('tomorrow-recipe-display').innerHTML = buildMiniRecipeHTML(tomorrowRec, true, gearPlan);
+                brewBtn.disabled = false;
+                brewBtn.className = 'w-full py-3 px-4 bg-botanical-700 hover:bg-botanical-900 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99]';
+                brewBtn.innerHTML = `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${t('btnConfirmBrew')}</span>`;
+            }
+
+            // 5-Day Forecast Strip
+            const forecastEl = document.getElementById('five-day-forecast');
+            if (adaptiveRecipes.length === 0) {
+                forecastEl.innerHTML = `<div class="col-span-full text-center text-xs text-gray-500 py-3">${t('emptyStockDesc')}</div>`;
+            } else {
+                let startIdx = adaptiveRecipes.findIndex(r => r.id === appState.schedule.tomorrowRecipeId);
+                if (startIdx < 0) startIdx = 0;
+
+                let forecastHTML = '';
+                for (let i = 0; i < 5; i++) {
+                    const dayObj = getFormattedDate(i);
+                    let recForDay;
+                    if (i === 0) recForDay = todayRec;
+                    else if (i === 1) recForDay = adaptiveRecipes[startIdx];
+                    else recForDay = adaptiveRecipes[(startIdx + (i - 1)) % adaptiveRecipes.length];
+
+                    const isToday = i === 0;
+                    const isTomorrow = i === 1;
+                    forecastHTML += `
+                        <div class="p-3 rounded-xl border ${isToday ? 'bg-amber-50/60 border-amber-200' : isTomorrow ? 'bg-botanical-50/70 border-botanical-300' : 'bg-cream border-gray-200/70'}">
+                            <div class="flex items-center justify-between text-[11px] font-bold ${isToday ? 'text-amber-700' : isTomorrow ? 'text-botanical-700' : 'text-gray-500'}">
+                                <span>${isToday ? t('todayShort') : isTomorrow ? t('tomorrowShort') : dayObj.short}</span>
+                                <span>${recForDay.code}</span>
+                            </div>
+                            <div class="text-xs font-semibold text-gray-900 mt-1 truncate">${getRecField(recForDay, 'name')}</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5 truncate">${getRecField(recForDay, 'tag')}</div>
+                        </div>
+                    `;
+                }
+                forecastEl.innerHTML = forecastHTML;
+            }
+        }
+
+        function buildMiniRecipeHTML(recipe, checkStock, gearPlan = computeGearThermodynamics()) {
+            const totalGrams = Math.round(recipe.ingredients.reduce((acc, item) => acc + item.grams, 0) * 10) / 10;
+            const itemsList = recipe.ingredients.map(req => {
+                const inv = appState.ingredients.find(i => i.id === req.id);
+                const enough = inv && !inv.isOutOfStock && inv.currentGrams >= req.grams;
+                const vis = getRecField(req, 'visual');
+                return `
+                    <div class="flex items-center justify-between py-1.5 border-b border-gray-200/60 last:border-0 text-xs sm:text-sm gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${inv ? inv.color : '#666'}"></span>
+                            <span class="font-medium text-gray-800 truncate">${getIngName(inv)}</span>
+                            <span class="text-[11px] text-gray-400 hidden sm:inline shrink-0">(${vis})</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="font-bold text-gray-900">${req.grams}g</span>
+                            ${checkStock ? (enough 
+                                ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">${t('leftLabel')} ${inv.currentGrams}g</span>` 
+                                : `<span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">${t('shortLabel')} (${inv ? inv.currentGrams : 0}g)</span>`
+                            ) : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded border ${recipe.bgBadge}">${getRecField(recipe, 'tag')}</span>
+                    <span class="text-xs text-gray-500 font-medium">${t('totalLabel')}: <strong>${totalGrams}g</strong> / ${gearPlan.boiledWaterMl}ml</span>
+                </div>
+                ${recipe.isAdapted ? `<div class="mb-2.5 text-[11px] font-semibold text-blue-800 bg-blue-100/70 px-2.5 py-1 rounded-lg">✨ ${recipe.adaptNote}</div>` : ''}
+                <div class="divide-y divide-gray-100 mb-3">${itemsList}</div>
+                <p class="text-xs text-gray-600 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-gray-100">
+                    <strong>${t('mechLabel')}</strong> ${getRecField(recipe, 'mechanism')}
+                </p>
+            `;
+        }
+
+        function renderGearConfigurator() {
+            const gearPlan = computeGearThermodynamics();
+            const isVi = appState.lang === 'vi';
+
+            const btnSteel = document.getElementById('btn-ice-steel');
+            const btnMelting = document.getElementById('btn-ice-melting');
+            const steelCtrl = document.getElementById('steel-ice-controls');
+            const meltingCtrl = document.getElementById('melting-ice-controls');
+
+            if (btnSteel && btnMelting) {
+                if (gearPlan.iceMode === 'steel') {
+                    btnSteel.className = 'py-2 px-2.5 rounded-xl border-2 border-botanical-700 bg-botanical-50 text-botanical-900 text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    btnMelting.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1.5';
+                    steelCtrl.classList.remove('hidden');
+                    meltingCtrl.classList.add('hidden');
+                } else {
+                    btnMelting.className = 'py-2 px-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    btnSteel.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1.5';
+                    meltingCtrl.classList.remove('hidden');
+                    steelCtrl.classList.add('hidden');
+                }
+            }
+
+            const inputBoxes = document.getElementById('input-steel-boxes');
+            if (inputBoxes) inputBoxes.value = gearPlan.steelBoxes;
+            const steelSummary = document.getElementById('steel-ice-summary');
+            if (steelSummary) {
+                steelSummary.innerHTML = isVi
+                    ? `1 viên 2.7cm³ ≈ <strong>19.7ml</strong> • Đang dùng <strong>${gearPlan.totalCubesUsed}/${gearPlan.totalCubesAvailable} viên</strong>.`
+                    : `1 cube (2.7cm³) ≈ <strong>19.7ml</strong> • Using <strong>${gearPlan.totalCubesUsed}/${gearPlan.totalCubesAvailable} cubes</strong>.`;
+            }
+
+            const inputRatio = document.getElementById('input-tea-ratio');
+            if (inputRatio) inputRatio.value = gearPlan.meltingTeaRatio;
+
+            const inputWarm = document.getElementById('input-warm-cup');
+            if (inputWarm) inputWarm.value = gearPlan.warmCupMl;
+
+            const flasksListEl = document.getElementById('flasks-config-list');
+            if (flasksListEl) {
+                flasksListEl.innerHTML = gearPlan.flaskPlans.map(fp => {
+                    const fName = isVi ? (fp.nameVi || fp.name) : fp.name;
+                    const canDelete = gearPlan.flaskPlans.length > 1;
+                    const badgeText = gearPlan.iceMode === 'steel'
+                        ? `${t('teaToPourLabel')}: <strong>${fp.teaMl}ml</strong> + <strong>${fp.cubes} ${t('cubesDropLabel')}</strong> (~${fp.iceVol}ml)`
+                        : `${t('teaToPourLabel')}: <strong>${fp.teaMl}ml</strong> (${gearPlan.meltingTeaRatio}%) • ${t('shopIceTopupLabel')}: <strong>~${fp.iceVol}ml</strong>`;
+
+                    return `
+                        <div class="p-2.5 rounded-xl bg-cream/80 border border-gray-200 space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${fName}" onchange="updateFlaskField('${fp.id}', 'name', this.value)" placeholder="${t('flaskNamePlaceholder')}" class="flex-1 min-w-0 text-xs font-bold bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900 outline-none focus:border-botanical-500">
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <input type="number" min="150" max="5000" step="50" value="${fp.capacityMl}" onchange="updateFlaskField('${fp.id}', 'capacityMl', this.value)" class="w-16 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg py-1.5 text-gray-900 outline-none focus:border-botanical-500">
+                                    <span class="text-xs font-semibold text-gray-500">ml</span>
+                                </div>
+                                ${canDelete ? `<button type="button" onclick="removeFlask('${fp.id}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold" title="Remove">✕</button>` : ''}
+                            </div>
+                            <div class="text-[11px] text-gray-600 pl-0.5">${badgeText}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const carafeCalcEl = document.getElementById('carafe-water-calculation');
+            if (carafeCalcEl) {
+                const liters = (gearPlan.boiledWaterMl / 1000).toFixed(2).replace(/\.00$/, '');
+                carafeCalcEl.innerHTML = isVi
+                    ? `Trà vào ${gearPlan.flaskPlans.length} bình (<strong>${gearPlan.totalTeaForFlasks}ml</strong>) + uống ấm (<strong>${gearPlan.warmCupMl}ml</strong>) + bù bã hút (<strong>${gearPlan.absorptionBuffer}ml</strong>) ➔ Đun sôi tối nay: <strong class="text-amber-950 text-sm">${gearPlan.boiledWaterMl}ml (${liters}L)</strong>.`
+                    : `Tea for ${gearPlan.flaskPlans.length} flask(s) (<strong>${gearPlan.totalTeaForFlasks}ml</strong>) + warm cup (<strong>${gearPlan.warmCupMl}ml</strong>) + herb absorption (<strong>${gearPlan.absorptionBuffer}ml</strong>) ➔ Boil tonight: <strong class="text-amber-950 text-sm">${gearPlan.boiledWaterMl}ml (${liters}L)</strong>.`;
+            }
+        }
+
+        function renderRecipes() {
+            const grid = document.getElementById('recipes-grid');
+            const badgeCount = document.getElementById('hidden-recipes-count');
+            const banner = document.getElementById('adaptive-status-banner');
+            const recipes = currentAdaptivePlan.recipes;
+            const gearPlan = computeGearThermodynamics();
+            const isVi = appState.lang === 'vi';
+
+            banner.className = `mb-4 p-4 rounded-2xl border shadow-2xs transition-all ${currentAdaptivePlan.levelColor}`;
+            banner.innerHTML = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="font-bold text-sm sm:text-base">${currentAdaptivePlan.levelTitle}</div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/80 border border-current/20 self-start sm:self-auto">
+                        ${isVi ? 'Tự thích ứng thông minh' : 'Dynamic Adaptive Engine'}
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm mt-1.5 opacity-90 leading-relaxed">${currentAdaptivePlan.explanation}</p>
+            `;
+
+            badgeCount.innerHTML = isVi
+                ? `Đang hiển thị <strong class="text-botanical-700">${recipes.length}</strong> công thức khả dụng`
+                : `Showing <strong class="text-botanical-700">${recipes.length}</strong> active formula(s)`;
+
+            if (recipes.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-red-200">
+                        <div class="text-3xl mb-2">⚠️</div>
+                        <h3 class="font-bold text-gray-900 text-lg">${t('emptyStockTitle')}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${t('emptyStockDesc')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = recipes.map(recipe => {
+                const totalGrams = recipe.ingredients.reduce((s, x) => s + x.grams, 0);
+                const ingRows = recipe.ingredients.map(req => {
+                    const inv = appState.ingredients.find(i => i.id === req.id);
+                    const vis = getRecField(req, 'visual');
+                    return `
+                        <li class="flex items-center justify-between text-xs sm:text-sm py-1.5 border-b border-gray-100 last:border-0 gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${inv ? inv.color : '#666'}"></span>
+                                <span class="text-gray-800 font-medium truncate">${getIngName(inv)}</span>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="font-bold text-gray-900">${req.grams}g</span>
+                                <span class="text-[11px] text-gray-400 ml-1">(${vis})</span>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+                        <div class="h-1.5 w-full absolute top-0 left-0" style="background-color: ${recipe.colorTheme}"></div>
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mt-1 mb-2">
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${recipe.bgBadge}">${recipe.code} • ${getRecField(recipe, 'tag')}</span>
+                                <span class="text-xs font-semibold text-gray-500 shrink-0">${Math.round(totalGrams * 10) / 10}g / ${gearPlan.boiledWaterMl}ml</span>
+                            </div>
+                            <h3 class="font-serif text-lg font-bold text-gray-900 mb-2">${getRecField(recipe, 'name')}</h3>
+
+                            ${recipe.isAdapted ? `
+                                <div class="mb-3 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-medium text-blue-900">
+                                    ✨ ${recipe.adaptNote}
+                                </div>
+                            ` : ''}
+
+                            <ul class="mb-4 bg-cream/80 rounded-xl p-3 border border-gray-100">
+                                ${ingRows}
+                            </ul>
+                        </div>
+
+                        <div class="space-y-3 pt-2 border-t border-gray-100">
+                            <p class="text-xs text-gray-600 leading-relaxed">${getRecField(recipe, 'mechanism')}</p>
+                            <button onclick="setRecipeForTomorrow('${recipe.id}')" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-botanical-50 hover:bg-botanical-700 text-botanical-800 hover:text-white border border-botanical-200 transition whitespace-nowrap">
+                                🌙 ${t('setTonightBtn')}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = appState.ingredients.map(ing => {
+                const pct = Math.min(100, Math.round((ing.currentGrams / ing.defaultGrams) * 100));
+                const isLow = !ing.isOutOfStock && ing.currentGrams <= ing.lowThreshold;
+                const isEmpty = ing.isOutOfStock || ing.currentGrams <= 0;
+                const barColor = isEmpty ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-botanical-500';
+
+                return `
+                    <div class="apothecary-card rounded-2xl p-4 flex flex-col justify-between transition ${isEmpty ? 'opacity-70 bg-gray-50/90 border-red-200' : ''}">
+                        <div>
+                            <div class="flex items-start justify-between gap-2.5 mb-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-12 h-12 rounded-2xl shrink-0 overflow-hidden border border-gray-100 shadow-2xs bg-white p-1">
+                                        ${BOTANICAL_SVGS[ing.id] || ''}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h3 class="font-bold text-gray-900 text-sm leading-tight truncate">${getIngName(ing)}</h3>
+                                            <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${ing.isExpansion ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-600'}">
+                                                ${ing.isExpansion ? t('expansionBadge') : t('coreBadge')}
+                                            </span>
+                                        </div>
+                                        <span class="text-[11px] italic text-gray-400 block mt-0.5 truncate">${ing.latin}</span>
+                                    </div>
+                                </div>
+
+                                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none shrink-0 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                                    <input type="checkbox" ${ing.isOutOfStock ? 'checked' : ''} onchange="toggleOutOfStock('${ing.id}', this.checked)" class="w-3.5 h-3.5 text-red-600 rounded focus:ring-red-500">
+                                    <span class="text-[11px] font-semibold whitespace-nowrap ${ing.isOutOfStock ? 'text-red-600' : 'text-gray-500'}">${t('markOutLabel')}</span>
+                                </label>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+                                <div class="h-full ${barColor} transition-all duration-300" style="width: ${isEmpty ? 0 : pct}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Gram Adjuster -->
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                            <span class="text-xs font-medium text-gray-500 whitespace-nowrap">${t('remainingLabel')}</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="adjustGrams('${ing.id}', -5)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm flex items-center justify-center transition">-</button>
+                                <div class="relative">
+                                    <input type="number" step="0.5" min="0" max="1000" value="${ing.currentGrams}" onchange="setGramsDirect('${ing.id}', this.value)" class="w-16 text-center text-xs sm:text-sm font-bold text-gray-900 border border-gray-200 rounded-lg py-1 bg-cream focus:ring-2 focus:ring-botanical-500 outline-none">
+                                </div>
+                                <span class="text-xs font-semibold text-gray-500">g</span>
+                                <button onclick="adjustGrams('${ing.id}', 5)" class="w-7 h-7 rounded-lg bg-botanical-50 hover:bg-botanical-100 text-botanical-700 font-bold text-sm flex items-center justify-center transition">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderScience() {
+            const grid = document.getElementById('science-grid');
+            grid.innerHTML = appState.ingredients.map(ing => `
+                <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-3.5 mb-3">
+                            <div class="w-14 h-14 rounded-2xl shrink-0 bg-cream p-1.5 border border-gray-200/70 shadow-2xs">
+                                ${BOTANICAL_SVGS[ing.id] || ''}
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${ing.badgeBg}">
+                                    ${ing.isExpansion ? t('expansionBadge') : t('coreBadge')} • ${ing.latin}
+                                </span>
+                                <h3 class="font-serif text-base sm:text-lg font-bold text-gray-900 mt-1 truncate">${getIngName(ing)}</h3>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">${t('activeCompoundsLabel')}</span>
+                            <p class="text-xs font-semibold text-botanical-900 bg-botanical-50/70 px-2.5 py-1.5 rounded-lg border border-botanical-100">
+                                ${ing.compounds}
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">${t('scienceFocusLabel')}</span>
+                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">${getRecField(ing, 'benefits')}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-gray-100 text-[11px] text-amber-800 bg-amber-50/60 px-2.5 py-2 rounded-lg">
+                        <strong>💡 ${t('steepNoteLabel')}</strong> ${getRecField(ing, 'steepNote')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-list-container');
+            if (!appState.history || appState.history.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4 bg-cream rounded-xl border border-dashed border-gray-300">
+                        <p class="text-xs sm:text-sm text-gray-500">${t('noLogsYet')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appState.history.map(entry => `
+                <div class="p-3.5 rounded-xl bg-cream border border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-botanical-700 text-white">${entry.recipeCode}</span>
+                            <span class="font-bold text-sm text-gray-900">${entry.recipeName}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${entry.summaryText}</p>
+                    </div>
+                    <div class="text-[11px] font-medium text-gray-400 shrink-0">
+                        🕒 ${entry.timestamp}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 11. USER INTERACTION HANDLERS
+        function updateScheduleSelection(slot, recipeId) {
+            if (!recipeId) return;
+            if (slot === 'today') appState.schedule.todayRecipeId = recipeId;
+            if (slot === 'tomorrow') appState.schedule.tomorrowRecipeId = recipeId;
+            saveState();
+            renderScheduleSection();
+            showToast(appState.lang === 'vi' ? '📅 Đã cập nhật lịch pha chế' : '📅 Schedule updated');
+        }
+
+        function setRecipeForTomorrow(recipeId) {
+            appState.schedule.tomorrowRecipeId = recipeId;
+            saveState();
+            renderScheduleSection();
+            document.getElementById('section-schedule').scrollIntoView({ behavior: 'smooth' });
+            showToast(appState.lang === 'vi' ? '🌙 Đã chọn công thức cho mẻ ủ tối nay' : '🌙 Selected formula for tonight');
+        }
+
+        function toggleFlaskCheck(flaskId, checked) {
+            if (!appState.schedule.dailyChecks.flasks) appState.schedule.dailyChecks.flasks = {};
+            appState.schedule.dailyChecks.flasks[flaskId] = checked;
+            saveState();
+            if (checked) {
+                const fp = computeGearThermodynamics().flaskPlans.find(x => x.id === flaskId);
+                if (fp) {
+                    const fName = appState.lang === 'vi' ? (fp.nameVi || fp.name) : fp.name;
+                    showToast(appState.lang === 'vi' ? `✅ Đã hoàn tất ${fName}` : `✅ Checked ${fName}`);
+                }
+            }
+        }
+
+        function setIceMode(mode) {
+            appState.gear.iceMode = mode;
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi'
+                ? (mode === 'steel' ? '🧊 Đã chuyển sang Đá Inox Không Tan' : '💧 Đã chuyển sang Nước Đá Tan (Tự tăng +25% cốt trà đậm)')
+                : (mode === 'steel' ? '🧊 Switched to 316 Steel Cubes' : '💧 Switched to Melting Shop Ice (+25% concentrated brew)')
+            );
+        }
+
+        function updateSteelBoxes(val) {
+            const boxes = Math.min(10, Math.max(1, parseInt(val) || 3));
+            appState.gear.steelBoxes = boxes;
+            saveState();
+            renderAll();
+        }
+
+        function updateMeltingRatio(val) {
+            const ratio = Math.min(85, Math.max(40, parseInt(val) || 60));
+            appState.gear.meltingTeaRatio = ratio;
+            saveState();
+            renderAll();
+        }
+
+        function updateWarmCup(val) {
+            const ml = Math.min(1000, Math.max(0, parseInt(val) || 0));
+            appState.gear.warmCupMl = ml;
+            saveState();
+            renderAll();
+        }
+
+        function addFlask() {
+            const nextNum = appState.gear.flasks.length + 1;
+            appState.gear.flasks.push({
+                id: `f_${Date.now()}`,
+                name: `Flask ${nextNum}`,
+                nameVi: `Bình ${nextNum}`,
+                capacityMl: 800
+            });
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? `➕ Đã thêm Bình ${nextNum} (800ml)` : `➕ Added Flask ${nextNum} (800ml)`);
+        }
+
+        function removeFlask(id) {
+            if (appState.gear.flasks.length <= 1) return;
+            appState.gear.flasks = appState.gear.flasks.filter(f => f.id !== id);
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? '🗑️ Đã bớt 1 bình đựng' : '🗑️ Removed flask');
+        }
+
+        function updateFlaskField(id, field, value) {
+            const flask = appState.gear.flasks.find(f => f.id === id);
+            if (!flask) return;
+            if (field === 'capacityMl') {
+                flask.capacityMl = Math.min(5000, Math.max(150, parseInt(value) || 500));
+            } else if (field === 'name') {
+                const clean = String(value).trim() || 'Flask';
+                if (appState.lang === 'vi') flask.nameVi = clean;
+                else flask.name = clean;
+            }
+            saveState();
+            renderAll();
+        }
+
+        function resetGearDefaults() {
+            appState.gear = JSON.parse(JSON.stringify(DEFAULT_GEAR));
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? '🔄 Đã đặt lại cấu hình 2 bình & đá inox mặc định' : '🔄 Reset to default 2 flasks & 316 steel cubes');
+        }
+
+        function confirmBrewTonight() {
+            const rec = currentAdaptivePlan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId);
+            if (!rec) return;
+
+            const isVi = appState.lang === 'vi';
+            const gearPlan = computeGearThermodynamics();
+            let deductedDetails = [];
+
+            rec.ingredients.forEach(req => {
+                const inv = appState.ingredients.find(i => i.id === req.id);
+                if (inv) {
+                    inv.currentGrams = Math.max(0, Math.round((inv.currentGrams - req.grams) * 10) / 10);
+                    if (inv.currentGrams === 0) inv.isOutOfStock = true;
+                    deductedDetails.push(`${getIngName(inv)} -${req.grams}g`);
+                }
+            });
+
+            const now = new Date();
+            const locale = isVi ? 'vi-VN' : 'en-US';
+            const stamp = now.toLocaleString(locale, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+            const recTitle = getRecField(rec, 'name');
+
+            appState.history.unshift({
+                id: Date.now(),
+                recipeCode: rec.code,
+                recipeName: recTitle,
+                summaryText: `[${gearPlan.boiledWaterMl}ml] ` + deductedDetails.join(', '),
+                timestamp: stamp
+            });
+
+            saveState();
+            renderAll();
+            showToast(isVi
+                ? `🎉 Đã ghi nhận mẻ ủ ${recTitle} (${gearPlan.boiledWaterMl}ml) & trừ kho!`
+                : `🎉 Logged ${recTitle} (${gearPlan.boiledWaterMl}ml) & deducted stock!`
+            );
+        }
+
+        function toggleOutOfStock(ingId, isOut) {
+            const ing = appState.ingredients.find(i => i.id === ingId);
+            if (!ing) return;
+            ing.isOutOfStock = isOut;
+            if (!isOut && ing.currentGrams <= 0) {
+                ing.currentGrams = 50;
+            }
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi'
+                ? (isOut ? `🚫 Đã ẩn công thức chứa ${getIngName(ing)}` : `✅ Đã kích hoạt lại ${getIngName(ing)}`)
+                : (isOut ? `🚫 Marked ${getIngName(ing)} out of stock` : `✅ Restocked ${getIngName(ing)}`)
+            );
+        }
+
+        function adjustGrams(ingId, delta) {
+            const ing = appState.ingredients.find(i => i.id === ingId);
+            if (!ing) return;
+            ing.currentGrams = Math.max(0, Math.round((ing.currentGrams + delta) * 10) / 10);
+            ing.isOutOfStock = ing.currentGrams === 0;
+            saveState();
+            renderAll();
+        }
+
+        function setGramsDirect(ingId, val) {
+            const ing = appState.ingredients.find(i => i.id === ingId);
+            if (!ing) return;
+            const num = parseFloat(val);
+            ing.currentGrams = isNaN(num) || num < 0 ? 0 : Math.round(num * 10) / 10;
+            ing.isOutOfStock = ing.currentGrams === 0;
+            saveState();
+            renderAll();
+        }
+
+        function restockAllDefault() {
+            appState.ingredients.forEach(ing => {
+                if (!ing.isExpansion) {
+                    ing.currentGrams = ing.defaultGrams;
+                    ing.isOutOfStock = false;
+                } else {
+                    ing.currentGrams = 0;
+                    ing.isOutOfStock = true;
+                }
+            });
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? '🔄 Đã nạp đầy 9 nguyên liệu cơ bản' : '🔄 Restocked 9 core botanicals');
+        }
+
+        function simulateScenario(type) {
+            const isVi = appState.lang === 'vi';
+            appState.ingredients.forEach(ing => {
+                if (!ing.isExpansion) {
+                    ing.currentGrams = ing.defaultGrams;
+                    ing.isOutOfStock = false;
+                } else {
+                    ing.currentGrams = 0;
+                    ing.isOutOfStock = true;
+                }
+            });
+
+            if (type === 'expanded') {
+                appState.ingredients.forEach(ing => {
+                    ing.currentGrams = ing.defaultGrams;
+                    ing.isOutOfStock = false;
+                });
+                showToast(isVi ? '✨ Mô phỏng: Đủ cả 16 nguyên liệu' : '✨ Simulated: All 16 herbs stocked');
+            } else if (type === 'missing2') {
+                ['stevia', 'hibiscus'].forEach(id => {
+                    const x = appState.ingredients.find(i => i.id === id);
+                    if (x) { x.currentGrams = 0; x.isOutOfStock = true; }
+                });
+                showToast(isVi ? '⚠️ Mô phỏng: Hết Cỏ ngọt & Hibiscus' : '⚠️ Simulated: Out of Stevia & Hibiscus');
+            } else if (type === 'missing4') {
+                ['hibiscus', 'butterfly', 'rosemary', 'mint'].forEach(id => {
+                    const x = appState.ingredients.find(i => i.id === id);
+                    if (x) { x.currentGrams = 0; x.isOutOfStock = true; }
+                });
+                showToast(isVi ? '⚡ Mô phỏng: Chỉ còn 5 món' : '⚡ Simulated: Only 5 herbs left');
+            } else if (type === 'conflict2') {
+                appState.ingredients.forEach(ing => {
+                    if (!['mint', 'ginger'].includes(ing.id)) {
+                        ing.currentGrams = 0;
+                        ing.isOutOfStock = true;
+                    }
+                });
+                showToast(isVi ? '🔥 Mô phỏng: Chỉ còn Bạc hà & Gừng' : '🔥 Simulated: Only Mint & Ginger left');
+            } else if (type === 'onlyStevia') {
+                appState.ingredients.forEach(ing => {
+                    if (ing.id !== 'stevia') {
+                        ing.currentGrams = 0;
+                        ing.isOutOfStock = true;
+                    }
+                });
+                showToast(isVi ? '🚫 Mô phỏng: Chỉ còn mỗi Cỏ ngọt' : '🚫 Simulated: Only Stevia left');
+            } else {
+                showToast(isVi ? '✅ Mô phỏng: Đủ 9 nguyên liệu cơ bản' : '✅ Simulated: 9 core herbs ready');
+            }
+
+            saveState();
+            renderAll();
+            document.getElementById('section-recipes').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearHistoryLog() {
+            appState.history = [];
+            saveState();
+            renderHistory();
+            showToast(appState.lang === 'vi' ? '🗑️ Đã xóa lịch sử pha chế' : '🗑️ Brewing logs cleared');
+        }
+
+        function resetAllData() {
+            const currentLang = appState.lang;
+            localStorage.removeItem(STORAGE_KEY);
+            document.cookie = `${STORAGE_KEY}_cookie=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+            appState = {
+                lang: currentLang,
+                gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
+                ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
+                schedule: {
+                    todayRecipeId: 'rec_1',
+                    tomorrowRecipeId: 'rec_2',
+                    lastUpdatedDate: getFormattedDate(0).iso,
+                    dailyChecks: { date: getFormattedDate(0).iso, flasks: {} }
+                },
+                history: []
+            };
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? '🔄 Đã khôi phục dữ liệu mặc định' : '🔄 Factory reset complete');
+        }
+
+        function exportDataJSON() {
+            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute('href', dataStr);
+            a.setAttribute('download', `botanical_tracker_${getFormattedDate(0).iso}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast(appState.lang === 'vi' ? '💾 Đã tải xuống file sao lưu JSON' : '💾 Exported backup JSON');
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    mergeLoadedState(imported);
+                    saveState();
+                    applyStaticTranslations();
+                    renderAll();
+                    showToast(appState.lang === 'vi' ? '📂 Đã nhập dữ liệu thành công!' : '📂 Backup imported successfully!');
+                } catch (err) {
+                    showToast(appState.lang === 'vi' ? '❌ File JSON không hợp lệ' : '❌ Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-botanical-900 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-lg border border-botanical-700 flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0';
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 12. INITIALIZE ON PAGE LOAD
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            applyStaticTranslations();
+            updateClockAndDates();
+            renderAll();
+            setInterval(updateClockAndDates, 1000);
+        });
+    </script>
+</body>
+</html>

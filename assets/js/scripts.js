@@ -161,4 +161,89 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return color;
     }
+
+    // --- 18+ content warning gate ---
+    // Every link except those inside the Coding zone asks for confirmation first.
+    const ageGate = document.getElementById('age-gate');
+    if (ageGate) {
+        const targetLabel = document.getElementById('age-gate-target');
+        const continueBtn = document.getElementById('age-gate-continue');
+        const cancelBtn = document.getElementById('age-gate-cancel');
+        let pendingLink = null;
+        let lastFocused = null;
+
+        function openAgeGate(link) {
+            pendingLink = link;
+            lastFocused = document.activeElement;
+
+            const label = (link.querySelector('.button-text')?.textContent
+                || link.getAttribute('title')
+                || link.getAttribute('aria-label')
+                || link.textContent
+                || link.hostname).trim();
+            targetLabel.textContent = label || link.hostname;
+
+            ageGate.hidden = false;
+            document.body.classList.add('age-gate-open');
+            continueBtn.focus();
+        }
+
+        function closeAgeGate() {
+            ageGate.hidden = true;
+            document.body.classList.remove('age-gate-open');
+            pendingLink = null;
+            if (lastFocused && typeof lastFocused.focus === 'function') {
+                lastFocused.focus();
+            }
+        }
+
+        function followPendingLink() {
+            if (!pendingLink) return;
+            const href = pendingLink.href;
+            const target = pendingLink.target;
+            const navigateHere = !target || target === '_self' || href.startsWith('mailto:');
+            closeAgeGate();
+            if (navigateHere) {
+                window.location.href = href;
+            } else {
+                window.open(href, target, 'noopener,noreferrer');
+            }
+        }
+
+        document.addEventListener('click', function (event) {
+            if (typeof event.target.closest !== 'function') return;
+            const link = event.target.closest('a[href]');
+            if (!link) return;
+            if (link.closest('.coding-zone') || link.hasAttribute('data-age-gate-allow')) return;
+            if (!link.href || link.href.startsWith('#')) return;
+
+            event.preventDefault();
+            openAgeGate(link);
+        });
+
+        continueBtn.addEventListener('click', followPendingLink);
+
+        ageGate.addEventListener('click', function (event) {
+            if (event.target.hasAttribute('data-age-gate-close')) {
+                closeAgeGate();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (ageGate.hidden) return;
+            if (event.key === 'Escape') {
+                closeAgeGate();
+            } else if (event.key === 'Tab') {
+                const first = continueBtn;
+                const last = cancelBtn;
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        });
+    }
 });

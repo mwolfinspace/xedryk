@@ -245,7 +245,7 @@
                         </div>
                     </div>
 
-                    <div class="section-container">
+                    <div class="section-container coding-zone" id="coding-zone">
                         <h3 class="section-title">Coding</h3>
                         <div class="button-group">
                             <div class="mica-button primary">
@@ -262,6 +262,14 @@
                                     <p class="button-text">16Ch Tests</p>
                                 </a>
                             </div>
+                            <div class="mica-button primary">
+                                <a href="herbal-brew-tracker.html" target="_blank" rel="noopener"
+                                    class="button-link">
+                                    <img src="./assets/images/herb-flask.svg" alt="Herbal Brew Tracker Logo"
+                                        class="button-logo" />
+                                    <p class="button-text">Herbal Brew Tracker</p>
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -275,6 +283,28 @@
             </div>
         </div>
     </div>
+
+    <!-- 18+ content warning (skipped for Coding zone links) -->
+    <div id="age-gate" class="age-gate" hidden>
+        <div class="age-gate__backdrop" data-age-gate-close></div>
+        <div class="age-gate__dialog" role="dialog" aria-modal="true" aria-labelledby="age-gate-title"
+            aria-describedby="age-gate-desc">
+            <div class="age-gate__badge" aria-hidden="true">18+</div>
+            <h2 id="age-gate-title" class="age-gate__title">Content warning</h2>
+            <p id="age-gate-desc" class="age-gate__desc">
+                The link you are about to visit may contain <strong>18+ content</strong>.
+                Please confirm that you are 18 or older before continuing to
+                <span id="age-gate-target" class="age-gate__target"></span>.
+            </p>
+            <div class="age-gate__actions">
+                <button type="button" id="age-gate-continue" class="age-gate__btn age-gate__btn--go">Continue</button>
+                <button type="button" id="age-gate-cancel" class="age-gate__btn age-gate__btn--back"
+                    data-age-gate-close>No, go back</button>
+            </div>
+            <p class="age-gate__note">Coding zone links open directly, no warning needed.</p>
+        </div>
+    </div>
+
     <script src="./assets/js/scripts.js" defer></script>
 </body>
 
