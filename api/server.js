@@ -270,7 +270,7 @@ function serveStatic(req, res, pathname) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+const handleRequest = async (req, res) => {
   try {
     const url = new URL(req.url, `http://${HOST}:${PORT}`);
     if (url.pathname !== '/api/share') return serveStatic(req, res, url.pathname);
@@ -376,13 +376,13 @@ const server = http.createServer(async (req, res) => {
     const status = err && err.code === 'TOO_LARGE' ? 413 : (err && err.code === 'BAD_JSON' ? 400 : 500);
     fail(res, status, status === 500 ? 'Server error' : String(err.message || 'Request error'));
   }
-});
+};
 
 cleanupExpired();
 const cleanupTimer = setInterval(cleanupExpired, 60_000);
 cleanupTimer.unref();
 let listeningCount = 0;
-HOST_LIST.forEach(host => server.listen(PORT, host, () => {
+HOST_LIST.forEach(host => http.createServer(handleRequest).listen(PORT, host, () => {
   listeningCount++;
   if (listeningCount === HOST_LIST.length) {
     console.log(`BotanicaLab share API listening on ${HOST_LIST.map(h => `http://${h}:${PORT}`).join(', ')} (data: ${DATA_DIR}, ttl: ${TTL_MS / 86400000}d)`);
