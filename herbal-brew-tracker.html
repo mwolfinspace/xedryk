@@ -232,6 +232,17 @@
                 </div>
             </div>
 
+            <!-- Setup Gate: Today stays empty until the first confirmed brew -->
+            <div id="setup-schedule-banner" class="hidden mb-5 p-4 rounded-2xl border border-amber-300 bg-amber-50 shadow-2xs">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl shrink-0">🧰</span>
+                    <div class="min-w-0">
+                        <p id="setup-schedule-title" class="font-bold text-sm sm:text-base text-amber-900"></p>
+                        <p id="setup-schedule-desc" class="mt-1 text-[11px] text-amber-800 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Two-Column Grid for Today & Tonight/Tomorrow -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
@@ -642,13 +653,18 @@
                                 </div>
                             </div>
 
+                            <div id="history-filter-bar" class="flex flex-wrap gap-1.5 mb-3"></div>
+                            <div id="history-stats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-3"></div>
                             <div id="history-list-container" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                             </div>
                         </div>
 
                         <div class="mt-6 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-400">
                             <span data-i18n="storageNote">Dữ liệu (v6) tự lưu trên LocalStorage & Device Cookie.</span>
-                            <button onclick="resetAllData()" data-i18n="btnFactoryReset" class="text-gray-500 hover:text-gray-800 underline text-left sm:text-right">Khôi phục gốc</button>
+                            <div class="flex flex-wrap items-center justify-end gap-3">
+                                <button onclick="clearBrowserDataReset()" data-i18n="btnClearBrowser" class="text-gray-500 hover:text-gray-800 underline text-left sm:text-right">🧹 Xóa cookie & cache</button>
+                                <button onclick="resetAllData()" data-i18n="btnFactoryReset" class="text-gray-500 hover:text-gray-800 underline text-left sm:text-right">Khôi phục gốc</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -751,6 +767,21 @@
                 btnClearLogs: 'Clear Logs',
                 storageNote: 'Data (v6) auto-saves to LocalStorage & Device Cookie.',
                 btnFactoryReset: 'Factory Reset',
+                btnClearBrowser: '🧹 Clear cookie & cache',
+                clearBrowserToast: 'Cookie, local data & cache cleared — setup welcome restored',
+                setupScheduleTitle: 'Setup mode: journal not started',
+                setupScheduleDesc: 'Entered grams are opening stock only. Drinking Today stays empty until you confirm tonight’s brew — that first confirmation starts the log.',
+                setupTodayPlaceholder: '☀️ No brew logged yet — confirm tonight to start',
+                historyAll: 'All',
+                historyBrew: 'Brews',
+                historyStock: 'Stock',
+                statBrews: 'Brews',
+                statConsumed: 'Consumed',
+                statStockEvents: 'Stock edits',
+                statDays: 'Days logged',
+                statStreak: 'Streak',
+                statTopHerb: 'Top herb',
+                statLastBrew: 'Last brew',
                 todayShort: 'Today',
                 tomorrowShort: 'Tomorrow',
                 outOfStockLabel: 'Out of stock',
@@ -856,6 +887,21 @@
                 btnClearLogs: 'Xóa lịch sử',
                 storageNote: 'Dữ liệu (v6) tự lưu trên LocalStorage & Cookie thiết bị.',
                 btnFactoryReset: 'Khôi phục gốc',
+                btnClearBrowser: '🧹 Xóa cookie & cache',
+                clearBrowserToast: 'Đã xóa cookie, dữ liệu local & cache — về lại màn hình thiết lập',
+                setupScheduleTitle: 'Chế độ thiết lập: chưa bắt đầu nhật ký',
+                setupScheduleDesc: 'Số gram vừa nhập chỉ là tồn kho ban đầu. Ô Hôm nay để trống cho đến khi bạn xác nhận mẻ ủ tối nay — lần xác nhận đầu tiên sẽ bắt đầu ghi nhật ký.',
+                setupTodayPlaceholder: '☀️ Chưa có mẻ đang uống — xác nhận tối nay để bắt đầu',
+                historyAll: 'Tất cả',
+                historyBrew: 'Mẻ ủ',
+                historyStock: 'Tồn kho',
+                statBrews: 'Số mẻ',
+                statConsumed: 'Đã dùng',
+                statStockEvents: 'Sửa kho',
+                statDays: 'Ngày uống',
+                statStreak: 'Chuỗi ngày',
+                statTopHerb: 'Vị dùng nhiều',
+                statLastBrew: 'Mẻ gần nhất',
                 todayShort: 'Hôm nay',
                 tomorrowShort: 'Ngày mai',
                 outOfStockLabel: 'Đã hết hàng',
@@ -944,6 +990,7 @@
                 schemaVersion: SCHEMA_VERSION,
                 lang: langOverride,
                 theme: 'light',
+                setupComplete: false,
                 gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
                 ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)).map(ing => ({
                     ...ing,
@@ -964,7 +1011,8 @@
                     pantrySearch: '',
                     scienceTier: 'all',
                     scienceSearch: '',
-                    allergyPanelOpen: true
+                    allergyPanelOpen: true,
+                    historyFilter: 'all'
                 },
                 schedule: {
                     todayRecipeId: 'rec_1',
@@ -1453,10 +1501,15 @@
             const oldVer = Number(raw.schemaVersion) || 1;
             Object.assign(base, copyUnknown(raw, [
                 'schemaVersion', 'lang', 'gear', 'ingredients', 'userProfile', 'uiFilters',
-                'schedule', 'history', 'customExtensions', '_migratedFrom', 'theme'
+                'schedule', 'history', 'customExtensions', '_migratedFrom', 'theme', 'setupComplete'
             ]));
             base.lang = raw.lang === 'en' ? 'en' : 'vi';
             base.theme = raw.theme === 'dark' ? 'dark' : 'light';
+            // Existing saved pantries are already past setup; a fresh/cleared device starts at setup.
+            base.setupComplete = typeof raw.setupComplete === 'boolean'
+                ? raw.setupComplete
+                : ((Array.isArray(raw.ingredients) && raw.ingredients.some(i => i && Number(i.currentGrams) > 0))
+                    || (Array.isArray(raw.history) && raw.history.length > 0));
 
             if (raw.gear && typeof raw.gear === 'object') {
                 Object.assign(base.gear, copyUnknown(raw.gear, ['iceMode', 'steelBoxes', 'meltingTeaRatio', 'warmCupMl', 'flasks']));
@@ -1539,6 +1592,7 @@
                     ...stripUnsafe(raw.uiFilters)
                 };
             }
+            if (!['all', 'brew', 'stock'].includes(base.uiFilters.historyFilter)) base.uiFilters.historyFilter = 'all';
 
             if (raw.schedule && typeof raw.schedule === 'object') {
                 Object.assign(base.schedule, copyUnknown(raw.schedule, ['todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime', 'lastUpdatedDate', 'pendingBrew', 'dailyChecks', 'rotation']));
@@ -1605,6 +1659,7 @@
                     schemaVersion: SCHEMA_VERSION,
                     lang: appState.lang,
                     theme: appState.theme,
+                    setupComplete: appState.setupComplete,
                     userProfile: appState.userProfile,
                     schedule: { todayRecipeId: appState.schedule.todayRecipeId, tomorrowRecipeId: appState.schedule.tomorrowRecipeId, tomorrowStrainTime: appState.schedule.tomorrowStrainTime },
                     stock: appState.ingredients.filter(i => !i.isOutOfStock).map(i => [i.id, i.currentGrams]),
@@ -1630,6 +1685,7 @@
                         schemaVersion: parsed.schemaVersion || 1,
                         lang: parsed.lang || 'vi',
                         theme: parsed.theme === 'dark' ? 'dark' : 'light',
+                        setupComplete: parsed.setupComplete === true,
                         userProfile: parsed.userProfile,
                         schedule: parsed.schedule,
                         ingredients: DEFAULT_INGREDIENTS.map(d => ({
@@ -1708,7 +1764,32 @@
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
-            showToast(currentLang === 'en' ? '🔄 Factory reset complete' : '🔄 Đã khôi phục toàn bộ dữ liệu gốc');
+            showToast(currentLang === 'en'
+                ? '🔄 Factory reset complete — setup welcome restored'
+                : '🔄 Đã khôi phục gốc — về lại màn hình thiết lập');
+        }
+
+        function clearBrowserDataReset() {
+            const currentLang = appState.lang || 'vi';
+            const currentTheme = appState.theme || 'light';
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                setCookie(STORAGE_KEY + '_c', '', -1);
+            } catch (e) {}
+            if (window.caches && typeof caches.keys === 'function') {
+                caches.keys()
+                    .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+                    .catch(() => {});
+            }
+            appState = createFreshDefaultState(currentLang);
+            appState.theme = currentTheme;
+            saveState();
+            applyStaticTranslations();
+            updateClockAndDates();
+            renderAll();
+            showToast(appState.lang === 'en'
+                ? '🧹 Cookie, local data & cache cleared — setup welcome restored'
+                : '🧹 Đã xóa cookie, dữ liệu local & cache — về lại màn hình thiết lập');
         }
 
         // 8. CLOCK, DATES & BREW PROGRESS TIMELINE
@@ -2049,6 +2130,7 @@
             if (tl.pending.prevTodayRecipeId !== undefined) appState.schedule.todayRecipeId = tl.pending.prevTodayRecipeId;
             if (tl.pending.prevTomorrowRecipeId !== undefined) appState.schedule.tomorrowRecipeId = tl.pending.prevTomorrowRecipeId;
             if (tl.pending.prevLastUpdatedDate !== undefined) appState.schedule.lastUpdatedDate = tl.pending.prevLastUpdatedDate;
+            if (tl.pending.prevSetupComplete !== undefined) appState.setupComplete = !!tl.pending.prevSetupComplete;
             appState.schedule.pendingBrew = null;
             saveState(); renderAll();
             showToast(appState.lang === 'en' ? '↩️ Brew cancelled & stock restored' : '↩️ Đã hủy mẻ ủ & hoàn lại nguyên liệu');
@@ -2064,8 +2146,13 @@
             const entry = appState.history.find(h => h.id === tl.pending.historyId);
             const minsEarly = Math.max(0, Math.round(tl.remaining / 60000));
             if (entry) {
+                entry.eventType = entry.eventType || 'brew';
+                entry.completedAt = new Date().toISOString();
                 entry.status = mode;
-                const suffix = mode === 'early' ? ` ⏱ Strained early (${minsEarly}m)` : ' ⏰ Strained on time';
+                const isEn = appState.lang === 'en';
+                const suffix = mode === 'early'
+                    ? (isEn ? ` ⏱ Strained early (${minsEarly}m)` : ` ⏱ Vắt sớm (${minsEarly} phút)`)
+                    : (isEn ? ' ⏰ Strained on time' : ' ⏰ Vắt đúng giờ');
                 if (!entry.summaryText.includes(suffix)) entry.summaryText += suffix;
             }
             appState.schedule.pendingBrew = null;
@@ -2222,8 +2309,17 @@
             const selToday = document.getElementById('select-today-recipe');
             const selTomorrow = document.getElementById('select-tomorrow-recipe');
             const freshRotation = buildFreshRotation(plan.recipes, 5);
+            const setupGate = !appState.setupComplete;
+            const setupBannerEl = document.getElementById('setup-schedule-banner');
+            if (setupBannerEl) {
+                setupBannerEl.classList.toggle('hidden', !setupGate);
+                const titleEl = document.getElementById('setup-schedule-title');
+                const descEl = document.getElementById('setup-schedule-desc');
+                if (titleEl) titleEl.textContent = t('setupScheduleTitle');
+                if (descEl) descEl.textContent = t('setupScheduleDesc');
+            }
 
-            if (plan.recipes.length > 0) {
+            if (!setupGate && plan.recipes.length > 0) {
                 if (!plan.recipes.some(r => r.id === appState.schedule.todayRecipeId)) appState.schedule.todayRecipeId = plan.recipes[0].id;
                 if (!plan.recipes.some(r => r.id === appState.schedule.tomorrowRecipeId)) {
                     appState.schedule.tomorrowRecipeId = (freshRotation[1] || plan.recipes[Math.min(1, plan.recipes.length - 1)]).id;
@@ -2251,12 +2347,22 @@
                 });
             }
 
-            if (selToday) { selToday.innerHTML = optionsHTML; selToday.value = appState.schedule.todayRecipeId || ''; }
-            if (selTomorrow) { selTomorrow.innerHTML = optionsHTML; selTomorrow.value = appState.schedule.tomorrowRecipeId || ''; }
+            if (selToday) {
+                selToday.disabled = setupGate;
+                selToday.innerHTML = setupGate ? `<option value="">${t('setupTodayPlaceholder')}</option>` : optionsHTML;
+                selToday.value = setupGate ? '' : (appState.schedule.todayRecipeId || '');
+            }
+            if (selTomorrow) {
+                selTomorrow.disabled = false;
+                selTomorrow.innerHTML = optionsHTML;
+                selTomorrow.value = appState.schedule.tomorrowRecipeId || '';
+            }
 
             const todayRec = plan.recipes.find(r => r.id === appState.schedule.todayRecipeId) || plan.recipes[0];
             const tomorrowRec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
-            document.getElementById('today-recipe-display').innerHTML = buildMiniRecipeHTML(todayRec, false);
+            document.getElementById('today-recipe-display').innerHTML = setupGate
+                ? `<div class="p-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 text-xs text-amber-800 leading-relaxed">${t('setupTodayPlaceholder')}</div>`
+                : buildMiniRecipeHTML(todayRec, false);
             document.getElementById('tomorrow-recipe-display').innerHTML = buildMiniRecipeHTML(tomorrowRec, true);
 
             const checklistEl = document.getElementById('daily-flasks-checklist');
@@ -2929,21 +3035,99 @@
         function renderHistorySection() {
             const container = document.getElementById('history-list-container');
             if (!container) return;
-            if (!appState.history || appState.history.length === 0) {
+            const all = Array.isArray(appState.history) ? appState.history : [];
+            const filter = ['all', 'brew', 'stock'].includes(appState.uiFilters.historyFilter) ? appState.uiFilters.historyFilter : 'all';
+
+            const filterEl = document.getElementById('history-filter-bar');
+            if (filterEl) {
+                const tabs = [
+                    { id: 'all', label: t('historyAll') },
+                    { id: 'brew', label: t('historyBrew') },
+                    { id: 'stock', label: t('historyStock') }
+                ];
+                filterEl.innerHTML = tabs.map(tab => {
+                    const active = filter === tab.id;
+                    const cls = active
+                        ? 'bg-botanical-700 text-white border-botanical-800'
+                        : 'bg-cream hover:bg-botanical-50 text-gray-600 border-gray-200';
+                    return `<button type="button" onclick="setHistoryFilter('${tab.id}')" class="px-2.5 py-1 rounded-lg border text-[11px] font-bold transition ${cls}">${tab.label}</button>`;
+                }).join('');
+            }
+
+            const brews = all.filter(e => !e.eventType || e.eventType === 'brew');
+            const stockEvents = all.filter(e => e.eventType === 'stock');
+            const consumed = Math.round(brews.reduce((sum, e) => sum + (Number(e.totalGrams) || 0), 0) * 10) / 10;
+            const herbTotals = new Map();
+            brews.forEach(e => {
+                (Array.isArray(e.herbs) ? e.herbs : []).forEach(h => {
+                    const key = h.id || h.herbId || h.name;
+                    if (!key) return;
+                    const prev = herbTotals.get(key) || { name: h.name || key, grams: 0 };
+                    prev.grams += Number(h.grams) || 0;
+                    prev.name = h.name || prev.name;
+                    herbTotals.set(key, prev);
+                });
+            });
+            const topHerb = [...herbTotals.values()].sort((a, b) => b.grams - a.grams)[0];
+            const daySet = new Set(brews.map(e => e.isoDate).filter(Boolean));
+            let streakOffset = daySet.has(localIsoDate(0)) ? 0 : -1;
+            let streak = 0;
+            while (daySet.has(localIsoDate(streakOffset))) { streak++; streakOffset--; }
+            const statsEl = document.getElementById('history-stats');
+            if (statsEl) {
+                const stat = (label, value) => `<div class="p-2 rounded-xl bg-cream border border-gray-200/80"><p class="text-[10px] text-gray-400 font-semibold">${label}</p><p class="text-sm font-bold text-botanical-800 truncate" title="${value}">${value}</p></div>`;
+                statsEl.innerHTML = [
+                    stat(t('statBrews'), brews.length),
+                    stat(t('statConsumed'), `${consumed}g`),
+                    stat(t('statDays'), daySet.size),
+                    stat(t('statStreak'), streak),
+                    stat(t('statTopHerb'), topHerb ? `${topHerb.name} (${Math.round(topHerb.grams * 10) / 10}g)` : '—'),
+                    stat(t('statStockEvents'), stockEvents.length),
+                    stat(t('statLastBrew'), brews[0]?.timestamp || '—')
+                ].join('');
+            }
+
+            const list = all.filter(e => filter === 'all'
+                || (filter === 'brew' ? (!e.eventType || e.eventType === 'brew') : e.eventType === 'stock'));
+            if (list.length === 0) {
                 container.innerHTML = `<div class="p-6 rounded-xl bg-cream border border-dashed border-gray-300 text-center text-xs text-gray-500 leading-relaxed">${t('noLogsYet')}</div>`;
                 return;
             }
-            container.innerHTML = appState.history.map(entry => `
+
+            container.innerHTML = list.map(entry => {
+                const isBrew = !entry.eventType || entry.eventType === 'brew';
+                const badge = entry.recipeCode || (isBrew ? '🍵' : '📦');
+                const badgeStyle = isBrew
+                    ? 'bg-botanical-700 text-white'
+                    : (entry.action === 'out'
+                        ? 'bg-red-100 text-red-800'
+                        : (['add', 'restock', 'in'].includes(entry.action)
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-900'));
+                const title = isBrew ? (entry.recipeName || '') : `${badge} ${entry.herbName || ''}`;
+                const statusText = isBrew && entry.status
+                    ? (entry.status === 'steeping'
+                        ? (appState.lang === 'en' ? 'Steeping' : 'Đang ủ')
+                        : (entry.status === 'early'
+                            ? (appState.lang === 'en' ? 'Strained early' : 'Vắt sớm')
+                            : (appState.lang === 'en' ? 'Strained on time' : 'Vắt đúng giờ')))
+                    : '';
+                const statusHTML = statusText
+                    ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-botanical-50 text-botanical-700 border border-botanical-200 shrink-0">${statusText}</span>`
+                    : '';
+                return `
                 <div class="p-3.5 rounded-xl bg-cream border border-gray-200/80 flex flex-col gap-1">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-botanical-700 text-white shrink-0">${entry.recipeCode}</span>
-                            <span class="font-bold text-xs sm:text-sm text-gray-900 truncate">${entry.recipeName}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${badgeStyle}">${badge}</span>
+                            <span class="font-bold text-xs sm:text-sm text-gray-900 truncate">${title}</span>
+                            ${statusHTML}
                         </div>
                         <span class="text-[11px] text-gray-400 shrink-0">${entry.timestamp}</span>
                     </div>
                     <p class="text-xs text-gray-600 leading-relaxed">${entry.summaryText}</p>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         function renderAll() {
@@ -3052,15 +3236,23 @@
             renderScienceSection();
         }
 
+        function setHistoryFilter(key) {
+            appState.uiFilters.historyFilter = ['all', 'brew', 'stock'].includes(key) ? key : 'all';
+            saveState();
+            renderHistorySection();
+        }
+
         function quickRestockHerbs(csvIds) {
             const ids = String(csvIds || '').split(',').filter(Boolean);
             let count = 0;
             ids.forEach(id => {
                 const ing = appState.ingredients.find(i => i.id === id);
                 if (ing) {
+                    const before = ing.currentGrams;
                     ing.currentGrams = ing.defaultGrams || 100;
                     ing.isOutOfStock = false;
                     markHerbsRestocked([id]);
+                    logStockEvent('restock', ing, { from: before, to: ing.currentGrams });
                     count++;
                 }
             });
@@ -3108,13 +3300,16 @@
             const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
             const rec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
             if (!rec) { showToast(t('emptyStockTitle')); return; }
+            const wasSetup = !appState.setupComplete;
+            appState.setupComplete = true;
 
             const historyId = Date.now() + Math.random();
             appState.schedule.pendingBrew = {
                 recipeId: rec.id, targetDate: getFormattedDate(1).iso, confirmedAt: Date.now(), historyId,
                 deducted: [], prevUsage: [], prevTodayRecipeId: appState.schedule.todayRecipeId,
                 prevTomorrowRecipeId: appState.schedule.tomorrowRecipeId,
-                prevLastUpdatedDate: appState.schedule.lastUpdatedDate || ''
+                prevLastUpdatedDate: appState.schedule.lastUpdatedDate || '',
+                prevSetupComplete: !wasSetup
             };
 
             const gear = getGearMetrics(), steep = computeRealTimeSteepMetrics(), isEn = appState.lang === 'en';
@@ -3137,9 +3332,73 @@
                 ? `Steeped ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, est. ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`
                 : `Ủ ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, dự kiến ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`;
 
-            appState.history.unshift({ id: historyId, status: 'steeping', recipeCode: rec.code, recipeName: getRecField(rec, 'name'), summaryText, timestamp: nowStr });
+            const brewHerbs = appState.schedule.pendingBrew.deducted.map(d => {
+                const ing = appState.ingredients.find(i => i.id === d.id);
+                return { id: d.id, name: ing ? getIngName(ing) : d.id, grams: d.grams };
+            });
+            const totalGrams = Math.round(brewHerbs.reduce((sum, h) => sum + Number(h.grams), 0) * 10) / 10;
+            const startSuffix = wasSetup ? (isEn ? ' · 🚀 Journal started' : ' · 🚀 Bắt đầu nhật ký') : '';
+            pushHistory({
+                id: historyId,
+                eventType: 'brew',
+                status: 'steeping',
+                isoDate: getFormattedDate(0).iso,
+                targetDate: getFormattedDate(1).iso,
+                totalGrams,
+                herbs: brewHerbs,
+                recipeCode: rec.code,
+                recipeName: getRecField(rec, 'name'),
+                summaryText: summaryText + startSuffix,
+                timestamp: nowStr
+            });
             saveState(); renderAll();
             showToast(isEn ? '✅ Brew logged & stock deducted!' : '✅ Đã ghi nhật ký & trừ kho tự động!');
+        }
+
+        const HISTORY_LIMIT = 500;
+        function pushHistory(entry) {
+            appState.history.unshift(entry);
+            if (appState.history.length > HISTORY_LIMIT) appState.history.length = HISTORY_LIMIT;
+        }
+
+        function logStockEvent(action, ing, opts = {}) {
+            if (!ing) return;
+            const isEn = appState.lang === 'en';
+            const from = Math.max(0, Number(opts.from) || 0);
+            const to = Math.max(0, Number(opts.to) || 0);
+            const delta = Math.round((to - from) * 10) / 10;
+            const nowStr = new Date().toLocaleString(isEn ? 'en-US' : 'vi-VN', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const name = getIngName(ing);
+            const u = getHerbUsage(ing);
+            const fresh = u.freshSince ? formatFreshDate(u.freshSince, isEn) : (isEn ? 'not stamped' : 'chưa ghi nhận');
+            const icons = { add: '📥', restock: '🔄', adjust: '✏️', set: '✍️', in: '✅', out: '🚫' };
+            const verbs = {
+                add: isEn ? 'first added' : 'nhập lần đầu',
+                restock: isEn ? 'restocked' : 'nạp mới',
+                adjust: isEn ? 'adjusted' : 'điều chỉnh',
+                set: isEn ? 'set to' : 'đặt thành',
+                in: isEn ? 'back in stock' : 'mở lại hàng',
+                out: isEn ? 'marked out' : 'đánh dấu hết hàng'
+            };
+            const changeText = (action === 'in' || action === 'out')
+                ? `${from}g → ${to}g`
+                : `${delta >= 0 ? '+' : ''}${delta}g (${from}g → ${to}g)`;
+            pushHistory({
+                id: Date.now() + Math.random(),
+                eventType: 'stock',
+                action,
+                herbId: ing.id,
+                herbName: name,
+                isoDate: localIsoDate(0),
+                fromGrams: from,
+                toGrams: to,
+                deltaGrams: delta,
+                freshSince: u.freshSince || '',
+                recipeCode: icons[action] || '📦',
+                recipeName: name,
+                summaryText: `${icons[action] || '📦'} ${name}: ${verbs[action] || action} · ${changeText} · ${isEn ? 'fresh since' : 'mốc tươi'} ${fresh}`,
+                timestamp: nowStr
+            });
         }
 
         function stampRestockIfNeeded(id, before, after) {
@@ -3151,10 +3410,12 @@
         function restockHerb(id) {
             const ing = appState.ingredients.find(i => i.id === id);
             if (!ing) return;
+            const before = ing.currentGrams;
             const target = Math.max(Number(ing.defaultGrams) || 100, Number(ing.currentGrams) || 0);
             ing.currentGrams = Math.round(target * 10) / 10;
             ing.isOutOfStock = false;
             markHerbsRestocked([id]);
+            logStockEvent('restock', ing, { from: before, to: ing.currentGrams });
             saveState(); renderAll();
             showToast(appState.lang === 'en'
                 ? `📅 ${getIngName(ing)}: restock date stamped`
@@ -3167,7 +3428,8 @@
             const before = ing.currentGrams;
             ing.currentGrams = Math.max(0, Math.round((ing.currentGrams + delta) * 10) / 10);
             ing.isOutOfStock = ing.currentGrams <= 0;
-            stampRestockIfNeeded(id, before, ing.currentGrams);
+            const stamped = stampRestockIfNeeded(id, before, ing.currentGrams);
+            logStockEvent(stamped ? 'restock' : 'adjust', ing, { from: before, to: ing.currentGrams });
             saveState(); renderAll();
         }
 
@@ -3178,24 +3440,32 @@
             const num = Math.max(0, Math.round((parseFloat(val) || 0) * 10) / 10);
             ing.currentGrams = num;
             ing.isOutOfStock = num <= 0;
-            stampRestockIfNeeded(id, before, num);
+            const stamped = stampRestockIfNeeded(id, before, num);
+            const action = stamped ? (before <= 0 ? 'add' : 'restock') : (num < before ? 'adjust' : 'set');
+            logStockEvent(action, ing, { from: before, to: num });
             saveState(); renderAll();
         }
 
         function toggleOutOfStock(id, isOut) {
             const ing = appState.ingredients.find(i => i.id === id);
             if (!ing) return;
+            const before = ing.currentGrams;
             ing.isOutOfStock = isOut;
             if (!isOut) {
                 if (ing.currentGrams <= 0) ing.currentGrams = ing.defaultGrams || 50;
                 markHerbsRestocked([id]);
             }
+            logStockEvent(isOut ? 'out' : 'in', ing, { from: before, to: ing.currentGrams });
             saveState(); renderAll();
         }
 
         function restockAllDefault() {
             appState.ingredients.forEach(ing => {
-                if (ing.tier === 'core') { ing.currentGrams = ing.defaultGrams; ing.isOutOfStock = false; markHerbsRestocked([ing.id]); }
+                if (ing.tier === 'core') {
+                    const before = ing.currentGrams;
+                    ing.currentGrams = ing.defaultGrams; ing.isOutOfStock = false; markHerbsRestocked([ing.id]);
+                    logStockEvent('restock', ing, { from: before, to: ing.currentGrams });
+                }
             });
             saveState(); renderAll();
             showToast(appState.lang === 'en' ? '🔄 Restocked 9 core herbs' : '🔄 Đã nạp đầy 9 nguyên liệu cơ bản');
@@ -3203,6 +3473,7 @@
 
         function simulateScenario(mode) {
             if (mode === 'allergyDemo') {
+                appState.setupComplete = true;
                 appState.ingredients.forEach(ing => { ing.currentGrams = ing.defaultGrams; ing.isOutOfStock = false; markHerbsRestocked([ing.id]); });
                 appState.userProfile = { excludedAllergies: ['allergy_asteraceae'], medicalFilters: ['med_gerd'], excludedHerbIds: [] };
                 appState.uiFilters.showAvailable = true;
@@ -3215,6 +3486,7 @@
                 return;
             }
             appState.userProfile = { excludedAllergies: [], medicalFilters: [], excludedHerbIds: [] };
+            appState.setupComplete = mode !== 'setup';
             appState.ingredients.forEach(ing => {
                 if (mode === 'full') {
                     const keep = ing.tier === 'core';
