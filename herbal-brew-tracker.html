@@ -428,14 +428,23 @@
                 <div class="lg:col-span-7">
                     <div class="apothecary-card rounded-2xl p-5 sm:p-6 h-full flex flex-col justify-between">
                         <div>
-                            <div class="flex items-center justify-between gap-2 mb-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                                 <div>
                                     <span data-i18n="logBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-500">Auto-Log</span>
                                     <h3 data-i18n="logTitle" class="font-serif text-xl font-bold text-gray-900 mt-0.5">Brewing History</h3>
                                 </div>
-                                <button onclick="clearHistoryLog()" data-i18n="btnClearLogs" class="text-xs text-red-600 hover:text-red-800 font-medium px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
-                                    Clear Logs
-                                </button>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button onclick="exportDataJSON()" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-botanical-50 hover:bg-botanical-100 text-botanical-800 border border-botanical-200 transition whitespace-nowrap">
+                                        💾 <span data-i18n="btnExportShort">Backup JSON</span>
+                                    </button>
+                                    <label class="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 transition cursor-pointer whitespace-nowrap">
+                                        📂 <span data-i18n="btnImportShort">Restore JSON</span>
+                                        <input type="file" accept=".json,application/json" onchange="importDataJSON(event)" class="hidden">
+                                    </label>
+                                    <button onclick="clearHistoryLog()" data-i18n="btnClearLogs" class="text-xs text-red-600 hover:text-red-800 font-medium px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition whitespace-nowrap">
+                                        Clear Logs
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="history-list-container" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
@@ -489,6 +498,8 @@
                 btnRestockCore: 'Restock 9 Core Herbs',
                 btnExport: 'Export JSON',
                 btnImport: 'Import',
+                btnExportShort: 'Export Data',
+                btnImportShort: 'Upload Data',
                 simTitle: '🧪 Quick Stock Depletion Simulator (Test Auto-Adaptation):',
                 simHint: '1-tap test for low/missing herbs',
                 simFull: '✅ 9 Core Ready',
@@ -572,6 +583,8 @@
                 btnRestockCore: 'Nạp 9 món cơ bản',
                 btnExport: 'Xuất JSON',
                 btnImport: 'Nhập file',
+                btnExportShort: 'Tải dữ liệu về',
+                btnImportShort: 'Tải dữ liệu lên',
                 simTitle: '🧪 Mô phỏng nhanh các kịch bản thiếu nguyên liệu:',
                 simHint: 'Bấm thử 1 chạm',
                 simFull: '✅ Đủ 9 món cơ bản',
@@ -2321,14 +2334,25 @@
         }
 
         function exportDataJSON() {
-            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
-            const a = document.createElement('a');
-            a.setAttribute('href', dataStr);
-            a.setAttribute('download', `botanical_tracker_${getFormattedDate(0).iso}.json`);
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            showToast(appState.lang === 'vi' ? '💾 Đã tải xuống file sao lưu JSON' : '💾 Exported backup JSON');
+            try {
+                const exportPayload = {
+                    app: 'BotanicaLab Herbal Brew & Inventory Tracker',
+                    exportedAt: new Date().toISOString(),
+                    data: appState
+                };
+                const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `botanical_backup_${getFormattedDate(0).iso}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast(appState.lang === 'vi' ? '💾 Đã tải xuống toàn bộ dữ liệu (.json)' : '💾 Exported full backup (.json)');
+            } catch (err) {
+                showToast(appState.lang === 'vi' ? '❌ Lỗi khi xuất file sao lưu' : '❌ Failed to export backup');
+            }
         }
 
         function importDataJSON(event) {
@@ -2337,14 +2361,24 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const imported = JSON.parse(e.target.result);
+                    const rawParsed = JSON.parse(e.target.result);
+                    const imported = rawParsed && rawParsed.data ? rawParsed.data : rawParsed;
+                    if (!imported || (!imported.ingredients && !imported.history && !imported.gear)) {
+                        throw new Error('Invalid schema');
+                    }
                     mergeLoadedState(imported);
                     saveState();
                     applyStaticTranslations();
+                    updateClockAndDates();
                     renderAll();
-                    showToast(appState.lang === 'vi' ? '📂 Đã nhập dữ liệu thành công!' : '📂 Backup imported successfully!');
+                    showToast(appState.lang === 'vi'
+                        ? `📂 Đã khôi phục kho, bình & ${appState.history.length} lịch sử pha chế!`
+                        : `📂 Restored pantry, gear & ${appState.history.length} brew logs!`
+                    );
                 } catch (err) {
-                    showToast(appState.lang === 'vi' ? '❌ File JSON không hợp lệ' : '❌ Invalid JSON file');
+                    showToast(appState.lang === 'vi' ? '❌ File JSON không đúng định dạng sao lưu' : '❌ Invalid backup JSON format');
+                } finally {
+                    event.target.value = '';
                 }
             };
             reader.readAsText(file);
