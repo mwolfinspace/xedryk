@@ -995,6 +995,7 @@
 
         // 5. DEFAULT GEAR, STORAGE KEY & GLOBAL APPLICATION STATE
         const STORAGE_KEY = 'botanical_infusion_tracker_v2';
+        const SCHEMA_VERSION = 3;
 
         const DEFAULT_GEAR = {
             iceMode: 'steel', // 'steel' | 'melting'
@@ -1007,19 +1008,25 @@
             ]
         };
 
-        let appState = {
-            lang: 'en',
-            gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
-            ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
-            schedule: {
-                todayRecipeId: 'rec_1',
-                tomorrowRecipeId: 'rec_2',
-                tomorrowStrainTime: '08:00',
-                lastUpdatedDate: '',
-                dailyChecks: { date: '', flasks: {} }
-            },
-            history: []
-        };
+        function createFreshDefaultState(langOverride = 'en') {
+            return {
+                schemaVersion: SCHEMA_VERSION,
+                lang: langOverride,
+                gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
+                ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
+                schedule: {
+                    todayRecipeId: 'rec_1',
+                    tomorrowRecipeId: 'rec_2',
+                    tomorrowStrainTime: '08:00',
+                    lastUpdatedDate: '',
+                    dailyChecks: { date: '', flasks: {} }
+                },
+                history: [],
+                customExtensions: {} // Reserved forward-compatible namespace for future fields
+            };
+        }
+
+        let appState = createFreshDefaultState('en');
 
         let currentAdaptivePlan = {
             level: 0,
@@ -1029,520 +1036,432 @@
             recipes: []
         };
 
+        // 6. TRANSLATION & REAL-TIME THERMODYNAMIC HELPERS
         function t(key) {
-            return (I18N[appState.lang] && I18N[appState.lang][key]) || I18N.en[key] || key;
+            const lang = (appState && appState.lang === 'vi') ? 'vi' : 'en';
+            return (I18N[lang] && I18N[lang][key] !== undefined)
+                ? I18N[lang][key]
+                : (I18N.en[key] || key);
         }
 
         function getIngName(ing) {
-            if (!ing) return 'Herb';
-            return appState.lang === 'vi' ? ing.nameVi : ing.nameEn;
+            if (!ing) return '';
+            return appState.lang === 'vi' ? (ing.nameVi || ing.nameEn) : (ing.nameEn || ing.nameVi);
         }
 
-        function getRecField(obj, fieldBase) {
-            if (!obj) return '';
-            const suffix = appState.lang === 'vi' ? 'Vi' : 'En';
-            return obj[`${fieldBase}${suffix}`] || obj[`${fieldBase}En`] || '';
+        function getRecField(rec, fieldBase) {
+            if (!rec) return '';
+            const viKey = fieldBase + 'Vi';
+            const enKey = fieldBase + 'En';
+            return appState.lang === 'vi' ? (rec[viKey] || rec[enKey] || '') : (rec[enKey] || rec[viKey] || '');
         }
 
-        // 6. THERMODYNAMICS & REAL-TIME EXTRACTION ENGINE
-        function computeRealTimeSteepMetrics() {
-            const now = new Date();
-            const curH = now.getHours();
-            const curM = now.getMinutes();
-
-            const strainTimeStr = (appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00';
-            const [sHour, sMin] = strainTimeStr.split(':').map(n => parseInt(n, 10) || 0);
-
-            // Compute start time (if user opens between 12:00–23:59 -> steeping tonight; if 00:00–11:59 -> steeping right now until strain time)
-            const start = new Date(now);
-            const end = new Date(now);
-            end.setHours(sHour, sMin, 0, 0);
-            if (end <= start) {
-                end.setDate(end.getDate() + 1);
-            }
-
-            const diffMs = Math.max(30 * 60 * 1000, end - start); // Minimum 30 mins
-            const totalMinutes = Math.round(diffMs / 60000);
-            const steepHours = Math.round((totalMinutes / 60) * 10) / 10;
-
-            const startTimeLabel = `${String(curH).padStart(2, '0')}:${String(curM).padStart(2, '0')}`;
-            const durH = Math.floor(totalMinutes / 60);
-            const durM = totalMinutes % 60;
-            const durStr = durM > 0 ? `${durH}h${String(durM).padStart(2, '0')}m` : `${durH}h`;
-
-            // Extraction curve relative to 10.0h baseline:
-            // Shorter steep (e.g. 7h) -> higher herb dose (~1.16x) for full extraction;
-            // Longer steep (e.g. 12h at 20:00 -> 08:00) -> lower herb dose (~0.90x) to prevent tannin bitterness.
-            const rawSteepFactor = Math.pow(10 / Math.max(2, steepHours), 0.42);
-            const steepDoseFactor = Math.min(1.35, Math.max(0.82, Math.round(rawSteepFactor * 100) / 100));
-
-            // Newton's Law of Cooling in glass carafe (T_initial = 88°C, T_ambient = 27°C, k ≈ 0.22 / hr)
-            const tAmbient = 27;
-            const tInitial = 88;
-            const predictedTempC = Math.round((tAmbient + (tInitial - tAmbient) * Math.exp(-0.22 * steepHours)) * 10) / 10;
-
-            // Ice multiplier: warmer strained tea (>33°C) needs proportionally more cooling capacity
-            const deltaT = Math.max(10, predictedTempC - 6); // Target chilled temp ~6°C
-            const baseDeltaT = 33.5 - 6; // Baseline 10h steep temp (~33.5°C)
-            const iceDemandMultiplier = Math.min(1.5, Math.max(0.95, deltaT / baseDeltaT));
-
-            return {
-                startTimeLabel,
-                strainTimeStr,
-                steepHours,
-                durStr,
-                steepDoseFactor,
-                predictedTempC,
-                iceDemandMultiplier
-            };
-        }
-
-        function computeGearThermodynamics() {
+        function getGearMetrics() {
             const g = appState.gear || DEFAULT_GEAR;
-            const steepMetrics = computeRealTimeSteepMetrics();
-            const CUBE_VOL_ML = 19.683;
-            const totalCubesAvailable = (g.steelBoxes || 3) * 8;
-            const totalCapacity = g.flasks.reduce((s, f) => s + (Number(f.capacityMl) || 0), 0);
+            const flasks = Array.isArray(g.flasks) && g.flasks.length > 0 ? g.flasks : DEFAULT_GEAR.flasks;
+            const iceMode = g.iceMode === 'melting' ? 'melting' : 'steel';
+            const steelBoxes = Math.max(1, Number(g.steelBoxes) || 3);
+            const totalCubesAvailable = steelBoxes * 8;
+            const cubeVolMl = 19.7; // 2.7cm^3
+            const meltingTeaRatio = Math.min(90, Math.max(30, Number(g.meltingTeaRatio) || 60)) / 100;
+            const warmCupMl = Math.max(0, Number(g.warmCupMl) || 0);
 
-            let totalTeaForFlasks = 0;
-            let totalCubesUsed = 0;
+            let totalCapacityMl = 0;
+            flasks.forEach(f => { totalCapacityMl += (Number(f.capacityMl) || 800); });
 
-            const flaskPlans = g.flasks.map(f => {
-                const cap = Math.max(100, Number(f.capacityMl) || 500);
-                if (g.iceMode === 'steel') {
-                    // Scale ideal cubes by iceDemandMultiplier when strained tea is warmer
-                    const idealCubes = Math.max(1, Math.round(((cap * 0.10) / CUBE_VOL_ML) * steepMetrics.iceDemandMultiplier));
-                    const shareCap = totalCapacity > 0 ? Math.max(1, Math.floor((cap / totalCapacity) * totalCubesAvailable)) : idealCubes;
-                    const cubes = Math.min(idealCubes, shareCap);
-                    const iceVol = Math.round(cubes * CUBE_VOL_ML);
-                    const teaMl = Math.max(50, cap - iceVol);
-                    totalTeaForFlasks += teaMl;
-                    totalCubesUsed += cubes;
-                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes };
+            let allocatedCubes = 0;
+            const flaskBreakdown = flasks.map(f => {
+                const cap = Number(f.capacityMl) || 800;
+                if (iceMode === 'steel') {
+                    // Allocate ~17.5% volume in steel cubes, bounded by available boxes
+                    const idealCubes = Math.max(2, Math.round((cap * 0.175) / cubeVolMl));
+                    const shareMax = Math.max(1, Math.floor((cap / Math.max(1, totalCapacityMl)) * totalCubesAvailable));
+                    const cubes = Math.min(idealCubes, shareMax);
+                    allocatedCubes += cubes;
+                    const iceDispMl = Math.round(cubes * cubeVolMl);
+                    const pourMl = Math.max(100, Math.round((cap - iceDispMl - 22) / 10) * 10);
+                    return {
+                        id: f.id,
+                        name: appState.lang === 'vi' ? (f.nameVi || f.name) : (f.name || f.nameVi),
+                        capacityMl: cap,
+                        cubes,
+                        iceDispMl,
+                        pourMl,
+                        shopIceMl: 0
+                    };
                 } else {
-                    // For melting water ice, warmer tea melts more ice -> adjust home tea fill % slightly lower
-                    const baseRatio = Math.min(85, Math.max(40, Number(g.meltingTeaRatio) || 60));
-                    const adjustedRatio = Math.max(40, Math.round(baseRatio / Math.pow(steepMetrics.iceDemandMultiplier, 0.45)));
-                    const ratio = adjustedRatio / 100;
-                    const teaMl = Math.round((cap * ratio) / 10) * 10;
-                    const iceVol = cap - teaMl;
-                    totalTeaForFlasks += teaMl;
-                    return { ...f, capacityMl: cap, teaMl, iceVol, cubes: 0, effectiveTeaRatio: adjustedRatio };
+                    const pourMl = Math.round((cap * meltingTeaRatio) / 10) * 10;
+                    const shopIceMl = Math.max(0, cap - pourMl);
+                    return {
+                        id: f.id,
+                        name: appState.lang === 'vi' ? (f.nameVi || f.name) : (f.name || f.nameVi),
+                        capacityMl: cap,
+                        cubes: 0,
+                        iceDispMl: 0,
+                        pourMl,
+                        shopIceMl
+                    };
                 }
             });
 
-            const warmCup = Math.max(0, Number(g.warmCupMl) || 0);
-            const netTeaNeeded = totalTeaForFlasks + warmCup;
-            const absorptionBuffer = Math.max(150, Math.round((netTeaNeeded * 0.10) / 50) * 50);
-            const boiledWaterMl = netTeaNeeded + absorptionBuffer;
-
-            const volumeRatio = boiledWaterMl / 2200;
-            const concentrationBoost = g.iceMode === 'melting' ? 1.25 : 1.0;
-            const herbScaleFactor = volumeRatio * concentrationBoost * steepMetrics.steepDoseFactor;
+            const totalTeaNeededMl = flaskBreakdown.reduce((acc, item) => acc + item.pourMl, 0) + warmCupMl;
+            // Add ~12% dry herb water absorption + safety buffer rounded to nearest 50ml
+            const boiledWaterMl = Math.max(500, Math.ceil((totalTeaNeededMl * 1.12) / 50) * 50);
+            // Reference baseline is 2200ml; melting ice mode boosts concentration +25%
+            const concentrationBoost = iceMode === 'melting' ? 1.25 : 1.0;
+            const volumeScale = (boiledWaterMl / 2200) * concentrationBoost;
 
             return {
-                iceMode: g.iceMode,
-                steelBoxes: g.steelBoxes,
+                iceMode,
+                steelBoxes,
                 totalCubesAvailable,
-                totalCubesUsed,
-                meltingTeaRatio: g.meltingTeaRatio,
-                warmCupMl: warmCup,
-                totalCapacity,
-                totalTeaForFlasks,
-                absorptionBuffer,
+                allocatedCubes,
+                meltingTeaRatioPct: Math.round(meltingTeaRatio * 100),
+                warmCupMl,
+                totalCapacityMl,
+                totalTeaNeededMl,
                 boiledWaterMl,
-                herbScaleFactor,
-                flaskPlans,
-                steepMetrics
+                volumeScale,
+                flaskBreakdown
             };
         }
 
-        function scaleRecipeGrams(recipe, gearPlan) {
-            const scale = gearPlan.herbScaleFactor;
-            return recipe.ingredients.map(req => {
-                const inv = appState.ingredients.find(i => i.id === req.id);
-                const maxSafe = inv ? inv.maxSafeGrams * Math.max(1, gearPlan.boiledWaterMl / 2200) : req.grams * scale;
-                let scaled = Math.round(req.grams * scale * 2) / 2;
-                scaled = Math.max(1, Math.min(Math.round(maxSafe * 2) / 2, scaled));
-                return { ...req, grams: scaled };
-            });
+        function computeRealTimeSteepMetrics() {
+            const now = new Date();
+            const currentHourFloat = now.getHours() + (now.getMinutes() / 60);
+            const strainStr = (appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00';
+            const parts = strainStr.split(':');
+            const strainHourFloat = (parseInt(parts[0], 10) || 8) + ((parseInt(parts[1], 10) || 0) / 60);
+
+            // Calculate hours from current clock to tomorrow morning's strain time
+            let steepHours = (24 - currentHourFloat) + strainHourFloat;
+            if (currentHourFloat < 12) {
+                // If user opens early morning (00:00 - 11:59), compute remaining hours until today's strain time or next day
+                steepHours = strainHourFloat > currentHourFloat
+                    ? (strainHourFloat - currentHourFloat)
+                    : ((24 - currentHourFloat) + strainHourFloat);
+            }
+            steepHours = Math.max(2, Math.min(18, steepHours));
+
+            // Extraction kinetics: 10h is baseline (1.0x). Longer steeps need slightly fewer herbs to avoid tannin bitterness; shorter steeps need more.
+            const rawExtractionFactor = Math.pow(10 / steepHours, 0.22);
+            const extractionFactor = Math.max(0.85, Math.min(1.25, rawExtractionFactor));
+
+            // Newton's Law of Cooling: T(t) = T_env + (T_0 - T_env) * e^(-k*t)
+            // Initial pour temp ~88°C, ambient room temp ~27°C, cooling constant k ≈ 0.22/hr in glass carafe
+            const predictedTempC = Math.round((27 + (88 - 27) * Math.exp(-0.22 * steepHours)) * 10) / 10;
+
+            // Ice adjustment if tea is still warm when strained (< 6h steep)
+            const extraThermalLoad = predictedTempC > 33 ? Math.min(1.35, 1 + (predictedTempC - 33) * 0.012) : 1.0;
+
+            const startClockStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            return {
+                startClockStr,
+                strainStr,
+                steepHours: Math.round(steepHours * 10) / 10,
+                extractionFactor,
+                predictedTempC,
+                extraThermalLoad
+            };
         }
 
-        // 7. BIOCHEMICAL COMPATIBILITY & ADAPTIVE FORMULA ENGINE
-        function checkBiochemicalCompatibility(ingsList) {
-            const ids = ingsList.map(x => x.id);
-            const getG = (id) => {
-                const f = ingsList.find(x => x.id === id);
-                return f ? f.grams : 0;
-            };
-            // Rule 1: Hibiscus + Butterfly Pea (only allow micro-acid pH shift <= 2.5g Hibiscus)
-            if (ids.includes('hibiscus') && ids.includes('butterfly') && getG('hibiscus') > 2.5) return false;
-            // Rule 2: Rosemary + Peppermint clash (camphor + menthol overload)
-            if (ids.includes('rosemary') && ids.includes('mint')) return false;
-            // Rule 3: Peppermint + Ginger thermal clash
-            if (ids.includes('mint') && ids.includes('ginger')) return false;
-            // Rule 4: Stevia cannot be brewed alone
-            if (ids.length === 1 && ids[0] === 'stevia') return false;
+        function scaleHerbGrams(baseGrams, herbId, customMultiplier = 1) {
+            const ing = appState.ingredients.find(i => i.id === herbId);
+            const maxSafe = ing && ing.maxSafeGrams ? ing.maxSafeGrams : 12;
+            const raw = baseGrams * customMultiplier;
+            // Enforce biochemical ceiling for potent herbs (Stevia <= 2.5g, Rosemary <= 3.5g)
+            const capped = (herbId === 'stevia' || herbId === 'rosemary') ? Math.min(maxSafe, raw) : raw;
+            return Math.max(0.5, Math.round(capped * 2) / 2); // Round to nearest 0.5g
+        }
+
+        // 7. DYNAMIC ADAPTIVE FORMULA ENGINE (5-LEVEL DEPLETION + BIOCHEMICAL COMPATIBILITY)
+        function checkBiochemicalCompatibility(herbIds) {
+            const set = new Set(herbIds);
+            // Rule 1: High-dose Hibiscus + Butterfly Pea causes muddy oxidation if hibiscus > 3g
+            // Rule 2: Peppermint + Ginger thermal clash
+            if (set.has('mint') && set.has('ginger')) return false;
+            // Rule 3: Rosemary + Peppermint heavy essential oil clash
+            if (set.has('rosemary') && set.has('mint')) return false;
             return true;
         }
 
-        function isStockEnoughForRecipe(recipe) {
-            const gearPlan = computeGearThermodynamics();
-            const scaledIngs = scaleRecipeGrams(recipe, gearPlan);
-            return scaledIngs.every(req => {
-                const inv = appState.ingredients.find(i => i.id === req.id);
-                return inv && !inv.isOutOfStock && inv.currentGrams >= req.grams;
+        function isStockEnoughForRecipe(recipe, scaleFactor = 1) {
+            return recipe.ingredients.every(item => {
+                const ing = appState.ingredients.find(i => i.id === item.id);
+                if (!ing || ing.isOutOfStock) return false;
+                const needed = scaleHerbGrams(item.grams, item.id, scaleFactor);
+                return ing.currentGrams >= needed;
             });
         }
 
         function computeAdaptiveEngine() {
-            const gearPlan = computeGearThermodynamics();
-            const available = appState.ingredients.filter(i => !i.isOutOfStock && i.currentGrams >= 1.0);
-            const availCount = available.length;
+            const gear = getGearMetrics();
+            const steep = computeRealTimeSteepMetrics();
+            const combinedScale = gear.volumeScale * steep.extractionFactor;
+
+            const availableHerbs = appState.ingredients.filter(i => !i.isOutOfStock && i.currentGrams >= 1);
+            const coreHerbs = appState.ingredients.filter(i => !i.isExpansion);
+            const availableCoreCount = coreHerbs.filter(i => !i.isOutOfStock && i.currentGrams >= 2).length;
             const isVi = appState.lang === 'vi';
 
-            const coreAvailableCount = available.filter(i => !i.isExpansion).length;
-            const coreMissingCount = 9 - coreAvailableCount;
-            const validBaseRecipes = BASE_RECIPES.filter(isStockEnoughForRecipe);
+            const validRecipes = [];
 
-            let level = 0;
-            let levelTitle = '';
-            let levelColor = '';
-            let explanation = '';
-            let generatedRecipes = [];
-
-            if (availCount === 0) {
-                level = 5;
-                levelTitle = isVi ? 'Cấp độ 5: Kho Đã Cạn Hoàn Toàn (0/16 Nguyên Liệu)' : 'Level 5: Pantry Completely Depleted (0/16 Herbs)';
-                levelColor = 'bg-red-50 border-red-300 text-red-900';
-                explanation = isVi ? 'Tất cả nguyên liệu đều đã hết. Vui lòng nhập thêm gram ở mục Kho Nguyên Liệu.' : 'All botanicals are out of stock. Restock herbs in the Pantry section below.';
-                generatedRecipes = [];
-            } else if (coreMissingCount === 0 && validBaseRecipes.length >= 5) {
-                level = 0;
-                const extraCount = availCount - 9;
-                if (extraCount > 0) {
-                    levelTitle = isVi 
-                        ? `Cấp độ 0+: Kho Mở Rộng (${availCount}/16 Nguyên Liệu • ${validBaseRecipes.length} Công Thức)`
-                        : `Level 0+: Expanded Pantry (${availCount}/16 Herbs • ${validBaseRecipes.length} Formulas Unlocked)`;
-                    explanation = isVi
-                        ? `Bạn đã bổ sung thêm ${extraCount} nguyên liệu mới vào kho! Định lượng đã tự điều chỉnh theo ${gearPlan.boiledWaterMl}ml nước sôi.`
-                        : `You stocked ${extraCount} expansion herbs! Gram ratios are auto-scaled for ${gearPlan.boiledWaterMl}ml boiled water.`;
-                } else {
-                    levelTitle = isVi
-                        ? `Cấp độ 0: Kho Cơ Bản Đầy Đủ (9/9 Sẵn Sàng • ${gearPlan.boiledWaterMl}ml Nước)`
-                        : `Level 0: Core Pantry Ready (9/9 Stocked • ${gearPlan.boiledWaterMl}ml Water)`;
-                    explanation = isVi
-                        ? `9 nguyên liệu sẵn có vận hành 5 công thức chuẩn (${gearPlan.flaskPlans.length} bình, ${gearPlan.iceMode === 'steel' ? 'đá inox' : 'nước đá tan'}). Nhập gram cho 7 món mở rộng để mở công thức mới.`
-                        : `All 9 core herbs ready (${gearPlan.flaskPlans.length} flask(s), ${gearPlan.iceMode === 'steel' ? 'steel cubes' : 'melting shop ice'}). Enter grams on expansion herbs to unlock new blends.`;
+            // Step 1: Filter & scale predefined recipes that have sufficient stock
+            BASE_RECIPES.forEach(rec => {
+                if (isStockEnoughForRecipe(rec, combinedScale)) {
+                    validRecipes.push({
+                        ...rec,
+                        isAutoGenerated: false,
+                        ingredients: rec.ingredients.map(item => ({
+                            ...item,
+                            grams: scaleHerbGrams(item.grams, item.id, combinedScale)
+                        }))
+                    });
                 }
-                levelColor = 'bg-botanical-50 border-botanical-300 text-botanical-900';
-                generatedRecipes = validBaseRecipes.map(r => ({
-                    ...r,
-                    ingredients: scaleRecipeGrams(r, gearPlan),
-                    isAdapted: Boolean(r.id.startsWith('rec_exp_')) || Math.abs(gearPlan.herbScaleFactor - 1) > 0.08,
-                    adaptNote: r.id.startsWith('rec_exp_') 
-                        ? (isVi ? `Công thức mở rộng (${gearPlan.boiledWaterMl}ml)` : `Expansion formula (${gearPlan.boiledWaterMl}ml)`)
-                        : (Math.abs(gearPlan.herbScaleFactor - 1) > 0.08 
-                            ? (isVi ? `Tự chỉnh định lượng cho ${gearPlan.boiledWaterMl}ml (${gearPlan.iceMode === 'melting' ? 'cốt đậm +25%' : 'chuẩn'})` : `Scaled for ${gearPlan.boiledWaterMl}ml (${gearPlan.iceMode === 'melting' ? '+25% ice concentrate' : 'standard'})`)
-                            : (isVi ? 'Công thức chuẩn cân bằng' : 'Balanced baseline formula'))
-                }));
-            } else if (coreMissingCount <= 2 && availCount >= 4) {
-                level = 1;
-                levelTitle = isVi
-                    ? `Cấp độ 1–2: Thiếu ${coreMissingCount} Món Cơ Bản (${availCount}/16 Sẵn Sàng)`
-                    : `Level 1–2: Missing ${coreMissingCount} Core Herb(s) (${availCount}/16 Ready)`;
-                levelColor = 'bg-amber-50 border-amber-300 text-amber-900';
-                explanation = isVi
-                    ? 'Hệ thống tự động giữ các công thức còn đủ đồ và thay thế thông minh các vị bị thiếu (tự tăng Táo đỏ hoặc nhắc bổ sung đường ăn kiêng buổi sáng).'
-                    : 'Retaining intact recipes and substituting missing herbs by functional group (boosting Jujube or flagging morning zero-GI sweeteners).';
+            });
 
-                const seenSignatures = new Set();
-                BASE_RECIPES.forEach(base => {
-                    if (isStockEnoughForRecipe(base)) {
-                        const scaledBase = { ...base, ingredients: scaleRecipeGrams(base, gearPlan) };
-                        const sig = scaledBase.ingredients.map(x => `${x.id}:${x.grams}`).sort().join('|');
-                        if (!seenSignatures.has(sig)) {
-                            seenSignatures.add(sig);
-                            generatedRecipes.push({ ...scaledBase, isAdapted: false, adaptNote: isVi ? 'Giữ nguyên chuẩn' : 'Standard formula' });
-                        }
-                    } else if (!base.id.startsWith('rec_exp_')) {
-                        const adapted = adaptRecipeWithSubstitutions(base, available);
-                        if (adapted) {
-                            const sig = adapted.ingredients.map(x => `${x.id}:${x.grams}`).sort().join('|');
-                            if (!seenSignatures.has(sig)) {
-                                seenSignatures.add(sig);
-                                generatedRecipes.push(adapted);
+            // Step 2: If fewer than 2 predefined recipes qualify (due to depleted stock), synthesize safe adaptive blends
+            if (validRecipes.length < 2 && availableHerbs.length > 0) {
+                const nonSweeteners = availableHerbs.filter(h => h.id !== 'stevia');
+                const hasStevia = availableHerbs.find(h => h.id === 'stevia' && h.currentGrams >= 1.5);
+
+                if (nonSweeteners.length >= 2) {
+                    // Build safe 2-to-3 herb synergistic combinations
+                    for (let i = 0; i < nonSweeteners.length && validRecipes.length < 4; i++) {
+                        for (let j = i + 1; j < nonSweeteners.length && validRecipes.length < 4; j++) {
+                            const h1 = nonSweeteners[i];
+                            const h2 = nonSweeteners[j];
+                            if (!checkBiochemicalCompatibility([h1.id, h2.id])) continue;
+                            // Avoid combining high-acid hibiscus with butterfly pea in auto-blends
+                            if ((h1.id === 'hibiscus' && h2.id === 'butterfly') || (h1.id === 'butterfly' && h2.id === 'hibiscus')) continue;
+
+                            const blendIngs = [
+                                { id: h1.id, grams: scaleHerbGrams(Math.min(6, h1.maxSafeGrams * 0.75), h1.id, combinedScale), visualEn: 'balanced portion', visualVi: 'định lượng cân bằng' },
+                                { id: h2.id, grams: scaleHerbGrams(Math.min(6, h2.maxSafeGrams * 0.75), h2.id, combinedScale), visualEn: 'balanced portion', visualVi: 'định lượng cân bằng' }
+                            ];
+
+                            if (hasStevia && h1.id !== 'jujube' && h2.id !== 'jujube') {
+                                blendIngs.push({
+                                    id: 'stevia',
+                                    grams: scaleHerbGrams(2, 'stevia', combinedScale),
+                                    visualEn: '1 small pinch',
+                                    visualVi: '1 nhúm nhỏ'
+                                });
+                            }
+
+                            const alreadyExists = validRecipes.some(r =>
+                                r.ingredients.length === blendIngs.length &&
+                                blendIngs.every(bi => r.ingredients.some(ri => ri.id === bi.id))
+                            );
+
+                            if (!alreadyExists) {
+                                const codeNum = validRecipes.length + 1;
+                                validRecipes.push({
+                                    id: `auto_${h1.id}_${h2.id}`,
+                                    code: `ADP-0${codeNum}`,
+                                    isAutoGenerated: true,
+                                    nameEn: `${h1.nameEn.split(' ').slice(-1)[0]} & ${h2.nameEn.split(' ').slice(-1)[0]} Blend`,
+                                    nameVi: `Phối Hợp ${h1.nameVi.split(' ').slice(0, 3).join(' ')} + ${h2.nameVi.split(' ').slice(0, 3).join(' ')}`,
+                                    tagEn: 'Auto-Adapted Synergy',
+                                    tagVi: 'Tự động ứng biến',
+                                    colorTheme: h1.color || '#3d7a5a',
+                                    bgBadge: 'bg-amber-50 text-amber-800 border-amber-200',
+                                    ingredients: blendIngs,
+                                    mechanismEn: `Biochemically verified pairing of ${h1.nameEn} and ${h2.nameEn} scaled to ${gear.boiledWaterMl}ml water.`,
+                                    mechanismVi: `Tổ hợp tương hợp hóa sinh giữa ${h1.nameVi} và ${h2.nameVi}, tự căn chỉnh cho ${gear.boiledWaterMl}ml nước.`
+                                });
                             }
                         }
                     }
-                });
-                if (generatedRecipes.length === 0) {
-                    generatedRecipes = generateDynamicCombinations(available, 3);
                 }
-            } else if (availCount >= 4) {
-                level = 3;
-                levelTitle = isVi
-                    ? `Cấp độ 3–4: Kho Thu Gọn (${availCount}/16 Nguyên Liệu)`
-                    : `Level 3–4: Auto-Mixer Active (${availCount}/16 Herbs Left)`;
-                levelColor = 'bg-orange-50 border-orange-300 text-orange-900';
-                explanation = isVi
-                    ? 'Bộ máy Auto-Mixer tự động ghép tổ hợp tương hợp từ các nguyên liệu còn lại, loại bỏ cặp xung khắc và cân chỉnh định lượng.'
-                    : 'Auto-Mixer synthesized compatible 3–4 herb blends from remaining stock while filtering out biochemical clashes.';
 
-                const validDirect = BASE_RECIPES.filter(isStockEnoughForRecipe).map(r => ({
-                    ...r,
-                    ingredients: scaleRecipeGrams(r, gearPlan),
-                    isAdapted: false,
-                    adaptNote: isVi ? 'Đủ nguyên liệu từ kho' : 'Available from current stock'
-                }));
-                const dynamicOnes = generateDynamicCombinations(available, 4);
-                generatedRecipes = [...validDirect, ...dynamicOnes].slice(0, 6);
-            } else {
+                // Single-origin fallback if remaining herbs clash (e.g. only Mint + Ginger left) or only 1 herb left
+                if (validRecipes.length === 0 && nonSweeteners.length >= 1) {
+                    nonSweeteners.slice(0, 3).forEach((herb, idx) => {
+                        const singleIngs = [{
+                            id: herb.id,
+                            grams: scaleHerbGrams(Math.min(8, herb.maxSafeGrams * 0.85), herb.id, combinedScale),
+                            visualEn: 'single-origin steep',
+                            visualVi: 'ủ đơn phương'
+                        }];
+                        if (hasStevia && herb.id !== 'jujube') {
+                            singleIngs.push({
+                                id: 'stevia',
+                                grams: scaleHerbGrams(2, 'stevia', combinedScale),
+                                visualEn: '1 small pinch',
+                                visualVi: '1 nhúm nhỏ'
+                            });
+                        }
+                        validRecipes.push({
+                            id: `single_${herb.id}`,
+                            code: `SOLO-0${idx + 1}`,
+                            isAutoGenerated: true,
+                            nameEn: `Pure ${herb.nameEn}`,
+                            nameVi: `Đơn Phương ${herb.nameVi}`,
+                            tagEn: 'Conflict-Safe Single Herb',
+                            tagVi: 'Tách riêng tránh xung khắc',
+                            colorTheme: herb.color || '#3d7a5a',
+                            bgBadge: 'bg-rose-50 text-rose-800 border-rose-200',
+                            ingredients: singleIngs,
+                            mechanismEn: `Isolated single-herb infusion to avoid thermal/essential-oil conflict while preserving ${herb.compounds.split(',')[0]}.`,
+                            mechanismVi: `Tách ủ riêng lẻ để tránh xung khắc dược tính, giữ trọn hoạt chất ${herb.compounds.split(',')[0]}.`
+                        });
+                    });
+                }
+            }
+
+            // Determine Depletion Level Banner
+            let level = 0;
+            let levelTitle = '';
+            let levelColor = 'bg-botanical-50/90 border-botanical-200 text-botanical-900';
+            let explanation = '';
+
+            if (availableHerbs.length === 0 || (availableHerbs.length === 1 && availableHerbs[0].id === 'stevia')) {
                 level = 5;
-                levelTitle = isVi
-                    ? `Cấp độ 5: Sắp Cạn Kho (Chỉ Còn ${availCount} Món)`
-                    : `Level 5: Critical Low Stock (${availCount} Herb(s) Left)`;
-                levelColor = 'bg-rose-50 border-rose-300 text-rose-900';
+                levelColor = 'bg-red-50 border-red-200 text-red-900';
+                levelTitle = isVi ? '🚨 Cấp 5: Cạn Kho / Chỉ Còn Cỏ Ngọt' : '🚨 Level 5: Pantry Depleted / Only Stevia Left';
                 explanation = isVi
-                    ? 'Tự động chuyển sang chế độ Đơn phương (Single-Origin) hoặc ghép đôi an toàn. Các cặp xung khắc như Bạc hà + Gừng đã được tách riêng.'
-                    : 'Switched to Single-Origin or safe dual-herb infusions. Conflicting pairs (such as Mint + Ginger) are automatically separated.';
-                generatedRecipes = generateLastResortRecipes(available);
+                    ? 'Không nên ủ Cỏ ngọt đơn độc qua đêm (gây vị ngọt gắt). Vui lòng nhập thêm ít nhất 1 loại thảo mộc nền.'
+                    : 'Stevia should not be steeped alone overnight (causes metallic sweetness). Please restock at least 1 base botanical.';
+            } else if (availableHerbs.length <= 3) {
+                level = 4;
+                levelColor = 'bg-rose-50 border-rose-200 text-rose-900';
+                levelTitle = isVi ? `🔥 Cấp 4: Chế Độ Tồn Kho Tối Thiểu (${availableHerbs.length} món)` : `🔥 Level 4: Minimal Stock Mode (${availableHerbs.length} herbs)`;
+                explanation = isVi
+                    ? 'Hệ thống tự động kiểm tra ma trận xung khắc (ví dụ tách riêng Bạc hà & Gừng) để tạo công thức đơn phương hoặc ghép đôi an toàn.'
+                    : 'Compatibility matrix active: conflicting herbs (e.g. Peppermint & Ginger) are automatically separated into safe solo or paired brews.';
+            } else if (availableCoreCount < 7) {
+                level = 2;
+                levelColor = 'bg-amber-50 border-amber-200 text-amber-900';
+                levelTitle = isVi ? `⚡ Cấp 2: Tự Động Ứng Biến (${validRecipes.length} công thức khả dụng)` : `⚡ Level 2: Dynamic Auto-Blending (${validRecipes.length} active formulas)`;
+                explanation = isVi
+                    ? `Một số nguyên liệu đã hết. Hệ thống tự ẩn công thức thiếu đồ và ghép tổ hợp thay thế tương hợp cho ${gear.boiledWaterMl}ml nước.`
+                    : `Some pantry items are out. Incompatible formulas are hidden and safe substitute blends are calculated for ${gear.boiledWaterMl}ml water.`;
+            } else {
+                level = 0;
+                levelColor = 'bg-botanical-50/90 border-botanical-200 text-botanical-900';
+                levelTitle = isVi ? `✅ Cấp 0: Kho Tối Ưu (${validRecipes.length} công thức sẵn sàng)` : `✅ Level 0: Optimal Pantry (${validRecipes.length} formulas ready)`;
+                explanation = isVi
+                    ? `Định lượng tự động căn chỉnh theo ${gear.boiledWaterMl}ml nước và thời gian ủ ${steep.steepHours}h (dự kiến ${steep.predictedTempC}°C lúc ${steep.strainStr}).`
+                    : `Dosages dynamically calibrated for ${gear.boiledWaterMl}ml water and a ${steep.steepHours}h steep (est. ${steep.predictedTempC}°C at ${steep.strainStr}).`;
             }
 
-            currentAdaptivePlan = { level, levelTitle, levelColor, explanation, recipes: generatedRecipes };
+            currentAdaptivePlan = {
+                level,
+                levelTitle,
+                levelColor,
+                explanation,
+                recipes: validRecipes
+            };
+
+            return currentAdaptivePlan;
         }
 
-        function adaptRecipeWithSubstitutions(baseRecipe, available) {
-            const isVi = appState.lang === 'vi';
-            const gearPlan = computeGearThermodynamics();
-            const scale = gearPlan.herbScaleFactor;
-            let newIngs = [];
-            let notes = [];
+        // 8. FORWARD-COMPATIBLE STORAGE, SCHEMA MIGRATION & JSON BACKUP ENGINE
+        function migrateAndSanitizeState(raw) {
+            const base = createFreshDefaultState((raw && raw.lang === 'vi') ? 'vi' : 'en');
+            if (!raw || typeof raw !== 'object') return base;
 
-            for (const req of baseRecipe.ingredients) {
-                const inv = available.find(a => a.id === req.id);
-                const scaledReq = Math.max(1, Math.round(req.grams * scale * 2) / 2);
-                if (inv && inv.currentGrams >= scaledReq) {
-                    newIngs.push({ ...req, grams: scaledReq });
-                } else {
-                    const sub = findBestSubstitute(req.id, available, newIngs.map(x => x.id));
-                    if (sub) {
-                        newIngs.push(sub.item);
-                        notes.push(sub.note);
-                    } else if (req.id === 'stevia') {
-                        notes.push(isVi ? 'Hết cỏ ngọt → thêm đường ăn kiêng buổi sáng' : 'No Stevia → add morning zero-GI sweetener');
-                    } else {
-                        return null;
-                    }
+            const oldVer = Number(raw.schemaVersion) || 1;
+            base.lang = raw.lang === 'vi' ? 'vi' : 'en';
+
+            // Migrate Gear safely
+            if (raw.gear && typeof raw.gear === 'object') {
+                base.gear.iceMode = raw.gear.iceMode === 'melting' ? 'melting' : 'steel';
+                base.gear.steelBoxes = Math.max(1, Number(raw.gear.steelBoxes) || DEFAULT_GEAR.steelBoxes);
+                base.gear.meltingTeaRatio = Math.min(90, Math.max(30, Number(raw.gear.meltingTeaRatio) || DEFAULT_GEAR.meltingTeaRatio));
+                base.gear.warmCupMl = Math.max(0, Number(raw.gear.warmCupMl) ?? DEFAULT_GEAR.warmCupMl);
+                if (Array.isArray(raw.gear.flasks) && raw.gear.flasks.length > 0) {
+                    base.gear.flasks = raw.gear.flasks.map((f, idx) => ({
+                        id: f.id || `flask_${idx + 1}`,
+                        name: f.name || `Flask ${idx + 1}`,
+                        nameVi: f.nameVi || f.name || `Bình ${idx + 1}`,
+                        capacityMl: Math.max(150, Number(f.capacityMl) || 800)
+                    }));
                 }
             }
 
-            if (newIngs.length < 2) return null;
-            normalizeQuantities(newIngs, available);
-            if (!checkBiochemicalCompatibility(newIngs)) return null;
-
-            return {
-                ...baseRecipe,
-                id: `${baseRecipe.id}_adapted`,
-                code: `${baseRecipe.code}*`,
-                ingredients: newIngs,
-                isAdapted: true,
-                adaptNote: notes.length > 0 ? notes.join(' • ') : (isVi ? 'Đã điều chỉnh định lượng' : 'Dosage adjusted')
-            };
-        }
-
-        function findBestSubstitute(missingId, available, alreadyUsedIds) {
-            const isVi = appState.lang === 'vi';
-            const priorityMap = {
-                stevia: ['jujube', 'goji', 'pandan'],
-                hibiscus: ['orange', 'lemongrass'],
-                butterfly: ['chrysanthemum', 'jasmine', 'pandan'],
-                rosemary: ['pandan', 'jasmine', 'chenpi'],
-                orange: ['hibiscus', 'lemongrass', 'chenpi'],
-                jujube: ['goji', 'stevia', 'pandan'],
-                ginger: ['chenpi', 'lemongrass', 'rosemary'],
-                pandan: ['jasmine', 'rosemary', 'jujube'],
-                mint: ['lemongrass', 'pandan', 'orange']
-            };
-
-            const candidates = priorityMap[missingId] || [];
-            for (const candId of candidates) {
-                if (alreadyUsedIds.includes(candId)) continue;
-                const inv = available.find(a => a.id === candId && a.currentGrams >= 3);
-                if (inv) {
-                    const dose = Math.min(inv.currentGrams, Math.min(inv.maxSafeGrams, candId === 'stevia' ? 2 : 5));
-                    const missingObj = appState.ingredients.find(i => i.id === missingId);
+            // Migrate Ingredients & Backfill New Herbs
+            if (Array.isArray(raw.ingredients)) {
+                const rawMap = new Map(raw.ingredients.map(item => [item.id, item]));
+                base.ingredients = DEFAULT_INGREDIENTS.map(defIng => {
+                    const saved = rawMap.get(defIng.id);
+                    if (!saved) return { ...defIng };
+                    const grams = Math.max(0, Number(saved.currentGrams) || 0);
                     return {
-                        item: { id: candId, grams: dose, visualEn: 'auto-sub', visualVi: 'thay thế' },
-                        note: isVi
-                            ? `Thay ${getIngName(missingObj)} bằng ${getIngName(inv)} (${dose}g)`
-                            : `Replaced ${getIngName(missingObj)} with ${getIngName(inv)} (${dose}g)`
+                        ...defIng,
+                        ...saved,
+                        currentGrams: grams,
+                        isOutOfStock: typeof saved.isOutOfStock === 'boolean' ? saved.isOutOfStock : (grams <= 0)
+                    };
+                });
+                // Preserve any custom herbs added by the user
+                raw.ingredients.forEach(saved => {
+                    if (saved && saved.id && !base.ingredients.some(b => b.id === saved.id)) {
+                        base.ingredients.push(saved);
+                    }
+                });
+            }
+
+            // Migrate Schedule
+            if (raw.schedule && typeof raw.schedule === 'object') {
+                base.schedule.todayRecipeId = raw.schedule.todayRecipeId || 'rec_1';
+                base.schedule.tomorrowRecipeId = raw.schedule.tomorrowRecipeId || 'rec_2';
+                base.schedule.tomorrowStrainTime = raw.schedule.tomorrowStrainTime || '08:00';
+                base.schedule.lastUpdatedDate = raw.schedule.lastUpdatedDate || '';
+                if (raw.schedule.dailyChecks && typeof raw.schedule.dailyChecks === 'object') {
+                    base.schedule.dailyChecks = {
+                        date: raw.schedule.dailyChecks.date || '',
+                        flasks: raw.schedule.dailyChecks.flasks || {}
                     };
                 }
             }
-            return null;
-        }
 
-        function generateDynamicCombinations(available, maxResults) {
-            const isVi = appState.lang === 'vi';
-            const results = [];
-            const nonStevia = available.filter(a => a.id !== 'stevia');
-            const stevia = available.find(a => a.id === 'stevia' && a.currentGrams >= 1.5);
-
-            for (let i = 0; i < nonStevia.length; i++) {
-                for (let j = i + 1; j < nonStevia.length; j++) {
-                    const h1 = nonStevia[i];
-                    const h2 = nonStevia[j];
-                    const combo = [
-                        { id: h1.id, grams: Math.min(h1.currentGrams, Math.min(h1.maxSafeGrams, 6)), visualEn: 'base', visualVi: 'nền' },
-                        { id: h2.id, grams: Math.min(h2.currentGrams, Math.min(h2.maxSafeGrams, 5)), visualEn: 'synergy', visualVi: 'bổ trợ' }
-                    ];
-                    const h3 = nonStevia.find((x, idx) => idx > j && checkBiochemicalCompatibility([...combo, { id: x.id, grams: 4 }]));
-                    if (h3) {
-                        combo.push({ id: h3.id, grams: Math.min(h3.currentGrams, Math.min(h3.maxSafeGrams, 4)), visualEn: 'aroma', visualVi: 'hương' });
-                    }
-                    if (stevia && !combo.some(c => c.id === 'jujube')) {
-                        combo.push({ id: 'stevia', grams: Math.min(stevia.currentGrams, 2), visualEn: 'sweet', visualVi: 'ngọt' });
-                    }
-
-                    normalizeQuantities(combo, available);
-                    if (checkBiochemicalCompatibility(combo)) {
-                        const totalG = combo.reduce((s, x) => s + x.grams, 0);
-                        if (totalG >= 8) {
-                            results.push({
-                                id: `dyn_${h1.id}_${h2.id}`,
-                                code: `AUTO-${results.length + 1}`,
-                                nameEn: `${h1.nameEn.split(' ').pop()} & ${h2.nameEn.split(' ').pop()}`,
-                                nameVi: `Phối ${h1.nameVi.replace('khô', '').trim()} & ${h2.nameVi.replace('khô', '').trim()}`,
-                                tagEn: 'Auto-Synthesized', tagVi: 'Tự động ghép vị',
-                                colorTheme: h1.color,
-                                bgBadge: 'bg-teal-50 text-teal-800 border-teal-200',
-                                ingredients: combo,
-                                isAdapted: true,
-                                adaptNote: isVi ? 'Tổ hợp tự động an toàn từ kho hiện tại' : 'Biochemically verified blend from remaining pantry',
-                                mechanismEn: `Combines ${h1.nameEn} (${h1.compounds.split(',')[0]}) with ${h2.nameEn} without antagonist clashes.`,
-                                mechanismVi: `Kết hợp ${h1.nameVi} (${h1.compounds.split(',')[0]}) cùng ${h2.nameVi} đảm bảo tương hợp.`
-                            });
-                            if (results.length >= maxResults) return results;
-                        }
-                    }
-                }
+            // Migrate History & Custom Extensions
+            if (Array.isArray(raw.history)) {
+                base.history = raw.history;
             }
-            return results;
-        }
-
-        function generateLastResortRecipes(available) {
-            const isVi = appState.lang === 'vi';
-            const results = [];
-            const nonStevia = available.filter(a => a.id !== 'stevia');
-
-            if (nonStevia.length === 0) return [];
-
-            if (nonStevia.length >= 2) {
-                for (let i = 0; i < nonStevia.length; i++) {
-                    for (let j = i + 1; j < nonStevia.length; j++) {
-                        const pair = [
-                            { id: nonStevia[i].id, grams: Math.min(nonStevia[i].currentGrams, nonStevia[i].maxSafeGrams), visualEn: 'primary', visualVi: 'chính' },
-                            { id: nonStevia[j].id, grams: Math.min(nonStevia[j].currentGrams, nonStevia[j].maxSafeGrams), visualEn: 'secondary', visualVi: 'phụ' }
-                        ];
-                        if (checkBiochemicalCompatibility(pair)) {
-                            results.push({
-                                id: `last_pair_${i}_${j}`,
-                                code: `DUO-${results.length + 1}`,
-                                nameEn: `${nonStevia[i].nameEn} + ${nonStevia[j].nameEn}`,
-                                nameVi: `Trà Đôi: ${nonStevia[i].nameVi} & ${nonStevia[j].nameVi}`,
-                                tagEn: 'Minimalist Duo', tagVi: 'Công thức tối giản',
-                                colorTheme: nonStevia[i].color,
-                                bgBadge: 'bg-amber-50 text-amber-800 border-amber-200',
-                                ingredients: pair,
-                                isAdapted: true,
-                                adaptNote: isVi ? 'Ghép đôi tối ưu từ nguyên liệu cuối cùng' : 'Safe dual-herb infusion from last stock',
-                                mechanismEn: getRecField(nonStevia[i], 'benefits'),
-                                mechanismVi: getRecField(nonStevia[i], 'benefits')
-                            });
-                        }
-                    }
-                }
+            if (raw.customExtensions && typeof raw.customExtensions === 'object') {
+                base.customExtensions = { ...raw.customExtensions };
             }
 
-            nonStevia.forEach((herb, idx) => {
-                const dose = Math.min(herb.currentGrams, herb.maxSafeGrams);
-                results.push({
-                    id: `single_${herb.id}`,
-                    code: `SOLO-${idx + 1}`,
-                    nameEn: `Pure ${herb.nameEn}`,
-                    nameVi: `Đơn Phương ${herb.nameVi}`,
-                    tagEn: 'Single-Origin', tagVi: 'Đơn phương dược trà',
-                    colorTheme: herb.color,
-                    bgBadge: 'bg-gray-100 text-gray-800 border-gray-300',
-                    ingredients: [{ id: herb.id, grams: dose, visualEn: 'pure brew', visualVi: 'đơn vị' }],
-                    isAdapted: true,
-                    adaptNote: isVi ? 'Ủ đơn vị an toàn (tách riêng tránh xung khắc)' : 'Pure single-herb infusion (isolated to prevent clashes)',
-                    mechanismEn: getRecField(herb, 'benefits'),
-                    mechanismVi: getRecField(herb, 'benefits')
-                });
-            });
-
-            return results;
+            base.schemaVersion = SCHEMA_VERSION;
+            base._migratedFrom = oldVer < SCHEMA_VERSION ? oldVer : null;
+            return base;
         }
 
-        function normalizeQuantities(ingsList, available) {
-            const gearPlan = computeGearThermodynamics();
-            const scale = gearPlan.herbScaleFactor;
+        function setCookie(name, value, days = 365) {
+            try {
+                const expires = new Date(Date.now() + days * 864e5).toUTCString();
+                document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+            } catch (e) { /* Ignore cookie size/iframe limits */ }
+        }
 
-            ingsList.forEach(item => {
-                const inv = available.find(a => a.id === item.id);
-                if (inv) {
-                    const scaledMax = Math.round(inv.maxSafeGrams * Math.max(0.75, scale) * 2) / 2;
-                    const scaledDose = Math.max(1, Math.round(item.grams * scale * 2) / 2);
-                    item.grams = Math.min(scaledDose, inv.currentGrams, scaledMax);
-                }
-            });
-
-            const minTotalTarget = Math.max(8, Math.round(13 * scale));
-            let total = ingsList.reduce((s, x) => s + x.grams, 0);
-            if (total < minTotalTarget) {
-                for (const item of ingsList) {
-                    if (['stevia', 'rosemary', 'mint'].includes(item.id)) continue;
-                    const inv = available.find(a => a.id === item.id);
-                    const scaledMax = inv ? Math.round(inv.maxSafeGrams * Math.max(0.75, scale) * 2) / 2 : item.grams;
-                    if (inv && item.grams < scaledMax && item.grams < inv.currentGrams) {
-                        const add = Math.min(3, scaledMax - item.grams, inv.currentGrams - item.grams);
-                        item.grams = Math.round((item.grams + add) * 2) / 2;
-                        total += add;
-                        if (total >= minTotalTarget + 1) break;
-                    }
-                }
+        function getCookie(name) {
+            try {
+                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                return match ? decodeURIComponent(match[2]) : null;
+            } catch (e) {
+                return null;
             }
         }
 
-        // 8. PERSISTENCE (LOCALSTORAGE + COOKIES)
         function saveState() {
             try {
-                const payload = {
+                const payload = JSON.stringify(appState);
+                localStorage.setItem(STORAGE_KEY, payload);
+                // Compact cookie backup for pantry & schedule
+                const compactCookie = JSON.stringify({
+                    schemaVersion: SCHEMA_VERSION,
                     lang: appState.lang,
                     gear: appState.gear,
-                    ingredients: appState.ingredients.map(i => ({
-                        id: i.id,
-                        currentGrams: i.currentGrams,
-                        isOutOfStock: i.isOutOfStock
-                    })),
                     schedule: appState.schedule,
-                    history: appState.history.slice(0, 50)
-                };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-
-                const compact = {
-                    lang: appState.lang,
-                    gear: appState.gear,
-                    inv: appState.ingredients.map(i => ({ id: i.id, g: i.currentGrams, o: i.isOutOfStock })),
-                    sch: appState.schedule
-                };
-                const d = new Date();
-                d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
-                document.cookie = `${STORAGE_KEY}_cookie=${encodeURIComponent(JSON.stringify(compact))};expires=${d.toUTCString()};path=/;SameSite=Lax`;
-            } catch (e) {
-                console.error('Save error:', e);
+                    stock: appState.ingredients.map(i => ({ id: i.id, g: i.currentGrams, o: i.isOutOfStock ? 1 : 0 }))
+                });
+                setCookie(STORAGE_KEY + '_c', compactCookie, 365);
+            } catch (err) {
+                console.warn('Storage sync warning:', err);
             }
         }
 
@@ -1550,130 +1469,151 @@
             try {
                 const rawLocal = localStorage.getItem(STORAGE_KEY);
                 if (rawLocal) {
-                    mergeLoadedState(JSON.parse(rawLocal));
+                    appState = migrateAndSanitizeState(JSON.parse(rawLocal));
                     return;
                 }
-
-                const cookieName = `${STORAGE_KEY}_cookie=`;
-                const decodedCookie = decodeURIComponent(document.cookie);
-                const ca = decodedCookie.split(';');
-                for (let i = 0; i < ca.length; i++) {
-                    let c = ca[i].trim();
-                    if (c.indexOf(cookieName) === 0) {
-                        const compact = JSON.parse(c.substring(cookieName.length, c.length));
-                        if (compact.lang) appState.lang = compact.lang;
-                        if (compact.gear) appState.gear = { ...DEFAULT_GEAR, ...compact.gear };
-                        if (compact.inv) {
-                            compact.inv.forEach(item => {
-                                const target = appState.ingredients.find(x => x.id === item.id);
-                                if (target) {
-                                    target.currentGrams = item.g;
-                                    target.isOutOfStock = item.o;
-                                }
-                            });
-                        }
-                        if (compact.sch) appState.schedule = { ...appState.schedule, ...compact.sch };
-                        saveState();
-                        return;
-                    }
+                const rawCookie = getCookie(STORAGE_KEY + '_c');
+                if (rawCookie) {
+                    const parsed = JSON.parse(rawCookie);
+                    const reconstructed = {
+                        schemaVersion: parsed.schemaVersion || 1,
+                        lang: parsed.lang || 'en',
+                        gear: parsed.gear,
+                        schedule: parsed.schedule,
+                        ingredients: Array.isArray(parsed.stock)
+                            ? parsed.stock.map(s => ({ id: s.id, currentGrams: s.g, isOutOfStock: !!s.o }))
+                            : []
+                    };
+                    appState = migrateAndSanitizeState(reconstructed);
+                    saveState();
+                    return;
                 }
-            } catch (e) {
-                console.error('Load error:', e);
+            } catch (err) {
+                console.warn('Fallback to default state:', err);
             }
+            appState = createFreshDefaultState('en');
+            saveState();
         }
 
-        function mergeLoadedState(parsed) {
-            if (parsed.lang) appState.lang = parsed.lang;
-            if (parsed.gear) {
-                appState.gear = {
-                    ...DEFAULT_GEAR,
-                    ...parsed.gear,
-                    flasks: Array.isArray(parsed.gear.flasks) && parsed.gear.flasks.length > 0
-                        ? parsed.gear.flasks
-                        : JSON.parse(JSON.stringify(DEFAULT_GEAR.flasks))
+        function exportDataJSON() {
+            try {
+                const exportEnvelope = {
+                    appName: 'BotanicaLab Overnight Infusion Tracker',
+                    exportedAt: new Date().toISOString(),
+                    schemaVersion: SCHEMA_VERSION,
+                    data: appState
                 };
+                const blob = new Blob([JSON.stringify(exportEnvelope, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const dateStamp = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `botanicalab-backup-${dateStamp}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast(appState.lang === 'vi' ? '💾 Đã tải xuống file sao lưu JSON!' : '💾 JSON backup exported!');
+            } catch (err) {
+                showToast(appState.lang === 'vi' ? '❌ Lỗi xuất dữ liệu' : '❌ Export failed');
             }
-            if (parsed.ingredients && Array.isArray(parsed.ingredients)) {
-                parsed.ingredients.forEach(saved => {
-                    const target = appState.ingredients.find(i => i.id === saved.id);
-                    if (target) {
-                        target.currentGrams = typeof saved.currentGrams === 'number' ? saved.currentGrams : target.defaultGrams;
-                        target.isOutOfStock = Boolean(saved.isOutOfStock);
-                    }
-                });
-            }
-            if (parsed.schedule) appState.schedule = { ...appState.schedule, ...parsed.schedule };
-            if (parsed.history && Array.isArray(parsed.history)) appState.history = parsed.history;
         }
 
-        // 9. DATE & REAL-TIME SCHEDULE ENGINE
+        function importDataJSON(event) {
+            const file = event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    const payload = (parsed && parsed.data && typeof parsed.data === 'object') ? parsed.data : parsed;
+                    if (!payload || (!Array.isArray(payload.ingredients) && !payload.schedule && !payload.gear)) {
+                        throw new Error('Invalid backup structure');
+                    }
+                    const prevVer = Number(payload.schemaVersion || parsed.schemaVersion) || 1;
+                    appState = migrateAndSanitizeState(payload);
+                    saveState();
+                    applyStaticTranslations();
+                    updateClockAndDates();
+                    renderAll();
+                    const migratedNote = prevVer < SCHEMA_VERSION ? ` (v${prevVer} ➔ v${SCHEMA_VERSION})` : '';
+                    showToast(appState.lang === 'vi'
+                        ? `📂 Khôi phục dữ liệu thành công${migratedNote}!`
+                        : `📂 Backup restored successfully${migratedNote}!`);
+                } catch (err) {
+                    showToast(appState.lang === 'vi' ? '❌ File JSON không hợp lệ' : '❌ Invalid JSON backup file');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function resetAllData() {
+            const currentLang = appState.lang || 'en';
+            appState = createFreshDefaultState(currentLang);
+            saveState();
+            applyStaticTranslations();
+            updateClockAndDates();
+            renderAll();
+            showToast(currentLang === 'vi' ? '🔄 Đã khôi phục toàn bộ dữ liệu gốc' : '🔄 Factory reset complete');
+        }
+
+        // 9. DATE, REAL-TIME CLOCK & UI RENDERING ENGINE
         function getFormattedDate(offsetDays = 0) {
             const d = new Date();
             d.setDate(d.getDate() + offsetDays);
-            const locale = appState.lang === 'vi' ? 'vi-VN' : 'en-US';
-            const dayName = d.toLocaleDateString(locale, { weekday: 'long' });
-            const dateStr = d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const iso = d.toISOString().split('T')[0];
-            return {
-                iso,
-                display: `${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}`,
-                short: `${dayName.slice(0, 3)}, ${d.getDate()}/${d.getMonth() + 1}`
-            };
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const iso = `${yyyy}-${mm}-${dd}`;
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            const viOptions = { weekday: 'long', day: '2-digit', month: '2-digit' };
+            const display = appState.lang === 'vi'
+                ? d.toLocaleDateString('vi-VN', viOptions)
+                : d.toLocaleDateString('en-US', options);
+            return { iso, display };
         }
 
         function updateClockAndDates() {
             const now = new Date();
-            const locale = appState.lang === 'vi' ? 'vi-VN' : 'en-US';
-            const timeStr = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const today = getFormattedDate(0);
-            const tomorrow = getFormattedDate(1);
-
-            document.getElementById('live-clock-display').innerHTML = `🕒 <strong>${timeStr}</strong> • ${today.display}`;
-            document.getElementById('today-date-label').textContent = today.display;
-            document.getElementById('tomorrow-date-label').textContent = tomorrow.display;
-
-            if (appState.schedule.lastUpdatedDate && appState.schedule.lastUpdatedDate !== today.iso) {
-                appState.schedule.todayRecipeId = appState.schedule.tomorrowRecipeId;
-                const availableRecs = currentAdaptivePlan.recipes;
-                if (availableRecs.length > 0) {
-                    const currIdx = availableRecs.findIndex(r => r.id === appState.schedule.todayRecipeId);
-                    const nextRec = availableRecs[(currIdx + 1) % availableRecs.length];
-                    appState.schedule.tomorrowRecipeId = nextRec.id;
-                }
-                appState.schedule.lastUpdatedDate = today.iso;
-                appState.schedule.dailyChecks = { date: today.iso, flasks: {} };
-                saveState();
-            } else if (!appState.schedule.lastUpdatedDate) {
-                appState.schedule.lastUpdatedDate = today.iso;
+            const clockEl = document.getElementById('live-clock-display');
+            if (clockEl) {
+                const timeStr = now.toLocaleTimeString(appState.lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const dateStr = getFormattedDate(0).display;
+                clockEl.textContent = `🕒 ${dateStr} • ${timeStr}`;
             }
 
-            if (appState.schedule.dailyChecks.date !== today.iso) {
-                appState.schedule.dailyChecks = { date: today.iso, flasks: {} };
+            const todayInfo = getFormattedDate(0);
+            const tomorrowInfo = getFormattedDate(1);
+            const todayLabel = document.getElementById('today-date-label');
+            const tomorrowLabel = document.getElementById('tomorrow-date-label');
+            if (todayLabel) todayLabel.textContent = `${t('todayShort')} (${todayInfo.display})`;
+            if (tomorrowLabel) tomorrowLabel.textContent = `${t('tomorrowShort')} (${tomorrowInfo.display})`;
+
+            // Auto-rollover daily checklist if date changed
+            if (appState.schedule.dailyChecks && appState.schedule.dailyChecks.date !== todayInfo.iso) {
+                appState.schedule.dailyChecks = { date: todayInfo.iso, flasks: {} };
                 saveState();
             }
 
-            if (!lastMinuteTick) lastMinuteTick = now.getMinutes();
-            if (now.getMinutes() !== lastMinuteTick) {
-                lastMinuteTick = now.getMinutes();
-                renderAll();
+            const strainInput = document.getElementById('input-tomorrow-strain-time');
+            if (strainInput && appState.schedule.tomorrowStrainTime) {
+                strainInput.value = appState.schedule.tomorrowStrainTime;
             }
         }
 
-        let lastMinuteTick = null;
-
-        // 10. UI LANGUAGE APPLICATION & RENDERING
         function applyStaticTranslations() {
-            document.documentElement.lang = appState.lang;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (I18N[appState.lang][key]) {
-                    el.innerHTML = I18N[appState.lang][key];
+                if (key) {
+                    el.innerHTML = t(key);
                 }
             });
             const langLabel = document.getElementById('lang-toggle-label');
             if (langLabel) {
-                langLabel.textContent = appState.lang === 'en' ? 'EN ➔ VI' : 'VI ➔ EN';
+                langLabel.textContent = appState.lang === 'vi' ? 'VI ➔ EN' : 'EN ➔ VI';
             }
+            document.documentElement.lang = appState.lang;
         }
 
         function toggleLanguage() {
@@ -1682,367 +1622,243 @@
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
-            showToast(appState.lang === 'en' ? '🌐 Switched to English' : '🌐 Đã chuyển sang Tiếng Việt');
         }
 
-        function renderAll() {
-            computeAdaptiveEngine();
-
-            if (currentAdaptivePlan.recipes.length > 0) {
-                const stillValid = currentAdaptivePlan.recipes.some(r => r.id === appState.schedule.tomorrowRecipeId);
-                if (!stillValid) appState.schedule.tomorrowRecipeId = currentAdaptivePlan.recipes[0].id;
+        function buildMiniRecipeHTML(rec, isTonight = false) {
+            if (!rec) {
+                return `<p class="text-xs text-red-600 font-medium">${t('emptyStockDesc')}</p>`;
             }
-
-            renderScheduleSection();
-            renderGearConfigurator();
-            renderRecipes();
-            renderInventory();
-            renderScience();
-            renderHistory();
-        }
-
-        function renderScheduleSection() {
-            const selToday = document.getElementById('select-today-recipe');
-            const selTomorrow = document.getElementById('select-tomorrow-recipe');
-            const gearPlan = computeGearThermodynamics();
             const isVi = appState.lang === 'vi';
+            const totalGrams = rec.ingredients.reduce((sum, i) => sum + Number(i.grams || 0), 0);
+            const steep = computeRealTimeSteepMetrics();
 
-            const adaptiveRecipes = currentAdaptivePlan.recipes;
-            const allKnownRecipes = [...adaptiveRecipes];
-            BASE_RECIPES.forEach(b => {
-                if (!allKnownRecipes.some(x => x.id === b.id)) {
-                    allKnownRecipes.push({ ...b, ingredients: scaleRecipeGrams(b, gearPlan) });
-                }
-            });
-
-            selToday.innerHTML = allKnownRecipes.map(r => 
-                `<option value="${r.id}">${r.code} • ${getRecField(r, 'name')}</option>`
-            ).join('');
-            selToday.value = allKnownRecipes.some(r => r.id === appState.schedule.todayRecipeId) 
-                ? appState.schedule.todayRecipeId 
-                : allKnownRecipes[0].id;
-
-            if (adaptiveRecipes.length > 0) {
-                selTomorrow.innerHTML = adaptiveRecipes.map(r => 
-                    `<option value="${r.id}">${r.code} • ${getRecField(r, 'name')}</option>`
-                ).join('');
-                selTomorrow.value = appState.schedule.tomorrowRecipeId;
-            } else {
-                selTomorrow.innerHTML = `<option value="">⚠️ ${t('emptyStockTitle')}</option>`;
-            }
-
-            const todayRec = allKnownRecipes.find(r => r.id === selToday.value) || allKnownRecipes[0];
-            document.getElementById('today-recipe-display').innerHTML = buildMiniRecipeHTML(todayRec, false, gearPlan);
-
-            // Render Dynamic Flask Checklist for Today
-            const checklistEl = document.getElementById('daily-flasks-checklist');
-            if (checklistEl) {
-                const checksMap = appState.schedule.dailyChecks.flasks || {};
-                checklistEl.innerHTML = gearPlan.flaskPlans.map((fp, idx) => {
-                    const checked = Boolean(checksMap[fp.id]);
-                    const fName = isVi ? (fp.nameVi || fp.name) : fp.name;
-                    const bgClass = idx % 2 === 0 ? 'bg-blue-50/60 border-blue-100 hover:bg-blue-50' : 'bg-indigo-50/60 border-indigo-100 hover:bg-indigo-50';
-                    const detailText = gearPlan.iceMode === 'steel'
-                        ? (isVi
-                            ? `Rót <strong>~${fp.teaMl}ml</strong> trà (${gearPlan.steepMetrics.predictedTempC}°C) + thả <strong>${fp.cubes} viên đá inox</strong> (~${fp.iceVol}ml).`
-                            : `Pour <strong>~${fp.teaMl}ml</strong> brew (${gearPlan.steepMetrics.predictedTempC}°C) + <strong>${fp.cubes} steel cubes</strong> (~${fp.iceVol}ml).`)
-                        : (isVi
-                            ? `Ở nhà rót <strong>~${fp.teaMl}ml</strong> trà cốt (${fp.effectiveTeaRatio || gearPlan.meltingTeaRatio}%), ra tiệm thêm <strong>~${fp.iceVol}ml đá viên</strong> tới đầy bình.`
-                            : `At home pour <strong>~${fp.teaMl}ml</strong> tea (${fp.effectiveTeaRatio || gearPlan.meltingTeaRatio}%), then top up <strong>~${fp.iceVol}ml shop ice</strong> to brim.`);
-
-                    return `
-                        <label class="flex items-start gap-3 p-2.5 rounded-xl border cursor-pointer transition ${bgClass}">
-                            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleFlaskCheck('${fp.id}', this.checked)" class="mt-0.5 w-4 h-4 text-botanical-700 rounded focus:ring-botanical-500">
-                            <div class="text-xs leading-relaxed">
-                                <span class="font-bold text-gray-900 block">${fName} (${fp.capacityMl}ml)</span>
-                                <span class="text-gray-600">${detailText}</span>
-                            </div>
-                        </label>
-                    `;
-                }).join('');
-            }
-
-            // Tonight's water summary & real-time dynamic steep duration from current clock
-            const sm = gearPlan.steepMetrics;
-            const strainInput = document.getElementById('input-tomorrow-strain-time');
-            if (strainInput) strainInput.value = sm.strainTimeStr;
-
-            const waterSummaryEl = document.getElementById('tonight-water-summary');
-            if (waterSummaryEl) {
-                const liters = (gearPlan.boiledWaterMl / 1000).toFixed(2).replace(/\.00$/, '');
-                const dosePct = Math.round((sm.steepDoseFactor - 1) * 100);
-                const doseBadge = dosePct === 0
-                    ? (isVi ? '100% chuẩn' : '100% standard')
-                    : (dosePct > 0 ? `+${dosePct}%` : `${dosePct}%`);
-
-                waterSummaryEl.innerHTML = isVi
-                    ? `
-                        <div class="w-full p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-gray-700 space-y-1">
-                            <div class="flex flex-wrap items-center justify-between gap-1">
-                                <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
-                                <span>⏱️ Ủ ngay (<strong>${sm.startTimeLabel} → ${sm.strainTimeStr}</strong>): <strong class="text-botanical-900">${sm.durStr}</strong></span>
-                            </div>
-                            <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] text-amber-900 pt-1 border-t border-amber-200/60">
-                                <span>🌡️ Nhiệt độ trà lúc rót: <strong>~${sm.predictedTempC}°C</strong></span>
-                                <span>⚖️ Điều chỉnh thảo mộc theo giờ ủ: <strong>${doseBadge}</strong></span>
-                            </div>
-                        </div>
-                    `
-                    : `
-                        <div class="w-full p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-gray-700 space-y-1">
-                            <div class="flex flex-wrap items-center justify-between gap-1">
-                                <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gearPlan.boiledWaterMl}ml (${liters}L)</strong></span>
-                                <span>⏱️ Steep now (<strong>${sm.startTimeLabel} → ${sm.strainTimeStr}</strong>): <strong class="text-botanical-900">${sm.durStr}</strong></span>
-                            </div>
-                            <div class="flex flex-wrap items-center justify-between gap-1 text-[11px] text-amber-900 pt-1 border-t border-amber-200/60">
-                                <span>🌡️ Est. tea temp at strain: <strong>~${sm.predictedTempC}°C</strong></span>
-                                <span>⚖️ Time-based herb scaling: <strong>${doseBadge}</strong></span>
-                            </div>
-                        </div>
-                    `;
-            }
-
-            const brewBtn = document.getElementById('btn-brew-tonight');
-            if (adaptiveRecipes.length === 0) {
-                document.getElementById('tomorrow-recipe-display').innerHTML = `
-                    <div class="text-center py-6 px-3">
-                        <div class="text-2xl mb-1.5">🛒</div>
-                        <p class="text-sm font-bold text-red-800">${t('emptyStockTitle')}</p>
-                        <p class="text-xs text-gray-600 mt-1">${t('emptyStockDesc')}</p>
-                    </div>
-                `;
-                brewBtn.disabled = true;
-                brewBtn.className = 'w-full py-3 px-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2 text-xs sm:text-sm';
-                brewBtn.innerHTML = `<span>🚫 ${t('emptyStockTitle')}</span>`;
-            } else {
-                const tomorrowRec = adaptiveRecipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || adaptiveRecipes[0];
-                document.getElementById('tomorrow-recipe-display').innerHTML = buildMiniRecipeHTML(tomorrowRec, true, gearPlan);
-                brewBtn.disabled = false;
-                brewBtn.className = 'w-full py-3 px-4 bg-botanical-700 hover:bg-botanical-900 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99]';
-                brewBtn.innerHTML = `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${t('btnConfirmBrew')}</span>`;
-            }
-
-            // 5-Day Forecast Strip
-            const forecastEl = document.getElementById('five-day-forecast');
-            if (adaptiveRecipes.length === 0) {
-                forecastEl.innerHTML = `<div class="col-span-full text-center text-xs text-gray-500 py-3">${t('emptyStockDesc')}</div>`;
-            } else {
-                let startIdx = adaptiveRecipes.findIndex(r => r.id === appState.schedule.tomorrowRecipeId);
-                if (startIdx < 0) startIdx = 0;
-
-                let forecastHTML = '';
-                for (let i = 0; i < 5; i++) {
-                    const dayObj = getFormattedDate(i);
-                    let recForDay;
-                    if (i === 0) recForDay = todayRec;
-                    else if (i === 1) recForDay = adaptiveRecipes[startIdx];
-                    else recForDay = adaptiveRecipes[(startIdx + (i - 1)) % adaptiveRecipes.length];
-
-                    const isToday = i === 0;
-                    const isTomorrow = i === 1;
-                    forecastHTML += `
-                        <div class="p-3 rounded-xl border ${isToday ? 'bg-amber-50/60 border-amber-200' : isTomorrow ? 'bg-botanical-50/70 border-botanical-300' : 'bg-cream border-gray-200/70'}">
-                            <div class="flex items-center justify-between text-[11px] font-bold ${isToday ? 'text-amber-700' : isTomorrow ? 'text-botanical-700' : 'text-gray-500'}">
-                                <span>${isToday ? t('todayShort') : isTomorrow ? t('tomorrowShort') : dayObj.short}</span>
-                                <span>${recForDay.code}</span>
-                            </div>
-                            <div class="text-xs font-semibold text-gray-900 mt-1 truncate">${getRecField(recForDay, 'name')}</div>
-                            <div class="text-[10px] text-gray-500 mt-0.5 truncate">${getRecField(recForDay, 'tag')}</div>
-                        </div>
-                    `;
-                }
-                forecastEl.innerHTML = forecastHTML;
-            }
-        }
-
-        function buildMiniRecipeHTML(recipe, checkStock, gearPlan = computeGearThermodynamics()) {
-            const totalGrams = Math.round(recipe.ingredients.reduce((acc, item) => acc + item.grams, 0) * 10) / 10;
-            const itemsList = recipe.ingredients.map(req => {
-                const inv = appState.ingredients.find(i => i.id === req.id);
-                const enough = inv && !inv.isOutOfStock && inv.currentGrams >= req.grams;
-                const vis = getRecField(req, 'visual');
+            const itemsHTML = rec.ingredients.map(item => {
+                const ing = appState.ingredients.find(x => x.id === item.id);
+                const name = ing ? getIngName(ing) : item.id;
+                const stockLeft = ing ? ing.currentGrams : 0;
+                const visual = isVi ? (item.visualVi || '') : (item.visualEn || '');
+                const svg = BOTANICAL_SVGS[item.id] || '';
                 return `
-                    <div class="flex items-center justify-between py-1.5 border-b border-gray-200/60 last:border-0 text-xs sm:text-sm gap-2">
-                        <div class="flex items-start sm:items-center gap-2 min-w-0">
-                            <span class="w-2 h-2 rounded-full shrink-0 mt-1.5 sm:mt-0" style="background-color: ${inv ? inv.color : '#666'}"></span>
+                    <div class="flex items-center justify-between gap-2 py-1.5 border-b border-gray-200/60 last:border-b-0">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white">${svg}</div>
                             <div class="min-w-0">
-                                <span class="font-medium text-gray-800 block sm:inline truncate">${getIngName(inv)}</span>
-                                ${vis ? `<span class="text-[11px] text-gray-500 sm:text-gray-400 block sm:inline sm:ml-1">(${vis})</span>` : ''}
+                                <div class="text-xs sm:text-sm font-semibold text-gray-900 truncate">${name}</div>
+                                <div class="text-[11px] text-gray-500 leading-tight">${visual} • <span class="text-botanical-700">${t('leftLabel')}: ${stockLeft}g</span></div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <span class="font-bold text-gray-900">${req.grams}g</span>
-                            ${checkStock ? (enough 
-                                ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">${t('leftLabel')} ${inv.currentGrams}g</span>` 
-                                : `<span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">${t('shortLabel')} (${inv ? inv.currentGrams : 0}g)</span>`
-                            ) : ''}
-                        </div>
+                        <span class="shrink-0 text-xs sm:text-sm font-bold px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-900 shadow-2xs">
+                            ${item.grams}g
+                        </span>
                     </div>
                 `;
             }).join('');
 
+            const metaStrip = isTonight
+                ? `<div class="mt-2.5 pt-2 border-t border-botanical-200/70 flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-botanical-900">
+                        <span>⏱️ ${isVi ? 'Ủ từ' : 'Steep'} <strong>${steep.startClockStr} ➔ ${steep.strainStr}</strong> (${steep.steepHours}h)</span>
+                        <span>🌡️ ${isVi ? 'Nhiệt độ lọc dự kiến' : 'Est. strain temp'}: <strong>${steep.predictedTempC}°C</strong></span>
+                   </div>`
+                : '';
+
             return `
-                <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2.5">
-                    <span class="text-xs font-bold px-2 py-0.5 rounded border ${recipe.bgBadge}">${getRecField(recipe, 'tag')}</span>
-                    <span class="text-xs text-gray-500 font-medium">${t('totalLabel')}: <strong>${totalGrams}g</strong> / ${gearPlan.boiledWaterMl}ml</span>
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-md border ${rec.bgBadge} shrink-0">${rec.code}</span>
+                        <h4 class="font-bold text-sm sm:text-base text-gray-900 truncate">${getRecField(rec, 'name')}</h4>
+                    </div>
+                    <span class="text-[11px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-200 shrink-0">${t('totalLabel')}: ${Math.round(totalGrams * 10) / 10}g</span>
                 </div>
-                ${recipe.isAdapted ? `<div class="mb-2.5 text-[11px] font-semibold text-blue-800 bg-blue-100/70 px-2.5 py-1 rounded-lg">✨ ${recipe.adaptNote}</div>` : ''}
-                <div class="divide-y divide-gray-100 mb-3">${itemsList}</div>
-                <p class="text-xs text-gray-600 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-gray-100">
-                    <strong>${t('mechLabel')}</strong> ${getRecField(recipe, 'mechanism')}
+                <div class="divide-y divide-gray-100">${itemsHTML}</div>
+                <p class="mt-2.5 text-[11px] text-gray-600 leading-relaxed">
+                    <strong class="text-botanical-800">${t('mechLabel')}</strong> ${getRecField(rec, 'mechanism')}
                 </p>
+                ${metaStrip}
             `;
         }
 
-        function renderGearConfigurator() {
-            const gearPlan = computeGearThermodynamics();
+        function renderScheduleSection() {
+            const plan = computeAdaptiveEngine();
+            const gear = getGearMetrics();
+            const steep = computeRealTimeSteepMetrics();
             const isVi = appState.lang === 'vi';
 
-            const btnSteel = document.getElementById('btn-ice-steel');
-            const btnMelting = document.getElementById('btn-ice-melting');
-            const steelCtrl = document.getElementById('steel-ice-controls');
-            const meltingCtrl = document.getElementById('melting-ice-controls');
+            const selToday = document.getElementById('select-today-recipe');
+            const selTomorrow = document.getElementById('select-tomorrow-recipe');
 
-            if (btnSteel && btnMelting) {
-                if (gearPlan.iceMode === 'steel') {
-                    btnSteel.className = 'py-2 px-2.5 rounded-xl border-2 border-botanical-700 bg-botanical-50 text-botanical-900 text-xs font-bold transition flex items-center justify-center gap-1.5';
-                    btnMelting.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1.5';
-                    steelCtrl.classList.remove('hidden');
-                    meltingCtrl.classList.add('hidden');
-                } else {
-                    btnMelting.className = 'py-2 px-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5';
-                    btnSteel.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 text-xs font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1.5';
-                    meltingCtrl.classList.remove('hidden');
-                    steelCtrl.classList.add('hidden');
+            if (plan.recipes.length > 0) {
+                if (!plan.recipes.some(r => r.id === appState.schedule.todayRecipeId)) {
+                    appState.schedule.todayRecipeId = plan.recipes[0].id;
+                }
+                if (!plan.recipes.some(r => r.id === appState.schedule.tomorrowRecipeId)) {
+                    appState.schedule.tomorrowRecipeId = plan.recipes[Math.min(1, plan.recipes.length - 1)].id;
                 }
             }
 
-            const inputBoxes = document.getElementById('input-steel-boxes');
-            if (inputBoxes) inputBoxes.value = gearPlan.steelBoxes;
-            const steelSummary = document.getElementById('steel-ice-summary');
-            if (steelSummary) {
-                steelSummary.innerHTML = isVi
-                    ? `1 viên 2.7cm³ ≈ <strong>19.7ml</strong> • Đang dùng <strong>${gearPlan.totalCubesUsed}/${gearPlan.totalCubesAvailable} viên</strong>.`
-                    : `1 cube (2.7cm³) ≈ <strong>19.7ml</strong> • Using <strong>${gearPlan.totalCubesUsed}/${gearPlan.totalCubesAvailable} cubes</strong>.`;
+            const optionsHTML = plan.recipes.length > 0
+                ? plan.recipes.map(r => `<option value="${r.id}">${r.code} • ${getRecField(r, 'name')}</option>`).join('')
+                : `<option value="">${t('emptyStockTitle')}</option>`;
+
+            if (selToday) {
+                selToday.innerHTML = optionsHTML;
+                selToday.value = appState.schedule.todayRecipeId || '';
+            }
+            if (selTomorrow) {
+                selTomorrow.innerHTML = optionsHTML;
+                selTomorrow.value = appState.schedule.tomorrowRecipeId || '';
             }
 
-            const inputRatio = document.getElementById('input-tea-ratio');
-            if (inputRatio) inputRatio.value = gearPlan.meltingTeaRatio;
+            const todayRec = plan.recipes.find(r => r.id === appState.schedule.todayRecipeId) || plan.recipes[0];
+            const tomorrowRec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
 
-            const inputWarm = document.getElementById('input-warm-cup');
-            if (inputWarm) inputWarm.value = gearPlan.warmCupMl;
+            const todayDisplay = document.getElementById('today-recipe-display');
+            const tomorrowDisplay = document.getElementById('tomorrow-recipe-display');
+            if (todayDisplay) todayDisplay.innerHTML = buildMiniRecipeHTML(todayRec, false);
+            if (tomorrowDisplay) tomorrowDisplay.innerHTML = buildMiniRecipeHTML(tomorrowRec, true);
 
-            const flasksListEl = document.getElementById('flasks-config-list');
-            if (flasksListEl) {
-                flasksListEl.innerHTML = gearPlan.flaskPlans.map(fp => {
-                    const fName = isVi ? (fp.nameVi || fp.name) : fp.name;
-                    const canDelete = gearPlan.flaskPlans.length > 1;
-                    const badgeText = gearPlan.iceMode === 'steel'
-                        ? `${t('teaToPourLabel')}: <strong>${fp.teaMl}ml</strong> + <strong>${fp.cubes} ${t('cubesDropLabel')}</strong> (~${fp.iceVol}ml)`
-                        : `${t('teaToPourLabel')}: <strong>${fp.teaMl}ml</strong> (${gearPlan.meltingTeaRatio}%) • ${t('shopIceTopupLabel')}: <strong>~${fp.iceVol}ml</strong>`;
+            // Render Daily Thermal & Ice Checklist
+            const checklistEl = document.getElementById('daily-flasks-checklist');
+            if (checklistEl) {
+                const checks = (appState.schedule.dailyChecks && appState.schedule.dailyChecks.flasks) || {};
+                const rows = gear.flaskBreakdown.map(f => {
+                    const adjustedCubes = Math.max(1, Math.round(f.cubes * steep.extraThermalLoad));
+                    const isChecked = !!checks[f.id];
+                    const detailText = gear.iceMode === 'steel'
+                        ? `${t('teaToPourLabel')}: <strong>${f.pourMl}ml</strong> + <strong>${adjustedCubes} ${t('cubesDropLabel')}</strong> (${f.capacityMl}ml)`
+                        : `${t('teaToPourLabel')}: <strong>${f.pourMl}ml</strong> (home) ➔ <strong>+${f.shopIceMl}ml</strong> ${t('shopIceTopupLabel')}`;
 
                     return `
-                        <div class="p-2.5 rounded-xl bg-cream/80 border border-gray-200 space-y-1.5">
-                            <div class="flex items-center gap-2">
-                                <input type="text" value="${fName}" onchange="updateFlaskField('${fp.id}', 'name', this.value)" placeholder="${t('flaskNamePlaceholder')}" class="flex-1 min-w-0 text-xs font-bold bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900 outline-none focus:border-botanical-500">
-                                <div class="flex items-center gap-1 shrink-0">
-                                    <input type="number" min="150" max="5000" step="50" value="${fp.capacityMl}" onchange="updateFlaskField('${fp.id}', 'capacityMl', this.value)" class="w-16 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg py-1.5 text-gray-900 outline-none focus:border-botanical-500">
-                                    <span class="text-xs font-semibold text-gray-500">ml</span>
+                        <label class="flex items-center justify-between gap-2 p-2.5 rounded-xl border ${isChecked ? 'bg-botanical-50/70 border-botanical-300' : 'bg-white border-gray-200'} cursor-pointer transition text-xs">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleFlaskCheck('${f.id}', this.checked)" class="w-4 h-4 rounded text-botanical-700 focus:ring-botanical-500">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 truncate">${f.name}</div>
+                                    <div class="text-[11px] text-gray-600">${detailText}</div>
                                 </div>
-                                ${canDelete ? `<button type="button" onclick="removeFlask('${fp.id}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold" title="Remove">✕</button>` : ''}
                             </div>
-                            <div class="text-[11px] text-gray-600 pl-0.5">${badgeText}</div>
-                        </div>
+                            <span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-md ${isChecked ? 'bg-botanical-700 text-white' : 'bg-gray-100 text-gray-600'}">
+                                ${isChecked ? '✓ Done' : `${f.capacityMl}ml`}
+                            </span>
+                        </label>
                     `;
-                }).join('');
+                });
+
+                if (gear.warmCupMl > 0) {
+                    const warmChecked = !!checks['warm_cup'];
+                    rows.push(`
+                        <label class="flex items-center justify-between gap-2 p-2.5 rounded-xl border ${warmChecked ? 'bg-amber-50/80 border-amber-300' : 'bg-white border-gray-200'} cursor-pointer transition text-xs">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <input type="checkbox" ${warmChecked ? 'checked' : ''} onchange="toggleFlaskCheck('warm_cup', this.checked)" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500">
+                                <span class="font-semibold text-gray-800">☕ ${t('warmCupLabel')} <strong>${gear.warmCupMl}ml</strong></span>
+                            </div>
+                            <span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-md ${warmChecked ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600'}">${warmChecked ? '✓' : 'AM'}</span>
+                        </label>
+                    `);
+                }
+                checklistEl.innerHTML = rows.join('');
             }
 
-            const carafeCalcEl = document.getElementById('carafe-water-calculation');
-            if (carafeCalcEl) {
-                const liters = (gearPlan.boiledWaterMl / 1000).toFixed(2).replace(/\.00$/, '');
-                carafeCalcEl.innerHTML = isVi
-                    ? `Trà vào ${gearPlan.flaskPlans.length} bình (<strong>${gearPlan.totalTeaForFlasks}ml</strong>) + uống ấm (<strong>${gearPlan.warmCupMl}ml</strong>) + bù bã hút (<strong>${gearPlan.absorptionBuffer}ml</strong>) ➔ Đun sôi tối nay: <strong class="text-amber-950 text-sm">${gearPlan.boiledWaterMl}ml (${liters}L)</strong>.`
-                    : `Tea for ${gearPlan.flaskPlans.length} flask(s) (<strong>${gearPlan.totalTeaForFlasks}ml</strong>) + warm cup (<strong>${gearPlan.warmCupMl}ml</strong>) + herb absorption (<strong>${gearPlan.absorptionBuffer}ml</strong>) ➔ Boil tonight: <strong class="text-amber-950 text-sm">${gearPlan.boiledWaterMl}ml (${liters}L)</strong>.`;
+            // Tonight water & thermal summary
+            const waterSummaryEl = document.getElementById('tonight-water-summary');
+            if (waterSummaryEl) {
+                waterSummaryEl.innerHTML = `
+                    <span>💧 ${t('totalBoilLabel')}: <strong class="text-gray-900">${gear.boiledWaterMl}ml</strong></span>
+                    <span>🧊 ${gear.iceMode === 'steel' ? `${gear.allocatedCubes}/${gear.totalCubesAvailable} ${t('cubesDropLabel')}` : `${gear.meltingTeaRatioPct}% tea + shop ice`}</span>
+                `;
+            }
+
+            // 5-Day Forecast Strip
+            const forecastEl = document.getElementById('five-day-forecast');
+            if (forecastEl) {
+                if (plan.recipes.length === 0) {
+                    forecastEl.innerHTML = `<div class="col-span-full text-xs text-gray-500 py-2">${t('emptyStockDesc')}</div>`;
+                } else {
+                    const startIdx = Math.max(0, plan.recipes.findIndex(r => r.id === appState.schedule.todayRecipeId));
+                    const cards = [];
+                    for (let d = 0; d < 5; d++) {
+                        const dateObj = getFormattedDate(d);
+                        const rec = plan.recipes[(startIdx + d) % plan.recipes.length];
+                        const dayBadge = d === 0 ? t('todayShort') : (d === 1 ? t('tomorrowShort') : dateObj.display);
+                        cards.push(`
+                            <div onclick="updateScheduleSelection('tomorrow', '${rec.id}')" class="p-2.5 rounded-xl border ${d === 1 ? 'border-botanical-500 bg-botanical-50/60' : 'border-gray-200/80 bg-cream'} hover:border-botanical-400 cursor-pointer transition">
+                                <div class="flex items-center justify-between gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">
+                                    <span class="truncate">${dayBadge}</span>
+                                    <span class="text-botanical-700">${rec.code}</span>
+                                </div>
+                                <div class="text-xs font-bold text-gray-900 truncate">${getRecField(rec, 'name')}</div>
+                            </div>
+                        `);
+                    }
+                    forecastEl.innerHTML = cards.join('');
+                }
             }
         }
 
-        function renderRecipes() {
-            const grid = document.getElementById('recipes-grid');
-            const badgeCount = document.getElementById('hidden-recipes-count');
-            const banner = document.getElementById('adaptive-status-banner');
-            const recipes = currentAdaptivePlan.recipes;
-            const gearPlan = computeGearThermodynamics();
+        function renderRecipesSection() {
+            const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
+            const bannerEl = document.getElementById('adaptive-status-banner');
+            const gridEl = document.getElementById('recipes-grid');
+            const countEl = document.getElementById('hidden-recipes-count');
             const isVi = appState.lang === 'vi';
 
-            banner.className = `mb-4 p-4 rounded-2xl border shadow-2xs transition-all ${currentAdaptivePlan.levelColor}`;
-            banner.innerHTML = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div class="font-bold text-sm sm:text-base">${currentAdaptivePlan.levelTitle}</div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/80 border border-current/20 self-start sm:self-auto">
-                        ${isVi ? 'Tự thích ứng thông minh' : 'Dynamic Adaptive Engine'}
-                    </span>
-                </div>
-                <p class="text-xs sm:text-sm mt-1.5 opacity-90 leading-relaxed">${currentAdaptivePlan.explanation}</p>
-            `;
+            if (bannerEl) {
+                bannerEl.className = `mb-4 p-4 rounded-2xl border shadow-2xs transition-all ${plan.levelColor}`;
+                bannerEl.innerHTML = `
+                    <div class="font-bold text-xs sm:text-sm mb-1">${plan.levelTitle}</div>
+                    <p class="text-xs opacity-90 leading-relaxed">${plan.explanation}</p>
+                `;
+            }
 
-            badgeCount.innerHTML = isVi
-                ? `Đang hiển thị <strong class="text-botanical-700">${recipes.length}</strong> công thức khả dụng`
-                : `Showing <strong class="text-botanical-700">${recipes.length}</strong> active formula(s)`;
+            if (countEl) {
+                countEl.textContent = isVi
+                    ? `Hiển thị ${plan.recipes.length} công thức khả dụng`
+                    : `Showing ${plan.recipes.length} available formulas`;
+            }
 
-            if (recipes.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-red-200">
-                        <div class="text-3xl mb-2">⚠️</div>
-                        <h3 class="font-bold text-gray-900 text-lg">${t('emptyStockTitle')}</h3>
-                        <p class="text-sm text-gray-600 mt-1">${t('emptyStockDesc')}</p>
+            if (!gridEl) return;
+            if (plan.recipes.length === 0) {
+                gridEl.innerHTML = `
+                    <div class="col-span-full apothecary-card rounded-2xl p-8 text-center">
+                        <div class="text-3xl mb-2">🌿</div>
+                        <h3 class="font-bold text-gray-900 text-base">${t('emptyStockTitle')}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${t('emptyStockDesc')}</p>
                     </div>
                 `;
                 return;
             }
 
-            grid.innerHTML = recipes.map(recipe => {
-                const totalGrams = recipe.ingredients.reduce((s, x) => s + x.grams, 0);
-                const ingRows = recipe.ingredients.map(req => {
-                    const inv = appState.ingredients.find(i => i.id === req.id);
-                    const vis = getRecField(req, 'visual');
+            gridEl.innerHTML = plan.recipes.map(rec => {
+                const totalGrams = Math.round(rec.ingredients.reduce((s, i) => s + Number(i.grams || 0), 0) * 10) / 10;
+                const ingRows = rec.ingredients.map(item => {
+                    const ing = appState.ingredients.find(x => x.id === item.id);
+                    const name = ing ? getIngName(ing) : item.id;
+                    const visual = isVi ? (item.visualVi || '') : (item.visualEn || '');
                     return `
-                        <li class="flex items-center justify-between text-xs sm:text-sm py-1.5 border-b border-gray-100 last:border-0 gap-2">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${inv ? inv.color : '#666'}"></span>
-                                <span class="text-gray-800 font-medium truncate">${getIngName(inv)}</span>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="font-bold text-gray-900">${req.grams}g</span>
-                                <span class="text-[11px] text-gray-400 ml-1">(${vis})</span>
-                            </div>
-                        </li>
+                        <div class="flex items-center justify-between gap-2 text-xs py-1">
+                            <span class="text-gray-800 font-medium truncate">${name} <span class="text-gray-400">(${visual})</span></span>
+                            <span class="font-bold text-gray-900 shrink-0">${item.grams}g</span>
+                        </div>
                     `;
                 }).join('');
 
                 return `
-                    <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
-                        <div class="h-1.5 w-full absolute top-0 left-0" style="background-color: ${recipe.colorTheme}"></div>
+                    <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between">
                         <div>
-                            <div class="flex items-center justify-between gap-2 mt-1 mb-2">
-                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${recipe.bgBadge}">${recipe.code} • ${getRecField(recipe, 'tag')}</span>
-                                <span class="text-xs font-semibold text-gray-500 shrink-0">${Math.round(totalGrams * 10) / 10}g / ${gearPlan.boiledWaterMl}ml</span>
+                            <div class="flex items-center justify-between gap-2 mb-2.5">
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${rec.bgBadge}">${rec.code}</span>
+                                <span class="text-[11px] font-semibold text-gray-500">${getRecField(rec, 'tag')}</span>
                             </div>
-                            <h3 class="font-serif text-lg font-bold text-gray-900 mb-2">${getRecField(recipe, 'name')}</h3>
-
-                            ${recipe.isAdapted ? `
-                                <div class="mb-3 px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-medium text-blue-900">
-                                    ✨ ${recipe.adaptNote}
-                                </div>
-                            ` : ''}
-
-                            <ul class="mb-4 bg-cream/80 rounded-xl p-3 border border-gray-100">
+                            <h3 class="font-serif font-bold text-lg text-gray-900 mb-3">${getRecField(rec, 'name')}</h3>
+                            <div class="bg-cream rounded-xl p-3 border border-gray-100 divide-y divide-gray-200/50 mb-3">
                                 ${ingRows}
-                            </ul>
+                            </div>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-4">
+                                <strong class="text-botanical-800">${t('mechLabel')}</strong> ${getRecField(rec, 'mechanism')}
+                            </p>
                         </div>
-
-                        <div class="space-y-3 pt-2 border-t border-gray-100">
-                            <p class="text-xs text-gray-600 leading-relaxed">${getRecField(recipe, 'mechanism')}</p>
-                            <button onclick="setRecipeForTomorrow('${recipe.id}')" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-botanical-50 hover:bg-botanical-700 text-botanical-800 hover:text-white border border-botanical-200 transition whitespace-nowrap">
+                        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                            <span class="text-xs font-bold text-gray-500">${t('totalLabel')}: ${totalGrams}g</span>
+                            <button onclick="selectFormulaForTonight('${rec.id}')" class="px-3 py-1.5 rounded-xl bg-botanical-50 hover:bg-botanical-700 text-botanical-800 hover:text-white border border-botanical-200 text-xs font-bold transition whitespace-nowrap">
                                 🌙 ${t('setTonightBtn')}
                             </button>
                         </div>
@@ -2051,55 +1867,49 @@
             }).join('');
         }
 
-        function renderInventory() {
-            const grid = document.getElementById('inventory-grid');
-            grid.innerHTML = appState.ingredients.map(ing => {
-                const pct = Math.min(100, Math.round((ing.currentGrams / ing.defaultGrams) * 100));
+        function renderInventorySection() {
+            const gridEl = document.getElementById('inventory-grid');
+            if (!gridEl) return;
+
+            gridEl.innerHTML = appState.ingredients.map(ing => {
+                const name = getIngName(ing);
+                const pct = Math.min(100, Math.round((ing.currentGrams / Math.max(1, ing.defaultGrams)) * 100));
                 const isLow = !ing.isOutOfStock && ing.currentGrams <= ing.lowThreshold;
-                const isEmpty = ing.isOutOfStock || ing.currentGrams <= 0;
-                const barColor = isEmpty ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-botanical-500';
+                const barColor = ing.isOutOfStock ? 'bg-gray-300' : (isLow ? 'bg-amber-500' : 'bg-botanical-500');
+                const svg = BOTANICAL_SVGS[ing.id] || '';
+                const badgeText = ing.isExpansion ? t('expansionBadge') : t('coreBadge');
+                const badgeStyle = ing.isExpansion ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-botanical-50 text-botanical-700 border-botanical-200';
 
                 return `
-                    <div class="apothecary-card rounded-2xl p-4 flex flex-col justify-between transition ${isEmpty ? 'opacity-70 bg-gray-50/90 border-red-200' : ''}">
-                        <div>
-                            <div class="flex items-start justify-between gap-2.5 mb-3">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-12 h-12 rounded-2xl shrink-0 overflow-hidden border border-gray-100 shadow-2xs bg-white p-1">
-                                        ${BOTANICAL_SVGS[ing.id] || ''}
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-1.5 flex-wrap">
-                                            <h3 class="font-bold text-gray-900 text-sm leading-tight truncate">${getIngName(ing)}</h3>
-                                            <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${ing.isExpansion ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-600'}">
-                                                ${ing.isExpansion ? t('expansionBadge') : t('coreBadge')}
-                                            </span>
-                                        </div>
-                                        <span class="text-[11px] italic text-gray-400 block mt-0.5 truncate">${ing.latin}</span>
-                                    </div>
+                    <div class="apothecary-card rounded-2xl p-4 ${ing.isOutOfStock ? 'opacity-75 bg-gray-50/80' : ''}">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white p-0.5">${svg}</div>
+                                <div class="min-w-0">
+                                    <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${badgeStyle} mb-0.5">${badgeText}</span>
+                                    <h3 class="font-bold text-sm text-gray-900 truncate">${name}</h3>
+                                    <p class="text-[11px] italic text-gray-400 truncate">${ing.latin}</p>
                                 </div>
-
-                                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none shrink-0 bg-white px-2 py-1 rounded-lg border border-gray-200">
-                                    <input type="checkbox" ${ing.isOutOfStock ? 'checked' : ''} onchange="toggleOutOfStock('${ing.id}', this.checked)" class="w-3.5 h-3.5 text-red-600 rounded focus:ring-red-500">
-                                    <span class="text-[11px] font-semibold whitespace-nowrap ${ing.isOutOfStock ? 'text-red-600' : 'text-gray-500'}">${t('markOutLabel')}</span>
-                                </label>
                             </div>
-
-                            <!-- Progress Bar -->
-                            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-                                <div class="h-full ${barColor} transition-all duration-300" style="width: ${isEmpty ? 0 : pct}%"></div>
-                            </div>
+                            <label class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 cursor-pointer shrink-0 select-none">
+                                <input type="checkbox" ${ing.isOutOfStock ? 'checked' : ''} onchange="toggleOutOfStock('${ing.id}', this.checked)" class="rounded text-rose-600 focus:ring-rose-500">
+                                <span>${t('markOutLabel')}</span>
+                            </label>
                         </div>
 
-                        <!-- Interactive Gram Adjuster -->
-                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-gray-100">
-                            <span class="text-xs font-medium text-gray-500 whitespace-nowrap">${t('remainingLabel')}</span>
+                        <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+                            <div class="h-full ${barColor} transition-all duration-300" style="width: ${pct}%"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs text-gray-500 font-medium">${t('remainingLabel')}</span>
                             <div class="flex items-center gap-1.5">
-                                <button onclick="adjustGrams('${ing.id}', -5)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm flex items-center justify-center transition">-</button>
-                                <div class="relative">
-                                    <input type="number" step="0.5" min="0" max="1000" value="${ing.currentGrams}" onchange="setGramsDirect('${ing.id}', this.value)" class="w-16 text-center text-xs sm:text-sm font-bold text-gray-900 border border-gray-200 rounded-lg py-1 bg-cream focus:ring-2 focus:ring-botanical-500 outline-none">
+                                <button onclick="adjustStock('${ing.id}', -5)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700 text-xs transition">-5</button>
+                                <div class="flex items-center border border-gray-300 rounded-lg bg-white px-2 py-1">
+                                    <input type="number" step="0.5" min="0" value="${ing.currentGrams}" onchange="setExactStock('${ing.id}', this.value)" class="w-12 text-center text-xs font-bold text-gray-900 outline-none">
+                                    <span class="text-[11px] text-gray-500 font-semibold">g</span>
                                 </div>
-                                <span class="text-xs font-semibold text-gray-500">g</span>
-                                <button onclick="adjustGrams('${ing.id}', 5)" class="w-7 h-7 rounded-lg bg-botanical-50 hover:bg-botanical-100 text-botanical-700 font-bold text-sm flex items-center justify-center transition">+</button>
+                                <button onclick="adjustStock('${ing.id}', 10)" class="w-7 h-7 rounded-lg bg-botanical-50 hover:bg-botanical-100 font-bold text-botanical-800 text-xs transition">+10</button>
                             </div>
                         </div>
                     </div>
@@ -2107,257 +1917,261 @@
             }).join('');
         }
 
-        function renderScience() {
-            const grid = document.getElementById('science-grid');
-            grid.innerHTML = appState.ingredients.map(ing => `
-                <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-3.5 mb-3">
-                            <div class="w-14 h-14 rounded-2xl shrink-0 bg-cream p-1.5 border border-gray-200/70 shadow-2xs">
-                                ${BOTANICAL_SVGS[ing.id] || ''}
+        function renderScienceSection() {
+            const gridEl = document.getElementById('science-grid');
+            if (!gridEl) return;
+            const isVi = appState.lang === 'vi';
+
+            gridEl.innerHTML = appState.ingredients.map(ing => {
+                const name = getIngName(ing);
+                const svg = BOTANICAL_SVGS[ing.id] || '';
+                const benefits = isVi ? (ing.benefitsVi || ing.benefitsEn) : ing.benefitsEn;
+                const steepNote = isVi ? (ing.steepNoteVi || ing.steepNoteEn) : ing.steepNoteEn;
+                const statusBadge = ing.isOutOfStock
+                    ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-500">${t('outOfStockLabel')}</span>`
+                    : `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-botanical-50 text-botanical-700">${ing.currentGrams}g</span>`;
+
+                return `
+                    <div class="apothecary-card rounded-2xl p-5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white p-1">${svg}</div>
+                                    <div class="min-w-0">
+                                        <h3 class="font-bold text-sm sm:text-base text-gray-900 truncate">${name}</h3>
+                                        <p class="text-xs italic text-gray-500 truncate">${ing.latin}</p>
+                                    </div>
+                                </div>
+                                ${statusBadge}
                             </div>
-                            <div class="min-w-0">
-                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${ing.badgeBg}">
-                                    ${ing.isExpansion ? t('expansionBadge') : t('coreBadge')} • ${ing.latin}
-                                </span>
-                                <h3 class="font-serif text-base sm:text-lg font-bold text-gray-900 mt-1 truncate">${getIngName(ing)}</h3>
+                            <div class="space-y-2 text-xs text-gray-600">
+                                <div class="p-2.5 rounded-xl bg-cream border border-gray-100">
+                                    <strong class="text-gray-900 block mb-0.5">${t('activeCompoundsLabel')}</strong>
+                                    <span class="text-botanical-800 font-medium">${ing.compounds}</span>
+                                </div>
+                                <p class="leading-relaxed"><strong class="text-gray-900">${t('scienceFocusLabel')}</strong> ${benefits}</p>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">${t('activeCompoundsLabel')}</span>
-                            <p class="text-xs font-semibold text-botanical-900 bg-botanical-50/70 px-2.5 py-1.5 rounded-lg border border-botanical-100">
-                                ${ing.compounds}
-                            </p>
-                        </div>
-
-                        <div class="mb-3">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400 block mb-1">${t('scienceFocusLabel')}</span>
-                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">${getRecField(ing, 'benefits')}</p>
+                        <div class="mt-3 pt-2.5 border-t border-gray-100 text-[11px] text-amber-800 bg-amber-50/60 px-2.5 py-1.5 rounded-lg">
+                            <strong>${t('steepNoteLabel')}</strong> ${steepNote}
                         </div>
                     </div>
-
-                    <div class="pt-2.5 border-t border-gray-100 text-[11px] text-amber-800 bg-amber-50/60 px-2.5 py-2 rounded-lg">
-                        <strong>💡 ${t('steepNoteLabel')}</strong> ${getRecField(ing, 'steepNote')}
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function renderHistory() {
+        function renderGearSection() {
+            const gear = getGearMetrics();
+            const g = appState.gear;
+            const isVi = appState.lang === 'vi';
+
+            const btnSteel = document.getElementById('btn-ice-steel');
+            const btnMelting = document.getElementById('btn-ice-melting');
+            const steelCtrl = document.getElementById('steel-ice-controls');
+            const meltingCtrl = document.getElementById('melting-ice-controls');
+
+            if (btnSteel && btnMelting) {
+                if (g.iceMode === 'steel') {
+                    btnSteel.className = 'py-2 px-2.5 rounded-xl border border-botanical-700 bg-botanical-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    btnMelting.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    if (steelCtrl) steelCtrl.classList.remove('hidden');
+                    if (meltingCtrl) meltingCtrl.classList.add('hidden');
+                } else {
+                    btnMelting.className = 'py-2 px-2.5 rounded-xl border border-blue-600 bg-blue-600 text-white text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    btnSteel.className = 'py-2 px-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-xs font-bold transition flex items-center justify-center gap-1.5';
+                    if (meltingCtrl) meltingCtrl.classList.remove('hidden');
+                    if (steelCtrl) steelCtrl.classList.add('hidden');
+                }
+            }
+
+            const inputBoxes = document.getElementById('input-steel-boxes');
+            if (inputBoxes) inputBoxes.value = g.steelBoxes;
+
+            const steelSummary = document.getElementById('steel-ice-summary');
+            if (steelSummary) {
+                steelSummary.textContent = isVi
+                    ? `Tổng ${gear.totalCubesAvailable} viên inox (2.7cm³ ≈ 19.7ml/viên) • Đang phân bổ ${gear.allocatedCubes} viên/ngày.`
+                    : `Total ${gear.totalCubesAvailable} cubes (2.7cm³ ≈ 19.7ml/cube) • Allocating ${gear.allocatedCubes} cubes/day.`;
+            }
+
+            const inputRatio = document.getElementById('input-tea-ratio');
+            if (inputRatio) inputRatio.value = gear.meltingTeaRatioPct;
+
+            const inputWarm = document.getElementById('input-warm-cup');
+            if (inputWarm) inputWarm.value = g.warmCupMl;
+
+            const flasksListEl = document.getElementById('flasks-config-list');
+            if (flasksListEl) {
+                flasksListEl.innerHTML = g.flasks.map((f, idx) => {
+                    const dispName = isVi ? (f.nameVi || f.name) : (f.name || f.nameVi);
+                    const canRemove = g.flasks.length > 1;
+                    return `
+                        <div class="flex items-center gap-2 bg-cream p-2 rounded-xl border border-gray-200/80">
+                            <input type="text" value="${dispName}" placeholder="${t('flaskNamePlaceholder')}" onchange="updateFlaskField(${idx}, 'name', this.value)" class="flex-1 min-w-0 text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900">
+                            <div class="flex items-center gap-1 shrink-0">
+                                <input type="number" min="150" max="5000" step="50" value="${f.capacityMl}" onchange="updateFlaskField(${idx}, 'capacityMl', this.value)" class="w-16 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg py-1.5 text-gray-900">
+                                <span class="text-[11px] font-bold text-gray-500">ml</span>
+                            </div>
+                            ${canRemove ? `<button type="button" onclick="removeFlask(${idx})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs shrink-0">✕</button>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const calcEl = document.getElementById('carafe-water-calculation');
+            if (calcEl) {
+                calcEl.innerHTML = isVi
+                    ? `• Tổng nước cốt cần thu sáng mai: <strong>${gear.totalTeaNeededMl}ml</strong><br>• Lượng nước đun sôi tối nay (cộng hao hụt bã 12%): <strong class="text-botanical-800">${gear.boiledWaterMl}ml</strong>`
+                    : `• Total strained tea needed tomorrow: <strong>${gear.totalTeaNeededMl}ml</strong><br>• Water to boil tonight (+12% herb absorption): <strong class="text-botanical-800">${gear.boiledWaterMl}ml</strong>`;
+            }
+        }
+
+        function renderHistorySection() {
             const container = document.getElementById('history-list-container');
+            if (!container) return;
+
             if (!appState.history || appState.history.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-10 px-4 bg-cream rounded-xl border border-dashed border-gray-300">
-                        <p class="text-xs sm:text-sm text-gray-500">${t('noLogsYet')}</p>
+                    <div class="p-6 rounded-xl bg-cream border border-dashed border-gray-300 text-center text-xs text-gray-500 leading-relaxed">
+                        ${t('noLogsYet')}
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = appState.history.map(entry => `
-                <div class="p-3.5 rounded-xl bg-cream border border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-botanical-700 text-white">${entry.recipeCode}</span>
-                            <span class="font-bold text-sm text-gray-900">${entry.recipeName}</span>
+                <div class="p-3.5 rounded-xl bg-cream border border-gray-200/80 flex flex-col gap-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-botanical-700 text-white shrink-0">${entry.recipeCode}</span>
+                            <span class="font-bold text-xs sm:text-sm text-gray-900 truncate">${entry.recipeName}</span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">${entry.summaryText}</p>
+                        <span class="text-[11px] text-gray-400 shrink-0">${entry.timestamp}</span>
                     </div>
-                    <div class="text-[11px] font-medium text-gray-400 shrink-0">
-                        🕒 ${entry.timestamp}
-                    </div>
+                    <p class="text-xs text-gray-600 leading-relaxed">${entry.summaryText}</p>
                 </div>
             `).join('');
         }
 
-        // 11. USER INTERACTION HANDLERS
+        function renderAll() {
+            renderScheduleSection();
+            renderRecipesSection();
+            renderInventorySection();
+            renderScienceSection();
+            renderGearSection();
+            renderHistorySection();
+        }
+
+        // 10. INTERACTIVE USER ACTIONS
         function updateScheduleSelection(slot, recipeId) {
             if (!recipeId) return;
-            if (slot === 'today') appState.schedule.todayRecipeId = recipeId;
-            if (slot === 'tomorrow') appState.schedule.tomorrowRecipeId = recipeId;
+            if (slot === 'today') {
+                appState.schedule.todayRecipeId = recipeId;
+            } else {
+                appState.schedule.tomorrowRecipeId = recipeId;
+            }
             saveState();
             renderScheduleSection();
-            showToast(appState.lang === 'vi' ? '📅 Đã cập nhật lịch pha chế' : '📅 Schedule updated');
         }
 
-        function updateTomorrowStrainTime(timeVal) {
-            if (!timeVal) return;
-            appState.schedule.tomorrowStrainTime = timeVal;
-            saveState();
-            renderScheduleSection();
-            showToast(appState.lang === 'vi'
-                ? `⏰ Đã đặt giờ rót bỏ xác trà ngày mai: ${timeVal}`
-                : `⏰ Tomorrow strain time set to ${timeVal}`
-            );
-        }
-
-        function setRecipeForTomorrow(recipeId) {
+        function selectFormulaForTonight(recipeId) {
             appState.schedule.tomorrowRecipeId = recipeId;
             saveState();
             renderScheduleSection();
-            document.getElementById('section-schedule').scrollIntoView({ behavior: 'smooth' });
-            showToast(appState.lang === 'vi' ? '🌙 Đã chọn công thức cho mẻ ủ tối nay' : '🌙 Selected formula for tonight');
+            const schedEl = document.getElementById('section-schedule');
+            if (schedEl) schedEl.scrollIntoView({ behavior: 'smooth' });
+            showToast(appState.lang === 'vi' ? '🌙 Đã chọn công thức cho mẻ ủ tối nay' : '🌙 Selected formula for tonight\'s steep');
+        }
+
+        function updateTomorrowStrainTime(timeStr) {
+            if (!timeStr) return;
+            appState.schedule.tomorrowStrainTime = timeStr;
+            saveState();
+            renderAll();
         }
 
         function toggleFlaskCheck(flaskId, checked) {
-            if (!appState.schedule.dailyChecks.flasks) appState.schedule.dailyChecks.flasks = {};
+            const todayIso = getFormattedDate(0).iso;
+            if (!appState.schedule.dailyChecks || appState.schedule.dailyChecks.date !== todayIso) {
+                appState.schedule.dailyChecks = { date: todayIso, flasks: {} };
+            }
             appState.schedule.dailyChecks.flasks[flaskId] = checked;
             saveState();
-            if (checked) {
-                const fp = computeGearThermodynamics().flaskPlans.find(x => x.id === flaskId);
-                if (fp) {
-                    const fName = appState.lang === 'vi' ? (fp.nameVi || fp.name) : fp.name;
-                    showToast(appState.lang === 'vi' ? `✅ Đã hoàn tất ${fName}` : `✅ Checked ${fName}`);
-                }
-            }
-        }
-
-        function setIceMode(mode) {
-            appState.gear.iceMode = mode;
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi'
-                ? (mode === 'steel' ? '🧊 Đã chuyển sang Đá Inox Không Tan' : '💧 Đã chuyển sang Nước Đá Tan (Tự tăng +25% cốt trà đậm)')
-                : (mode === 'steel' ? '🧊 Switched to 316 Steel Cubes' : '💧 Switched to Melting Shop Ice (+25% concentrated brew)')
-            );
-        }
-
-        function updateSteelBoxes(val) {
-            const boxes = Math.min(10, Math.max(1, parseInt(val) || 3));
-            appState.gear.steelBoxes = boxes;
-            saveState();
-            renderAll();
-        }
-
-        function updateMeltingRatio(val) {
-            const ratio = Math.min(85, Math.max(40, parseInt(val) || 60));
-            appState.gear.meltingTeaRatio = ratio;
-            saveState();
-            renderAll();
-        }
-
-        function updateWarmCup(val) {
-            const ml = Math.min(1000, Math.max(0, parseInt(val) || 0));
-            appState.gear.warmCupMl = ml;
-            saveState();
-            renderAll();
-        }
-
-        function addFlask() {
-            const nextNum = appState.gear.flasks.length + 1;
-            appState.gear.flasks.push({
-                id: `f_${Date.now()}`,
-                name: `Flask ${nextNum}`,
-                nameVi: `Bình ${nextNum}`,
-                capacityMl: 800
-            });
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi' ? `➕ Đã thêm Bình ${nextNum} (800ml)` : `➕ Added Flask ${nextNum} (800ml)`);
-        }
-
-        function removeFlask(id) {
-            if (appState.gear.flasks.length <= 1) return;
-            appState.gear.flasks = appState.gear.flasks.filter(f => f.id !== id);
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi' ? '🗑️ Đã bớt 1 bình đựng' : '🗑️ Removed flask');
-        }
-
-        function updateFlaskField(id, field, value) {
-            const flask = appState.gear.flasks.find(f => f.id === id);
-            if (!flask) return;
-            if (field === 'capacityMl') {
-                flask.capacityMl = Math.min(5000, Math.max(150, parseInt(value) || 500));
-            } else if (field === 'name') {
-                const clean = String(value).trim() || 'Flask';
-                if (appState.lang === 'vi') flask.nameVi = clean;
-                else flask.name = clean;
-            }
-            saveState();
-            renderAll();
-        }
-
-        function resetGearDefaults() {
-            appState.gear = JSON.parse(JSON.stringify(DEFAULT_GEAR));
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi' ? '🔄 Đã đặt lại cấu hình 2 bình & đá inox mặc định' : '🔄 Reset to default 2 flasks & 316 steel cubes');
+            renderScheduleSection();
         }
 
         function confirmBrewTonight() {
-            const rec = currentAdaptivePlan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId);
-            if (!rec) return;
+            const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
+            const rec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
+            if (!rec) {
+                showToast(t('emptyStockTitle'));
+                return;
+            }
 
+            const gear = getGearMetrics();
+            const steep = computeRealTimeSteepMetrics();
             const isVi = appState.lang === 'vi';
-            const gearPlan = computeGearThermodynamics();
-            let deductedDetails = [];
 
-            rec.ingredients.forEach(req => {
-                const inv = appState.ingredients.find(i => i.id === req.id);
-                if (inv) {
-                    inv.currentGrams = Math.max(0, Math.round((inv.currentGrams - req.grams) * 10) / 10);
-                    if (inv.currentGrams === 0) inv.isOutOfStock = true;
-                    deductedDetails.push(`${getIngName(inv)} -${req.grams}g`);
+            // Deduct stock
+            const deductedList = [];
+            rec.ingredients.forEach(item => {
+                const ing = appState.ingredients.find(i => i.id === item.id);
+                if (ing) {
+                    ing.currentGrams = Math.max(0, Math.round((ing.currentGrams - item.grams) * 10) / 10);
+                    if (ing.currentGrams <= 0) {
+                        ing.isOutOfStock = true;
+                    }
+                    deductedList.push(`${getIngName(ing)} (${item.grams}g)`);
                 }
             });
 
-            const now = new Date();
-            const locale = isVi ? 'vi-VN' : 'en-US';
-            const stamp = now.toLocaleString(locale, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-            const recTitle = getRecField(rec, 'name');
-            const sm = gearPlan.steepMetrics;
-            const steepTag = isVi
-                ? `Ủ ${sm.startTimeLabel}→${sm.strainTimeStr} (${sm.durStr}, ~${sm.predictedTempC}°C)`
-                : `Steep ${sm.startTimeLabel}→${sm.strainTimeStr} (${sm.durStr}, ~${sm.predictedTempC}°C)`;
+            const nowStr = new Date().toLocaleString(isVi ? 'vi-VN' : 'en-US', {
+                month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+
+            const summaryText = isVi
+                ? `Ủ ${gear.boiledWaterMl}ml nước (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, dự kiến ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`
+                : `Steeped ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, est. ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`;
 
             appState.history.unshift({
                 id: Date.now(),
                 recipeCode: rec.code,
-                recipeName: recTitle,
-                summaryText: `[${gearPlan.boiledWaterMl}ml • ${steepTag}] ` + deductedDetails.join(', '),
-                timestamp: stamp
+                recipeName: getRecField(rec, 'name'),
+                summaryText,
+                timestamp: nowStr
             });
 
             saveState();
             renderAll();
-            showToast(isVi
-                ? `🎉 Đã ghi nhận mẻ ủ ${recTitle} (${gearPlan.boiledWaterMl}ml) & trừ kho!`
-                : `🎉 Logged ${recTitle} (${gearPlan.boiledWaterMl}ml) & deducted stock!`
-            );
+            showToast(isVi ? '✅ Đã ghi nhật ký & tự động trừ kho!' : '✅ Brew logged & pantry stock deducted!');
         }
 
-        function toggleOutOfStock(ingId, isOut) {
-            const ing = appState.ingredients.find(i => i.id === ingId);
+        function adjustStock(id, delta) {
+            const ing = appState.ingredients.find(i => i.id === id);
+            if (!ing) return;
+            ing.currentGrams = Math.max(0, Math.round((ing.currentGrams + delta) * 10) / 10);
+            ing.isOutOfStock = ing.currentGrams <= 0;
+            saveState();
+            renderAll();
+        }
+
+        function setExactStock(id, val) {
+            const ing = appState.ingredients.find(i => i.id === id);
+            if (!ing) return;
+            const num = Math.max(0, Math.round((parseFloat(val) || 0) * 10) / 10);
+            ing.currentGrams = num;
+            ing.isOutOfStock = num <= 0;
+            saveState();
+            renderAll();
+        }
+
+        function toggleOutOfStock(id, isOut) {
+            const ing = appState.ingredients.find(i => i.id === id);
             if (!ing) return;
             ing.isOutOfStock = isOut;
             if (!isOut && ing.currentGrams <= 0) {
-                ing.currentGrams = 50;
+                ing.currentGrams = ing.defaultGrams || 50;
             }
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi'
-                ? (isOut ? `🚫 Đã ẩn công thức chứa ${getIngName(ing)}` : `✅ Đã kích hoạt lại ${getIngName(ing)}`)
-                : (isOut ? `🚫 Marked ${getIngName(ing)} out of stock` : `✅ Restocked ${getIngName(ing)}`)
-            );
-        }
-
-        function adjustGrams(ingId, delta) {
-            const ing = appState.ingredients.find(i => i.id === ingId);
-            if (!ing) return;
-            ing.currentGrams = Math.max(0, Math.round((ing.currentGrams + delta) * 10) / 10);
-            ing.isOutOfStock = ing.currentGrams === 0;
-            saveState();
-            renderAll();
-        }
-
-        function setGramsDirect(ingId, val) {
-            const ing = appState.ingredients.find(i => i.id === ingId);
-            if (!ing) return;
-            const num = parseFloat(val);
-            ing.currentGrams = isNaN(num) || num < 0 ? 0 : Math.round(num * 10) / 10;
-            ing.isOutOfStock = ing.currentGrams === 0;
             saveState();
             renderAll();
         }
@@ -2367,175 +2181,136 @@
                 if (!ing.isExpansion) {
                     ing.currentGrams = ing.defaultGrams;
                     ing.isOutOfStock = false;
-                } else {
-                    ing.currentGrams = 0;
-                    ing.isOutOfStock = true;
                 }
             });
             saveState();
             renderAll();
-            showToast(appState.lang === 'vi' ? '🔄 Đã nạp đầy 9 nguyên liệu cơ bản' : '🔄 Restocked 9 core botanicals');
+            showToast(appState.lang === 'vi' ? '🔄 Đã nạp đầy 9 nguyên liệu cơ bản' : '🔄 Restocked all 9 core herbs');
         }
 
-        function simulateScenario(type) {
-            const isVi = appState.lang === 'vi';
+        function simulateScenario(mode) {
             appState.ingredients.forEach(ing => {
-                if (!ing.isExpansion) {
+                if (mode === 'full') {
+                    ing.currentGrams = ing.isExpansion ? 0 : ing.defaultGrams;
+                    ing.isOutOfStock = ing.isExpansion;
+                } else if (mode === 'expanded') {
                     ing.currentGrams = ing.defaultGrams;
                     ing.isOutOfStock = false;
-                } else {
-                    ing.currentGrams = 0;
-                    ing.isOutOfStock = true;
+                } else if (mode === 'missing2') {
+                    const out = ing.isExpansion || ing.id === 'stevia' || ing.id === 'hibiscus';
+                    ing.currentGrams = out ? 0 : ing.defaultGrams;
+                    ing.isOutOfStock = out;
+                } else if (mode === 'missing4') {
+                    const keep = ['butterfly', 'jujube', 'pandan', 'orange', 'rosemary'].includes(ing.id);
+                    ing.currentGrams = keep ? ing.defaultGrams : 0;
+                    ing.isOutOfStock = !keep;
+                } else if (mode === 'conflict2') {
+                    const keep = ing.id === 'mint' || ing.id === 'ginger';
+                    ing.currentGrams = keep ? ing.defaultGrams : 0;
+                    ing.isOutOfStock = !keep;
+                } else if (mode === 'onlyStevia') {
+                    const keep = ing.id === 'stevia';
+                    ing.currentGrams = keep ? ing.defaultGrams : 0;
+                    ing.isOutOfStock = !keep;
                 }
             });
-
-            if (type === 'expanded') {
-                appState.ingredients.forEach(ing => {
-                    ing.currentGrams = ing.defaultGrams;
-                    ing.isOutOfStock = false;
-                });
-                showToast(isVi ? '✨ Mô phỏng: Đủ cả 16 nguyên liệu' : '✨ Simulated: All 16 herbs stocked');
-            } else if (type === 'missing2') {
-                ['stevia', 'hibiscus'].forEach(id => {
-                    const x = appState.ingredients.find(i => i.id === id);
-                    if (x) { x.currentGrams = 0; x.isOutOfStock = true; }
-                });
-                showToast(isVi ? '⚠️ Mô phỏng: Hết Cỏ ngọt & Hibiscus' : '⚠️ Simulated: Out of Stevia & Hibiscus');
-            } else if (type === 'missing4') {
-                ['hibiscus', 'butterfly', 'rosemary', 'mint'].forEach(id => {
-                    const x = appState.ingredients.find(i => i.id === id);
-                    if (x) { x.currentGrams = 0; x.isOutOfStock = true; }
-                });
-                showToast(isVi ? '⚡ Mô phỏng: Chỉ còn 5 món' : '⚡ Simulated: Only 5 herbs left');
-            } else if (type === 'conflict2') {
-                appState.ingredients.forEach(ing => {
-                    if (!['mint', 'ginger'].includes(ing.id)) {
-                        ing.currentGrams = 0;
-                        ing.isOutOfStock = true;
-                    }
-                });
-                showToast(isVi ? '🔥 Mô phỏng: Chỉ còn Bạc hà & Gừng' : '🔥 Simulated: Only Mint & Ginger left');
-            } else if (type === 'onlyStevia') {
-                appState.ingredients.forEach(ing => {
-                    if (ing.id !== 'stevia') {
-                        ing.currentGrams = 0;
-                        ing.isOutOfStock = true;
-                    }
-                });
-                showToast(isVi ? '🚫 Mô phỏng: Chỉ còn mỗi Cỏ ngọt' : '🚫 Simulated: Only Stevia left');
-            } else {
-                showToast(isVi ? '✅ Mô phỏng: Đủ 9 nguyên liệu cơ bản' : '✅ Simulated: 9 core herbs ready');
-            }
-
             saveState();
             renderAll();
-            document.getElementById('section-recipes').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function setIceMode(mode) {
+            appState.gear.iceMode = mode === 'melting' ? 'melting' : 'steel';
+            saveState();
+            renderAll();
+        }
+
+        function updateSteelBoxes(val) {
+            appState.gear.steelBoxes = Math.min(20, Math.max(1, parseInt(val, 10) || 3));
+            saveState();
+            renderAll();
+        }
+
+        function updateMeltingRatio(val) {
+            appState.gear.meltingTeaRatio = Math.min(90, Math.max(30, parseInt(val, 10) || 60));
+            saveState();
+            renderAll();
+        }
+
+        function updateWarmCup(val) {
+            appState.gear.warmCupMl = Math.min(2000, Math.max(0, parseInt(val, 10) || 0));
+            saveState();
+            renderAll();
+        }
+
+        function addFlask() {
+            const idx = appState.gear.flasks.length + 1;
+            appState.gear.flasks.push({
+                id: `flask_${Date.now()}`,
+                name: `Flask ${idx}`,
+                nameVi: `Bình ${idx}`,
+                capacityMl: 800
+            });
+            saveState();
+            renderAll();
+        }
+
+        function removeFlask(index) {
+            if (appState.gear.flasks.length <= 1) return;
+            appState.gear.flasks.splice(index, 1);
+            saveState();
+            renderAll();
+        }
+
+        function updateFlaskField(index, field, value) {
+            const f = appState.gear.flasks[index];
+            if (!f) return;
+            if (field === 'capacityMl') {
+                f.capacityMl = Math.min(10000, Math.max(150, parseInt(value, 10) || 800));
+            } else if (field === 'name') {
+                if (appState.lang === 'vi') f.nameVi = value;
+                else f.name = value;
+            }
+            saveState();
+            renderAll();
+        }
+
+        function resetGearDefaults() {
+            appState.gear = JSON.parse(JSON.stringify(DEFAULT_GEAR));
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi' ? '🔄 Đã khôi phục cấu hình bình & đá gốc' : '🔄 Reset flasks & ice to defaults');
         }
 
         function clearHistoryLog() {
             appState.history = [];
             saveState();
-            renderHistory();
-            showToast(appState.lang === 'vi' ? '🗑️ Đã xóa lịch sử pha chế' : '🗑️ Brewing logs cleared');
+            renderHistorySection();
+            showToast(appState.lang === 'vi' ? '🗑️ Đã xóa lịch sử pha chế' : '🗑️ Brew logs cleared');
         }
 
-        function resetAllData() {
-            const currentLang = appState.lang;
-            localStorage.removeItem(STORAGE_KEY);
-            document.cookie = `${STORAGE_KEY}_cookie=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-            appState = {
-                lang: currentLang,
-                gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
-                ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
-                schedule: {
-                    todayRecipeId: 'rec_1',
-                    tomorrowRecipeId: 'rec_2',
-                    tomorrowStrainTime: '08:00',
-                    lastUpdatedDate: getFormattedDate(0).iso,
-                    dailyChecks: { date: getFormattedDate(0).iso, flasks: {} }
-                },
-                history: []
-            };
-            saveState();
-            renderAll();
-            showToast(appState.lang === 'vi' ? '🔄 Đã khôi phục dữ liệu mặc định' : '🔄 Factory reset complete');
-        }
-
-        function exportDataJSON() {
-            try {
-                const exportPayload = {
-                    app: 'BotanicaLab Herbal Brew & Inventory Tracker',
-                    exportedAt: new Date().toISOString(),
-                    data: appState
-                };
-                const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `botanical_backup_${getFormattedDate(0).iso}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showToast(appState.lang === 'vi' ? '💾 Đã tải xuống toàn bộ dữ liệu (.json)' : '💾 Exported full backup (.json)');
-            } catch (err) {
-                showToast(appState.lang === 'vi' ? '❌ Lỗi khi xuất file sao lưu' : '❌ Failed to export backup');
-            }
-        }
-
-        function importDataJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const rawParsed = JSON.parse(e.target.result);
-                    const imported = rawParsed && rawParsed.data ? rawParsed.data : rawParsed;
-                    if (!imported || (!imported.ingredients && !imported.history && !imported.gear)) {
-                        throw new Error('Invalid schema');
-                    }
-                    mergeLoadedState(imported);
-                    saveState();
-                    applyStaticTranslations();
-                    updateClockAndDates();
-                    renderAll();
-                    showToast(appState.lang === 'vi'
-                        ? `📂 Đã khôi phục kho, bình & ${appState.history.length} lịch sử pha chế!`
-                        : `📂 Restored pantry, gear & ${appState.history.length} brew logs!`
-                    );
-                } catch (err) {
-                    showToast(appState.lang === 'vi' ? '❌ File JSON không đúng định dạng sao lưu' : '❌ Invalid backup JSON format');
-                } finally {
-                    event.target.value = '';
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function showToast(message) {
+        function showToast(msg) {
             const container = document.getElementById('toast-container');
+            if (!container) return;
             const toast = document.createElement('div');
-            toast.className = 'bg-botanical-900 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-lg border border-botanical-700 flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0';
-            toast.innerHTML = `<span>${message}</span>`;
+            toast.className = 'px-4 py-2.5 rounded-xl bg-botanical-900 text-white text-xs font-semibold shadow-lg border border-botanical-700 transition-all duration-300';
+            toast.textContent = msg;
             container.appendChild(toast);
-
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            });
-
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 3200);
         }
 
-        // 12. INITIALIZE ON PAGE LOAD
+        // 11. APPLICATION BOOTSTRAP
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
-            setInterval(updateClockAndDates, 1000);
+            setInterval(() => {
+                updateClockAndDates();
+                renderScheduleSection();
+            }, 30000);
         });
     </script>
 </body>
