@@ -7,7 +7,7 @@ module.exports = {
     exec_mode: 'fork',
     env: {
       PORT: '4317',
-      HOST: '127.0.0.1',
+      HOST: process.env.SHARE_HOST || '127.0.0.1',
       BOTANICALAB_SHARE_DATA: '/mnt/data/botanicalab-share',
       ALLOWED_ORIGIN: 'https://about.xedryk.top',
       SHARE_TTL_SECONDS: '259200',

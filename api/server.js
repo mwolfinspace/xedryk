@@ -15,7 +15,8 @@ const os = require('os');
 const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT || 4317);
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST_LIST = (process.env.HOST || '127.0.0.1').split(',').map(h => h.trim()).filter(Boolean);
+const HOST = HOST_LIST[0];
 const DATA_DIR = process.env.BOTANICALAB_SHARE_DATA || path.join(os.tmpdir(), 'botanicalab-share');
 const STATIC_DIR = process.env.STATIC_DIR || __dirname;
 const SERVE_STATIC = process.env.SERVE_STATIC === '1';
@@ -380,6 +381,10 @@ const server = http.createServer(async (req, res) => {
 cleanupExpired();
 const cleanupTimer = setInterval(cleanupExpired, 60_000);
 cleanupTimer.unref();
-server.listen(PORT, HOST, () => {
-  console.log(`BotanicaLab share API listening on http://${HOST}:${PORT} (data: ${DATA_DIR}, ttl: ${TTL_MS / 86400000}d)`);
-});
+let listeningCount = 0;
+HOST_LIST.forEach(host => server.listen(PORT, host, () => {
+  listeningCount++;
+  if (listeningCount === HOST_LIST.length) {
+    console.log(`BotanicaLab share API listening on ${HOST_LIST.map(h => `http://${h}:${PORT}`).join(', ')} (data: ${DATA_DIR}, ttl: ${TTL_MS / 86400000}d)`);
+  }
+}));

@@ -22,16 +22,16 @@ pm2 save
 Environment variables:
 
 - `PORT` (default `4317`)
-- `HOST` (default `127.0.0.1`)
+- `HOST` (default `127.0.0.1`; set `SHARE_HOST=172.29.0.1` when the page container reaches the API over its Docker bridge)
 - `BOTANICALAB_SHARE_DATA` (default OS temp dir; keep outside web root)
 - `ALLOWED_ORIGIN` (default `https://about.xedryk.top`)
 - `SHARE_TTL_SECONDS` (default `259200` = 3 days)
 - `SHARE_MAX_BYTES` (default `2097152`)
 - `STATIC_DIR` + `SERVE_STATIC=1` only for local testing
 
-## Caddy
+## Reverse proxy
 
-See `Caddyfile.snippet`. Add it to the `about.xedryk.top` site block and reload Caddy.
+The live `about.xedryk.top` page is served by the `about-page` container on `127.0.0.1:8089`. Copy `about-nginx.conf` to that container's `/etc/nginx/conf.d/default.conf` and reload nginx. The Caddy snippet is kept as an equivalent route if traffic is ever sent through Caddy first.
 
 ## Security properties
 
