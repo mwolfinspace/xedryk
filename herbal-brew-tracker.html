@@ -735,6 +735,19 @@
 
     </main>
 
+    <!-- CANCEL CONFIRMATION: protects against accidental taps on the steeping panel -->
+    <div id="cancel-confirm-modal" class="hidden fixed inset-0 z-[60] bg-black/70 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="cancel-confirm-title" onclick="if(event.target===this) closeCancelConfirm()">
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 id="cancel-confirm-title" data-i18n="cancelConfirmTitle" class="font-serif text-lg font-bold text-gray-900">Hủy mẻ đang ủ?</h3>
+            <p data-i18n="cancelConfirmBody" class="text-xs text-gray-600 mt-2 leading-relaxed">Thao tác này hoàn lại đúng số gram đã trừ, ngày dùng và mục nhật ký. Sau khi xác nhận sẽ không thể hoàn tác.</p>
+            <p id="cancel-confirm-recipe" class="text-[11px] font-semibold text-botanical-700 mt-2"></p>
+            <div class="flex flex-wrap gap-2 mt-4 justify-end">
+                <button type="button" onclick="closeCancelConfirm()" data-i18n="cancelConfirmKeep" class="px-3 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold transition">Giữ nguyên mẻ ủ</button>
+                <button type="button" id="cancel-confirm-yes" onclick="confirmCancelPendingBrew()" data-i18n="cancelConfirmYes" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-800 text-white text-xs font-bold shadow transition">Xác nhận hủy & hoàn kho</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION BANNER -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
 
@@ -763,6 +776,10 @@
                 editGearLink: '⚙️ Configure Flasks & Ice',
                 tonightBadge: '🌙 Steep Tonight (For Tomorrow)',
                 btnConfirmBrew: "Confirm Tonight's Brew (Auto-Deduct Stock)",
+                cancelConfirmTitle: 'Cancel this steep?',
+                cancelConfirmBody: 'This restores the exact deducted grams, usage dates and the log entry. This cannot be undone after confirming.',
+                cancelConfirmKeep: 'Keep steeping',
+                cancelConfirmYes: 'Yes, cancel & refund',
                 forecastHeader: '5-Day Balanced Rotation Forecast',
                 forecastSub: 'Uses only in-stock & allergy-safe formulas',
                 sec2Tag: '113 Conflict-Free Synergistic Formulas',
@@ -914,6 +931,10 @@
                 editGearLink: '⚙️ Tùy chỉnh Bình & Đá',
                 tonightBadge: '🌙 Tối nay ủ (Cho Ngày Mai)',
                 btnConfirmBrew: 'Xác nhận đã ủ mẻ tối nay (Trừ kho tự động)',
+                cancelConfirmTitle: 'Hủy mẻ đang ủ?',
+                cancelConfirmBody: 'Thao tác này hoàn lại đúng số gram đã trừ, ngày dùng và mục nhật ký. Sau khi xác nhận sẽ không thể hoàn tác.',
+                cancelConfirmKeep: 'Giữ nguyên mẻ ủ',
+                cancelConfirmYes: 'Xác nhận hủy & hoàn kho',
                 forecastHeader: 'Dự báo xoay vòng cân bằng 5 ngày tới',
                 forecastSub: 'Chỉ dùng công thức đủ kho & an toàn dị ứng',
                 sec2Tag: 'Ma trận Dược lý 113 Công thức • Không xung khắc',
@@ -2226,7 +2247,7 @@
             document.getElementById('brew-progress-sub').textContent = rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId;
             document.getElementById('brew-progress-hint').textContent = locked
                 ? (isEn ? '🔒 Cancel disabled' : '🔒 Không thể hủy')
-                : (isEn ? 'Tap to cancel & restore stock' : 'Nhấn để hủy & hoàn kho');
+                : (isEn ? 'Tap to cancel · confirm required' : 'Nhấn để hủy · cần xác nhận');
             document.getElementById('brew-progress-lock-note').textContent = locked
                 ? (isEn ? 'Within 60 min of strain time' : 'Dưới 60 phút trước giờ vắt')
                 : (isEn ? `Cancel closes in ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}` : `Khóa hủy sau ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}`);
@@ -2236,8 +2257,32 @@
 
             panel.style.borderColor = locked ? '#d97706' : '#3d7a5a';
             panel.style.cursor = locked ? 'default' : 'pointer';
-            panel.onclick = locked ? null : cancelPendingBrew;
+            panel.onclick = locked ? null : openCancelConfirm;
         }
+
+        function openCancelConfirm() {
+            const tl = getBrewTimeline();
+            if (!tl || tl.remaining <= BREW_LOCK_WINDOW_MS) return;
+            const rec = (currentAdaptivePlan.allEvaluated || []).find(r => r.id === tl.pending.recipeId);
+            const recipeEl = document.getElementById('cancel-confirm-recipe');
+            if (recipeEl) recipeEl.textContent = rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId;
+            const modal = document.getElementById('cancel-confirm-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeCancelConfirm() {
+            const modal = document.getElementById('cancel-confirm-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function confirmCancelPendingBrew() {
+            closeCancelConfirm();
+            cancelPendingBrew();
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeCancelConfirm();
+        });
 
         function cancelPendingBrew() {
             const tl = getBrewTimeline();
