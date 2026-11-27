@@ -582,7 +582,7 @@
                                 <div id="steel-ice-controls" class="pt-1 space-y-2 text-xs text-gray-600">
                                     <div class="flex items-center justify-between gap-2">
                                         <span data-i18n="steelBoxesLabel">Số hộp đá inox (8 viên/hộp):</span>
-                                        <input type="number" min="1" max="10" id="input-steel-boxes" onchange="updateSteelBoxes(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
+                                        <input type="number" min="1" max="10" id="input-steel-boxes" onfocus="selectZeroOnFocus(this)" oninput="stripLeadingZerosOnInput(this)" onchange="updateSteelBoxes(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
                                     </div>
                                     <p id="steel-ice-summary" class="text-[11px] text-gray-500"></p>
                                 </div>
@@ -592,7 +592,7 @@
                                     <div class="flex items-center justify-between gap-2">
                                         <span data-i18n="teaFillRatioLabel">Tỷ lệ rót trà ở nhà (Trước khi thêm đá):</span>
                                         <div class="flex items-center gap-1">
-                                            <input type="number" min="40" max="85" step="5" id="input-tea-ratio" onchange="updateMeltingRatio(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
+                                            <input type="number" min="40" max="85" step="5" id="input-tea-ratio" onfocus="selectZeroOnFocus(this)" oninput="stripLeadingZerosOnInput(this)" onchange="updateMeltingRatio(this.value)" class="w-16 text-center font-bold border border-gray-300 rounded-lg py-1 bg-cream text-gray-900">
                                             <span class="font-bold">%</span>
                                         </div>
                                     </div>
@@ -619,7 +619,7 @@
                                 <div class="flex items-center justify-between gap-2">
                                     <span data-i18n="warmCupLabel" class="font-bold text-amber-900">☕ Uống ấm buổi sáng tại nhà:</span>
                                     <div class="flex items-center gap-1">
-                                        <input type="number" min="0" max="600" step="50" id="input-warm-cup" onchange="updateWarmCup(this.value)" class="w-20 text-center font-bold border border-amber-300 rounded-lg py-1 bg-white text-gray-900">
+                                        <input type="number" min="0" max="600" step="50" id="input-warm-cup" onfocus="selectZeroOnFocus(this)" oninput="stripLeadingZerosOnInput(this)" onchange="updateWarmCup(this.value)" class="w-20 text-center font-bold border border-amber-300 rounded-lg py-1 bg-white text-gray-900">
                                         <span class="font-bold text-amber-900">ml</span>
                                     </div>
                                 </div>
@@ -2888,7 +2888,7 @@
                             <div class="flex items-center gap-1.5">
                                 <button onclick="adjustStock('${ing.id}', -5)" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700 text-xs transition">-5</button>
                                 <div class="flex items-center border border-gray-300 rounded-lg bg-white px-2 py-1">
-                                    <input type="number" step="0.5" min="0" value="${ing.currentGrams}" onchange="setExactStock('${ing.id}', this.value)" class="w-12 text-center text-xs font-bold text-gray-900 outline-none">
+                                    <input type="number" step="0.5" min="0" value="${ing.currentGrams}" onfocus="selectZeroOnFocus(this)" oninput="stripLeadingZerosOnInput(this)" onchange="setExactStock('${ing.id}', this.value)" class="w-12 text-center text-xs font-bold text-gray-900 outline-none">
                                     <span class="text-[11px] text-gray-500 font-semibold">g</span>
                                 </div>
                                 <button onclick="adjustStock('${ing.id}', 10)" class="w-7 h-7 rounded-lg bg-botanical-50 hover:bg-botanical-100 font-bold text-botanical-800 text-xs transition">+10</button>
@@ -3020,7 +3020,7 @@
                     <div class="flex items-center gap-2 bg-cream p-2 rounded-xl border border-gray-200/80">
                         <input type="text" value="${dispName}" placeholder="${t('flaskNamePlaceholder')}" onchange="updateFlaskField(${idx}, 'name', this.value)" class="flex-1 min-w-0 text-xs font-semibold bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900">
                         <div class="flex items-center gap-1 shrink-0">
-                            <input type="number" min="150" max="5000" step="50" value="${f.capacityMl}" onchange="updateFlaskField(${idx}, 'capacityMl', this.value)" class="w-16 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg py-1.5 text-gray-900">
+                            <input type="number" min="150" max="5000" step="50" value="${f.capacityMl}" onfocus="selectZeroOnFocus(this)" oninput="stripLeadingZerosOnInput(this)" onchange="updateFlaskField(${idx}, 'capacityMl', this.value)" class="w-16 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg py-1.5 text-gray-900">
                             <span class="text-[11px] font-bold text-gray-500">ml</span>
                         </div>
                         ${g.flasks.length > 1 ? `<button type="button" onclick="removeFlask(${idx})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs shrink-0">✕</button>` : ''}
@@ -3431,6 +3431,19 @@
             const stamped = stampRestockIfNeeded(id, before, ing.currentGrams);
             logStockEvent(stamped ? 'restock' : 'adjust', ing, { from: before, to: ing.currentGrams });
             saveState(); renderAll();
+        }
+
+        function selectZeroOnFocus(el) {
+            try { if (el && String(el.value).trim() === '0') el.select(); } catch (e) {}
+        }
+
+        function stripLeadingZerosOnInput(el) {
+            try {
+                if (!el) return;
+                const raw = String(el.value || '');
+                const cleaned = raw.replace(/^0+(?=\d)/, '');
+                if (cleaned !== raw) el.value = cleaned;
+            } catch (e) {}
         }
 
         function setExactStock(id, val) {
