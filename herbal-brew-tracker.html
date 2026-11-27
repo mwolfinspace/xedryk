@@ -891,6 +891,12 @@
         const SCHEMA_VERSION = 6;
         const BREW_LOCK_WINDOW_MS = 60 * 60 * 1000;
 
+        function localIsoDate(offsetDays = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
         const DEFAULT_GEAR = {
             iceMode: 'steel',
             steelBoxes: 3,
@@ -908,7 +914,10 @@
                 lang: langOverride,
                 theme: 'light',
                 gear: JSON.parse(JSON.stringify(DEFAULT_GEAR)),
-                ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)),
+                ingredients: JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)).map(ing => ({
+                    ...ing,
+                    usage: { lastUsedDate: '', lastUsedAt: 0, useCount: 0, usedGrams: 0, freshSince: localIsoDate(0) }
+                })),
                 userProfile: {
                     excludedAllergies: [],
                     medicalFilters: [],
@@ -1402,6 +1411,13 @@
                 return out;
             };
             const numOr = (val, fallback) => { const n = Number(val); return Number.isFinite(n) ? n : fallback; };
+            const sanitizeUsage = (u) => ({
+                lastUsedDate: typeof (u && u.lastUsedDate) === 'string' ? u.lastUsedDate : '',
+                lastUsedAt: numOr(u && u.lastUsedAt, 0),
+                useCount: Math.max(0, numOr(u && u.useCount, 0)),
+                usedGrams: Math.max(0, numOr(u && u.usedGrams, 0)),
+                freshSince: typeof (u && u.freshSince) === 'string' ? u.freshSince : localIsoDate(0)
+            });
 
             const oldVer = Number(raw.schemaVersion) || 1;
             Object.assign(base, copyUnknown(raw, [
@@ -1438,12 +1454,13 @@
                     const saved = rawMap.get(defIng.id);
                     if (!saved || typeof saved !== 'object') return { ...defIng };
                     const grams = Math.max(0, numOr(saved.currentGrams, 0));
-                    // Keep latest encyclopedia metadata, restore stock, and retain unknown future fields.
+                    // Keep latest encyclopedia metadata, restore stock/herb usage, and retain unknown future fields.
                     return {
                         ...defIng,
-                        ...copyUnknown(saved, Object.keys(defIng)),
+                        ...copyUnknown(saved, Object.keys(defIng).filter(k => k !== 'usage')),
                         currentGrams: grams,
-                        isOutOfStock: typeof saved.isOutOfStock === 'boolean' ? saved.isOutOfStock : (grams <= 0)
+                        isOutOfStock: typeof saved.isOutOfStock === 'boolean' ? saved.isOutOfStock : (grams <= 0),
+                        usage: sanitizeUsage(saved.usage)
                     };
                 });
                 // User-added herbs from older backups remain in the pantry instead of vanishing.
@@ -1473,6 +1490,7 @@
                         clean.medFlags = Array.isArray(item.medFlags) ? item.medFlags.filter(x => typeof x === 'string') : [];
                         clean.substitutes = Array.isArray(item.substitutes) ? item.substitutes.filter(x => typeof x === 'string') : [];
                         clean.isCustom = true;
+                        clean.usage = sanitizeUsage(item.usage);
                         return clean;
                     });
                 base.ingredients.push(...customHerbs);
@@ -1558,7 +1576,8 @@
                     theme: appState.theme,
                     userProfile: appState.userProfile,
                     schedule: { todayRecipeId: appState.schedule.todayRecipeId, tomorrowRecipeId: appState.schedule.tomorrowRecipeId, tomorrowStrainTime: appState.schedule.tomorrowStrainTime },
-                    stock: appState.ingredients.filter(i => !i.isOutOfStock).map(i => [i.id, i.currentGrams])
+                    stock: appState.ingredients.filter(i => !i.isOutOfStock).map(i => [i.id, i.currentGrams]),
+                    usage: appState.ingredients.filter(i => i.usage && (i.usage.useCount || i.usage.lastUsedDate)).map(i => [i.id, i.usage])
                 });
                 setCookie(STORAGE_KEY + '_c', compactCookie, 365);
             } catch (err) { console.warn('Storage warning:', err); }
@@ -1575,6 +1594,7 @@
                 if (rawCookie) {
                     const parsed = JSON.parse(rawCookie);
                     const stockMap = new Map(Array.isArray(parsed.stock) ? parsed.stock : []);
+                    const usageMap = new Map(Array.isArray(parsed.usage) ? parsed.usage : []);
                     const reconstructed = {
                         schemaVersion: parsed.schemaVersion || 1,
                         lang: parsed.lang || 'vi',
@@ -1588,6 +1608,10 @@
                         }))
                     };
                     appState = migrateAndSanitizeState(reconstructed);
+                    appState.ingredients.forEach(i => {
+                        const savedUsage = usageMap.get(i.id);
+                        if (savedUsage && typeof savedUsage === 'object') i.usage = { ...getHerbUsage(i), ...savedUsage };
+                    });
                     saveState();
                     return;
                 }
@@ -1667,6 +1691,97 @@
             return { iso, display };
         }
 
+        // Herb-level freshness: every confirmed brew records which herbs it consumed.
+        // Auto picks then favour herbs that were never/least used and still have stock,
+        // so a manually chosen formula cannot quietly leave other jars sitting stale.
+        function getHerbUsage(ing) {
+            if (!ing) return null;
+            if (!ing.usage || typeof ing.usage !== 'object' || Array.isArray(ing.usage)) {
+                ing.usage = { lastUsedDate: '', lastUsedAt: 0, useCount: 0, usedGrams: 0, freshSince: localIsoDate(0) };
+            }
+            const u = ing.usage;
+            if (typeof u.lastUsedDate !== 'string') u.lastUsedDate = '';
+            if (typeof u.freshSince !== 'string') u.freshSince = localIsoDate(0);
+            if (!Number.isFinite(Number(u.lastUsedAt))) u.lastUsedAt = 0;
+            if (!Number.isFinite(Number(u.useCount))) u.useCount = 0;
+            if (!Number.isFinite(Number(u.usedGrams))) u.usedGrams = 0;
+            return u;
+        }
+
+        function markHerbsUsed(deducted, isoDate) {
+            const dateIso = isoDate || localIsoDate(0);
+            (Array.isArray(deducted) ? deducted : []).forEach(d => {
+                const ing = d && (appState.ingredients || []).find(i => i.id === d.id);
+                if (!ing || !(Number(d.grams) > 0)) return;
+                const u = getHerbUsage(ing);
+                u.lastUsedDate = dateIso;
+                u.lastUsedAt = Date.now();
+                u.useCount = Number(u.useCount) + 1;
+                u.usedGrams = Math.round((Number(u.usedGrams) + Number(d.grams)) * 10) / 10;
+            });
+        }
+
+        function markHerbsRestocked(ids, isoDate) {
+            const dateIso = isoDate || localIsoDate(0);
+            (Array.isArray(ids) ? ids : [ids]).filter(Boolean).forEach(id => {
+                const ing = (appState.ingredients || []).find(i => i.id === id);
+                if (!ing) return;
+                getHerbUsage(ing).freshSince = dateIso;
+            });
+        }
+
+        function getHerbStaleDays(ing, todayIso) {
+            if (!ing) return 0;
+            const u = getHerbUsage(ing);
+            const todayMs = Date.parse(`${todayIso}T00:00:00`);
+            const daysFrom = iso => {
+                const ms = Date.parse(`${iso}T00:00:00`);
+                return Number.isFinite(ms) ? Math.max(0, Math.round((todayMs - ms) / 864e5)) : null;
+            };
+            const usedDays = u.lastUsedDate ? daysFrom(u.lastUsedDate) : null;
+            const freshDays = u.freshSince ? daysFrom(u.freshSince) : null;
+            if (usedDays === null) return 90 + (freshDays === null ? 60 : Math.min(freshDays, 60));
+            return Math.max(usedDays, freshDays === null ? 0 : freshDays * 0.5);
+        }
+
+        function getHerbPriority(ing, todayIso) {
+            if (!ing || ing.isOutOfStock || !(Number(ing.currentGrams) > 0)) return 0;
+            const u = getHerbUsage(ing);
+            const stale = getHerbStaleDays(ing, todayIso);
+            const usePenalty = Math.min(40, Number(u.useCount) * 2);
+            const stockRatio = Math.min(1.5, Number(ing.currentGrams) / Math.max(1, Number(ing.defaultGrams) || 100));
+            return Math.max(0, stale - usePenalty) + stockRatio * 10;
+        }
+
+        function getRecipeHerbPriority(recipe, todayIso, ingMap) {
+            const ids = [...new Set(((recipe && recipe.ingredients) || []).map(i => i.id))];
+            if (!ids.length) return 0;
+            const total = ids.reduce((sum, id) => sum + getHerbPriority(ingMap.get(id), todayIso), 0);
+            return total / ids.length;
+        }
+
+        function getRotationHerbStats(recipes) {
+            const ids = new Set();
+            (Array.isArray(recipes) ? recipes : []).forEach(r => ((r && r.ingredients) || []).forEach(i => ids.add(i.id)));
+            const ingMap = new Map((appState.ingredients || []).map(i => [i.id, i]));
+            const todayIso = localIsoDate(0);
+            let neverUsed = 0, oldestDays = 0, oldestId = '';
+            ids.forEach(id => {
+                const ing = ingMap.get(id);
+                if (!ing) return;
+                if (!(Number(getHerbUsage(ing).useCount) > 0)) neverUsed++;
+                const days = getHerbStaleDays(ing, todayIso);
+                if (days > oldestDays) { oldestDays = days; oldestId = id; }
+            });
+            const oldest = ingMap.get(oldestId);
+            return {
+                neverUsed,
+                oldestDays,
+                oldestId,
+                oldestName: oldest ? (appState.lang === 'en' ? (oldest.nameEn || oldest.nameVi) : (oldest.nameVi || oldest.nameEn)) : ''
+            };
+        }
+
         // Freshness rotation: least-recently-used first, deterministic tie-break,
         // so a 113-formula library does not visibly loop back after only a few days.
         function rotationHash(str) {
@@ -1706,6 +1821,7 @@
             const todayIso = getFormattedDate(0).iso;
             const todayMs = Date.parse(`${todayIso}T00:00:00`);
             const recent = rot.recentIds || [];
+            const ingMap = new Map((appState.ingredients || []).map(i => [i.id, i]));
             const lastCatId = recent.length ? recent[0] : null;
             const lastCat = lastCatId ? (list.find(r => r.id === lastCatId) || {}).category : null;
 
@@ -1720,9 +1836,10 @@
                 const recentPenalty = recentIdx >= 0 ? (recent.length - recentIdx) * 35 : 0;
                 const categoryBonus = (lastCat && recipe.category && recipe.category !== lastCat) ? 14 : 0;
                 const jitter = rotationHash(`${rot.seed}|${todayIso}|${recipe.id}`) % 100;
+                const herbBonus = getRecipeHerbPriority(recipe, todayIso, ingMap) * 1.5;
                 return {
                     recipe,
-                    score: Math.min(daysSince, 400) * 10 - recentPenalty + categoryBonus + jitter
+                    score: Math.min(daysSince, 120) * 10 - recentPenalty + categoryBonus + jitter + herbBonus
                 };
             });
 
@@ -1861,6 +1978,10 @@
                 if (!ing) return;
                 ing.currentGrams = Math.round((ing.currentGrams + numOr(d.grams, 0)) * 10) / 10;
                 if (ing.currentGrams > 0) ing.isOutOfStock = false;
+            });
+            (tl.pending.prevUsage || []).forEach(s => {
+                const ing = appState.ingredients.find(i => i.id === s.id);
+                if (ing && s.usage) ing.usage = { ...s.usage };
             });
             if (tl.pending.historyId) appState.history = appState.history.filter(h => h.id !== tl.pending.historyId);
             if (tl.pending.prevTodayRecipeId !== undefined) appState.schedule.todayRecipeId = tl.pending.prevTodayRecipeId;
@@ -2122,9 +2243,10 @@
             const forecastEl = document.getElementById('five-day-forecast');
             const cycleNoteEl = document.getElementById('forecast-cycle-note');
             if (cycleNoteEl) {
+                const herbStats = getRotationHerbStats(plan.recipes);
                 cycleNoteEl.textContent = isEn
-                    ? `Freshness cycle: ${plan.recipes.length} formulas • no repeat for ~${plan.recipes.length} days`
-                    : `Chu kỳ mới: ${plan.recipes.length} công thức • không lặp lại ~${plan.recipes.length} ngày`;
+                    ? `Freshness cycle: ${plan.recipes.length} formulas • ${herbStats.neverUsed} unused herbs • no repeat for ~${plan.recipes.length} days`
+                    : `Chu kỳ mới: ${plan.recipes.length} công thức • ${herbStats.neverUsed} vị chưa dùng • không lặp ~${plan.recipes.length} ngày`;
             }
             if (forecastEl) {
                 if (plan.recipes.length === 0) {
@@ -2834,6 +2956,7 @@
                 if (ing) {
                     ing.currentGrams = ing.defaultGrams || 100;
                     ing.isOutOfStock = false;
+                    markHerbsRestocked([id]);
                     count++;
                 }
             });
@@ -2885,7 +3008,7 @@
             const historyId = Date.now() + Math.random();
             appState.schedule.pendingBrew = {
                 recipeId: rec.id, targetDate: getFormattedDate(1).iso, confirmedAt: Date.now(), historyId,
-                deducted: [], prevTodayRecipeId: appState.schedule.todayRecipeId,
+                deducted: [], prevUsage: [], prevTodayRecipeId: appState.schedule.todayRecipeId,
                 prevTomorrowRecipeId: appState.schedule.tomorrowRecipeId,
                 prevLastUpdatedDate: appState.schedule.lastUpdatedDate || ''
             };
@@ -2899,8 +3022,11 @@
                     if (ing.currentGrams <= 0) ing.isOutOfStock = true;
                     deductedList.push(`${getIngName(ing)} (${item.grams}g)`);
                     appState.schedule.pendingBrew.deducted.push({ id: item.id, grams: item.grams });
+                    appState.schedule.pendingBrew.prevUsage.push({ id: item.id, usage: { ...getHerbUsage(ing) } });
                 }
             });
+
+            markHerbsUsed(appState.schedule.pendingBrew.deducted, getFormattedDate(0).iso);
 
             const nowStr = new Date().toLocaleString(isEn ? 'en-US' : 'vi-VN', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
             const summaryText = isEn
@@ -2917,15 +3043,18 @@
             if (!ing) return;
             ing.currentGrams = Math.max(0, Math.round((ing.currentGrams + delta) * 10) / 10);
             ing.isOutOfStock = ing.currentGrams <= 0;
+            if (delta > 0) markHerbsRestocked([id]);
             saveState(); renderAll();
         }
 
         function setExactStock(id, val) {
             const ing = appState.ingredients.find(i => i.id === id);
             if (!ing) return;
+            const before = ing.currentGrams;
             const num = Math.max(0, Math.round((parseFloat(val) || 0) * 10) / 10);
             ing.currentGrams = num;
             ing.isOutOfStock = num <= 0;
+            if (num > before) markHerbsRestocked([id]);
             saveState(); renderAll();
         }
 
@@ -2933,13 +3062,16 @@
             const ing = appState.ingredients.find(i => i.id === id);
             if (!ing) return;
             ing.isOutOfStock = isOut;
-            if (!isOut && ing.currentGrams <= 0) ing.currentGrams = ing.defaultGrams || 50;
+            if (!isOut) {
+                if (ing.currentGrams <= 0) ing.currentGrams = ing.defaultGrams || 50;
+                markHerbsRestocked([id]);
+            }
             saveState(); renderAll();
         }
 
         function restockAllDefault() {
             appState.ingredients.forEach(ing => {
-                if (ing.tier === 'core') { ing.currentGrams = ing.defaultGrams; ing.isOutOfStock = false; }
+                if (ing.tier === 'core') { ing.currentGrams = ing.defaultGrams; ing.isOutOfStock = false; markHerbsRestocked([ing.id]); }
             });
             saveState(); renderAll();
             showToast(appState.lang === 'en' ? '🔄 Restocked 9 core herbs' : '🔄 Đã nạp đầy 9 nguyên liệu cơ bản');
