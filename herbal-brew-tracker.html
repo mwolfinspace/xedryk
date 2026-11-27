@@ -81,6 +81,23 @@
         select {
             text-overflow: ellipsis;
         }
+        .brew-progress-fill {
+            background: linear-gradient(90deg, #244d38, #3d7a5a, #d97706, #3d7a5a);
+            background-size: 200% 100%;
+            animation: brew-flow 2.2s linear infinite;
+            transition: width 1s linear;
+        }
+        @keyframes brew-flow {
+            from { background-position: 0 0; }
+            to { background-position: -200% 0; }
+        }
+        .brew-panel-pulse {
+            animation: brew-pulse 2s ease-in-out infinite;
+        }
+        @keyframes brew-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(61, 122, 90, 0.22); }
+            50% { box-shadow: 0 0 0 7px rgba(61, 122, 90, 0); }
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-botanical-200 selection:text-botanical-900 pb-20">
@@ -224,6 +241,25 @@
 
                         <div id="tonight-water-summary" class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
                             <!-- Populated dynamically from vessel/ice config -->
+                        </div>
+                        <div id="brew-progress-panel" class="hidden brew-panel-pulse mb-3 rounded-2xl border-2 border-botanical-500 bg-gradient-to-r from-botanical-50 to-amber-50 p-3 sm:p-4" role="status">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div id="brew-progress-title" class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-botanical-700">⏳ Steeping in progress</div>
+                                    <div id="brew-progress-sub" class="text-[11px] text-gray-600 mt-0.5 truncate"></div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <div id="brew-progress-countdown" class="font-mono text-xl sm:text-2xl font-black text-botanical-900 tabular-nums">--:--:--</div>
+                                    <div id="brew-progress-hint" class="text-[10px] font-semibold text-botanical-700 mt-0.5">Tap to cancel</div>
+                                </div>
+                            </div>
+                            <div class="mt-2.5 h-3 rounded-full bg-white/80 border border-botanical-200 overflow-hidden">
+                                <div id="brew-progress-fill" class="brew-progress-fill h-full rounded-full" style="width:100%"></div>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between gap-2">
+                                <span id="brew-progress-lock-note" class="text-[10px] text-gray-500"></span>
+                                <button type="button" id="btn-strain-early" onclick="event.stopPropagation(); strainBrewEarly()" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold shadow transition">⏱ Strain early</button>
+                            </div>
                         </div>
                         <button id="btn-brew-tonight" onclick="confirmBrewTonight()" class="w-full py-3 px-4 bg-botanical-700 hover:bg-botanical-900 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99]">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -1023,7 +1059,8 @@
 
         // 5. DEFAULT GEAR, STORAGE KEY & GLOBAL APPLICATION STATE
         const STORAGE_KEY = 'botanical_infusion_tracker_v2';
-        const SCHEMA_VERSION = 4;
+        const SCHEMA_VERSION = 5;
+        const BREW_LOCK_WINDOW_MS = 60 * 60 * 1000;
 
         const DEFAULT_GEAR = {
             iceMode: 'steel', // 'steel' | 'melting'
@@ -1507,12 +1544,20 @@
                 base.schedule.tomorrowStrainTime = raw.schedule.tomorrowStrainTime || '08:00';
                 base.schedule.lastUpdatedDate = raw.schedule.lastUpdatedDate || '';
                 const pb = raw.schedule.pendingBrew;
-                base.schedule.pendingBrew = (pb && typeof pb === 'object' && pb.recipeId && pb.targetDate)
-                    ? Object.assign(copyUnknown(pb, ['recipeId', 'targetDate']), {
-                        recipeId: pb.recipeId,
-                        targetDate: pb.targetDate
-                    })
-                    : null;
+                if (pb && typeof pb === 'object' && pb.recipeId && pb.targetDate) {
+                    const cleanPb = copyUnknown(pb, []);
+                    cleanPb.recipeId = pb.recipeId;
+                    cleanPb.targetDate = pb.targetDate;
+                    cleanPb.confirmedAt = numOr(pb.confirmedAt, Date.now());
+                    if (Array.isArray(pb.deducted)) {
+                        cleanPb.deducted = pb.deducted
+                            .filter(d => d && typeof d === 'object' && d.id)
+                            .map(d => ({ id: d.id, grams: numOr(d.grams, 0) }));
+                    }
+                    base.schedule.pendingBrew = cleanPb;
+                } else {
+                    base.schedule.pendingBrew = null;
+                }
                 if (raw.schedule.dailyChecks && typeof raw.schedule.dailyChecks === 'object') {
                     Object.assign(base.schedule.dailyChecks, copyUnknown(raw.schedule.dailyChecks, ['date', 'flasks']));
                     base.schedule.dailyChecks.date = raw.schedule.dailyChecks.date || '';
@@ -1692,13 +1737,13 @@
             const el = document.getElementById('pending-brew-status');
             if (!el) return;
             const pending = appState.schedule && appState.schedule.pendingBrew;
-            const rotateAt = getRotateThreshold().toLocaleTimeString(appState.lang === 'vi' ? 'vi-VN' : 'en-US', {
-                hour: '2-digit', minute: '2-digit'
-            });
             if (pending && pending.recipeId) {
+                const strainAt = getPendingStrainDate(pending).toLocaleTimeString(appState.lang === 'vi' ? 'vi-VN' : 'en-US', {
+                    hour: '2-digit', minute: '2-digit'
+                });
                 el.textContent = appState.lang === 'vi'
-                    ? `✅ Đã xác nhận · đổi lúc ${rotateAt}`
-                    : `✅ Brew confirmed · rotates at ${rotateAt}`;
+                    ? `✅ Đã xác nhận · vắt lúc ${strainAt}`
+                    : `✅ Brew confirmed · strain at ${strainAt}`;
                 el.className = 'text-[11px] font-semibold text-botanical-700 mt-1';
             } else {
                 el.textContent = appState.lang === 'vi'
@@ -1706,6 +1751,185 @@
                     : 'Not confirmed · formula stays if skipped';
                 el.className = 'text-[11px] font-medium text-gray-400 mt-1';
             }
+        }
+
+        function numOr(val, fallback) {
+            const n = Number(val);
+            return Number.isFinite(n) ? n : fallback;
+        }
+
+        function getPendingStrainDate(pending) {
+            const parts = String(pending.targetDate || '').split('-');
+            const y = parseInt(parts[0], 10);
+            const mo = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            const timeParts = String((appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00').split(':');
+            const h = parseInt(timeParts[0], 10);
+            const mi = parseInt(timeParts[1], 10);
+            if (![y, mo, d, h, mi].every(Number.isFinite)) {
+                const fallback = new Date();
+                fallback.setDate(fallback.getDate() + 1);
+                fallback.setHours(8, 0, 0, 0);
+                return fallback;
+            }
+            return new Date(y, mo - 1, d, h, mi, 0, 0);
+        }
+
+        function getBrewTimeline() {
+            const pending = appState.schedule && appState.schedule.pendingBrew;
+            if (!pending || !pending.recipeId || !pending.targetDate) return null;
+            const target = getPendingStrainDate(pending);
+            const startedAt = Number(pending.confirmedAt) || Date.now();
+            const duration = Math.max(1000, target.getTime() - startedAt);
+            const remaining = target.getTime() - Date.now();
+            return { pending, target, startedAt, duration, remaining };
+        }
+
+        function formatBrewCountdown(ms) {
+            const total = Math.max(0, Math.floor(ms / 1000));
+            const h = Math.floor(total / 3600);
+            const m = Math.floor((total % 3600) / 60);
+            const s = total % 60;
+            const pad = n => String(n).padStart(2, '0');
+            return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+        }
+
+        function updateBrewProgressUI() {
+            const panel = document.getElementById('brew-progress-panel');
+            const btn = document.getElementById('btn-brew-tonight');
+            if (!panel || !btn) return;
+
+            const tl = getBrewTimeline();
+            if (!tl) {
+                panel.classList.add('hidden');
+                btn.classList.remove('hidden');
+                return;
+            }
+            if (tl.remaining <= 0) {
+                completePendingBrew();
+                return;
+            }
+
+            btn.classList.add('hidden');
+            panel.classList.remove('hidden');
+
+            const locked = tl.remaining <= BREW_LOCK_WINDOW_MS;
+            const isVi = appState.lang === 'vi';
+            const rec = (currentAdaptivePlan.recipes || []).find(r => r.id === tl.pending.recipeId);
+            const earlyBtn = document.getElementById('btn-strain-early');
+            const fill = document.getElementById('brew-progress-fill');
+            const countdown = document.getElementById('brew-progress-countdown');
+            const title = document.getElementById('brew-progress-title');
+            const sub = document.getElementById('brew-progress-sub');
+            const hint = document.getElementById('brew-progress-hint');
+            const lockNote = document.getElementById('brew-progress-lock-note');
+
+            if (countdown) countdown.textContent = formatBrewCountdown(tl.remaining);
+            if (fill) fill.style.width = `${Math.max(0, Math.min(100, (tl.remaining / tl.duration) * 100)).toFixed(3)}%`;
+            if (title) title.textContent = locked
+                ? (isVi ? '🔒 Đang ủ · Đã khóa' : '🔒 Steeping · Locked')
+                : (isVi ? '⏳ Đang ủ · Nhấn để hủy' : '⏳ Steeping · Tap to cancel');
+            if (sub) sub.textContent = rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId;
+            if (hint) hint.textContent = locked
+                ? (isVi ? '🔒 Không thể hủy' : '🔒 Cancel disabled')
+                : (isVi ? 'Nhấn để hủy & hoàn kho' : 'Tap to cancel & restore stock');
+            if (lockNote) lockNote.textContent = locked
+                ? (isVi ? 'Dưới 60 phút trước giờ vắt' : 'Within 60 min of strain time')
+                : (isVi
+                    ? `Khóa hủy sau ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}`
+                    : `Cancel closes in ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}`);
+            if (earlyBtn) {
+                earlyBtn.classList.toggle('hidden', !locked);
+                earlyBtn.textContent = isVi ? '⏱ Vắt sớm' : '⏱ Strain early';
+            }
+
+            panel.style.borderColor = locked ? '#d97706' : '#3d7a5a';
+            panel.style.cursor = locked ? 'default' : 'pointer';
+            panel.setAttribute('role', locked ? 'status' : 'button');
+            panel.tabIndex = locked ? -1 : 0;
+            panel.onclick = locked ? null : cancelPendingBrew;
+            panel.onkeydown = locked ? null : e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    cancelPendingBrew();
+                }
+            };
+        }
+
+        function cancelPendingBrew() {
+            const tl = getBrewTimeline();
+            if (!tl) return;
+            if (tl.remaining <= BREW_LOCK_WINDOW_MS) {
+                showToast(appState.lang === 'vi'
+                    ? '🔒 Đã khóa trong vòng 60 phút trước giờ vắt'
+                    : '🔒 Locked within 60 minutes of strain time');
+                return;
+            }
+
+            (tl.pending.deducted || []).forEach(d => {
+                const ing = appState.ingredients.find(i => i.id === d.id);
+                if (!ing) return;
+                ing.currentGrams = Math.round((ing.currentGrams + numOr(d.grams, 0)) * 10) / 10;
+                if (ing.currentGrams > 0) ing.isOutOfStock = false;
+            });
+            if (tl.pending.historyId) {
+                appState.history = appState.history.filter(h => h.id !== tl.pending.historyId);
+            }
+            if (tl.pending.prevTodayRecipeId !== undefined) {
+                appState.schedule.todayRecipeId = tl.pending.prevTodayRecipeId;
+            }
+            if (tl.pending.prevTomorrowRecipeId !== undefined) {
+                appState.schedule.tomorrowRecipeId = tl.pending.prevTomorrowRecipeId;
+            }
+            if (tl.pending.prevLastUpdatedDate !== undefined) {
+                appState.schedule.lastUpdatedDate = tl.pending.prevLastUpdatedDate;
+            }
+            appState.schedule.pendingBrew = null;
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi'
+                ? '↩️ Đã hủy mẻ ủ & hoàn lại nguyên liệu tồn kho'
+                : '↩️ Brew cancelled & pantry stock restored');
+        }
+
+        function strainBrewEarly() {
+            const tl = getBrewTimeline();
+            if (!tl) return;
+            if (tl.remaining <= 0) {
+                finalizePendingBrew('onTime', tl);
+                return;
+            }
+            if (tl.remaining > BREW_LOCK_WINDOW_MS) {
+                showToast(appState.lang === 'vi'
+                    ? 'Chỉ có thể vắt sớm trong 60 phút cuối'
+                    : 'Early strain is available only in the final 60 minutes');
+                return;
+            }
+            finalizePendingBrew('early', tl);
+        }
+
+        function completePendingBrew() {
+            const tl = getBrewTimeline();
+            if (!tl) return;
+            finalizePendingBrew('onTime', tl);
+        }
+
+        function finalizePendingBrew(mode, tl) {
+            const entry = appState.history.find(h => h.id === tl.pending.historyId);
+            const minsEarly = Math.max(0, Math.round(tl.remaining / 60000));
+            if (entry) {
+                entry.status = mode;
+                const suffix = mode === 'early'
+                    ? ` ⏱ Strained early (${minsEarly}m before target)`
+                    : ' ⏰ Strained at target time';
+                if (!entry.summaryText.includes(suffix)) entry.summaryText += suffix;
+            }
+            appState.schedule.pendingBrew = null;
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi'
+                ? (mode === 'early' ? '⏱ Đã đánh dấu vắt sớm' : '⏰ Đã hoàn tất mẻ ủ đúng giờ')
+                : (mode === 'early' ? '⏱ Marked as strained early' : '⏰ Brew completed at target time'));
         }
 
         // Apply a confirmed brew 4 hours before the configured strain time.
@@ -1731,7 +1955,6 @@
             sched.todayRecipeId = confirmedRec.id;
             sched.tomorrowRecipeId = nextRec.id;
             sched.lastUpdatedDate = todayIso;
-            sched.pendingBrew = null;
             saveState();
             renderAll();
             showToast(appState.lang === 'vi'
@@ -1767,6 +1990,7 @@
             }
 
             maybeRotateBrewSchedule();
+            updateBrewProgressUI();
         }
 
         function applyStaticTranslations() {
@@ -2235,6 +2459,7 @@
             renderScienceSection();
             renderGearSection();
             renderHistorySection();
+            updateBrewProgressUI();
         }
 
         // 10. INTERACTIVE USER ACTIONS
@@ -2283,10 +2508,18 @@
                 return;
             }
 
-            // Mark this brew as pending: it becomes "Today" 4h before tomorrow's strain time.
+            // Mark this brew as pending: it becomes "Today" 4h before tomorrow's strain time,
+            // and the progress panel drains until the configured strain time.
+            const historyId = Date.now() + Math.random();
             appState.schedule.pendingBrew = {
                 recipeId: rec.id,
-                targetDate: getFormattedDate(1).iso
+                targetDate: getFormattedDate(1).iso,
+                confirmedAt: Date.now(),
+                historyId,
+                deducted: [],
+                prevTodayRecipeId: appState.schedule.todayRecipeId,
+                prevTomorrowRecipeId: appState.schedule.tomorrowRecipeId,
+                prevLastUpdatedDate: appState.schedule.lastUpdatedDate || ''
             };
 
             const gear = getGearMetrics();
@@ -2303,6 +2536,7 @@
                         ing.isOutOfStock = true;
                     }
                     deductedList.push(`${getIngName(ing)} (${item.grams}g)`);
+                    appState.schedule.pendingBrew.deducted.push({ id: item.id, grams: item.grams });
                 }
             });
 
@@ -2315,7 +2549,8 @@
                 : `Steeped ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, est. ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`;
 
             appState.history.unshift({
-                id: Date.now(),
+                id: historyId,
+                status: 'steeping',
                 recipeCode: rec.code,
                 recipeName: getRecField(rec, 'name'),
                 summaryText,
