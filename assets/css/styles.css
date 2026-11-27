@@ -413,6 +413,10 @@
       position: relative;
       width: 100%;
       max-width: 540px;
+      max-height: calc(100vh - 3rem);
+      max-height: calc(100dvh - 3rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
       padding: 2.5rem 2rem 2rem;
       text-align: center;
       color: var(--text-light);
@@ -479,11 +483,14 @@
 
   .age-gate__btn {
       min-width: 175px;
+      min-height: 52px;
       padding: 0.75rem 1.5rem;
       font-family: inherit;
       font-size: 1.6rem;
       font-weight: 300;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
       border-radius: 18px;
       border: 2px solid #000;
       box-shadow: 5px 5px 0 0 rgba(0, 0, 0, 0.5);
@@ -516,9 +523,94 @@
       background: #6b3d7c;
   }
 
+  /* Phones in portrait: bottom sheet with full-width, thumb-friendly actions */
   @media screen and (max-width: 575px) {
-      .age-gate__dialog { padding: 2rem 1.25rem 1.5rem; }
-      .age-gate__title { font-size: 2rem; }
-      .age-gate__desc { font-size: 1.2rem; }
-      .age-gate__btn { min-width: 100%; }
+      .age-gate {
+          align-items: flex-end;
+          padding: 0;
+      }
+
+      .age-gate__dialog {
+          width: 100%;
+          max-width: none;
+          max-height: 92vh;
+          max-height: 92dvh;
+          padding: 2.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+          border-width: 2px 0 0;
+          border-radius: 28px 28px 0 0;
+          box-shadow: 0 -10px 40px 0 rgba(0, 0, 0, 0.6);
+          animation: age-gate-sheet-in 0.3s cubic-bezier(0.08, 0.59, 0.29, 0.99);
+      }
+
+      .age-gate__dialog::before {
+          content: "";
+          position: absolute;
+          top: 0.75rem;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 44px;
+          height: 5px;
+          border-radius: 999px;
+          background: rgba(255, 211, 251, 0.55);
+      }
+
+      .age-gate__badge {
+          width: 64px;
+          height: 64px;
+          margin-bottom: 0.75rem;
+          font-size: 1.6rem;
+      }
+
+      .age-gate__title {
+          font-size: 1.9rem;
+          margin-bottom: 0.75rem;
+      }
+
+      .age-gate__desc {
+          font-size: 1.15rem;
+          line-height: 1.55;
+          margin-bottom: 1.5rem;
+      }
+
+      .age-gate__actions {
+          flex-direction: column;
+          gap: 0.75rem;
+      }
+
+      .age-gate__btn {
+          width: 100%;
+          min-width: 0;
+          min-height: 56px;
+          font-size: 1.4rem;
+          border-radius: 16px;
+      }
+  }
+
+  @keyframes age-gate-sheet-in {
+      from { opacity: 0.6; transform: translateY(100%); }
+      to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Short landscape / small tablet: keep the dialog fully visible */
+  @media screen and (min-width: 576px) and (max-height: 620px) {
+      .age-gate__dialog {
+          padding: 1.5rem;
+      }
+
+      .age-gate__badge {
+          width: 56px;
+          height: 56px;
+          margin-bottom: 0.5rem;
+          font-size: 1.5rem;
+      }
+
+      .age-gate__title {
+          font-size: 1.8rem;
+          margin-bottom: 0.5rem;
+      }
+
+      .age-gate__desc {
+          font-size: 1.15rem;
+          margin-bottom: 1rem;
+      }
   }
