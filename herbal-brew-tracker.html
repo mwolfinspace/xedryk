@@ -192,6 +192,7 @@
                             <div>
                                 <span data-i18n="tonightBadge" class="text-xs font-bold uppercase tracking-wider text-botanical-700 bg-botanical-50 px-2.5 py-1 rounded-md border border-botanical-200">🌙 Steep Tonight (For Tomorrow)</span>
                                 <h3 class="text-base sm:text-lg font-bold text-gray-900 mt-1.5" id="tomorrow-date-label">Loading...</h3>
+                                <p id="pending-brew-status" class="text-[11px] font-medium text-gray-400 mt-1"></p>
                             </div>
                             <select id="select-tomorrow-recipe" onchange="updateScheduleSelection('tomorrow', this.value)" class="w-full sm:w-auto sm:max-w-[215px] text-xs border border-botanical-300 rounded-xl px-2.5 py-2 bg-botanical-50/50 font-semibold text-botanical-900 focus:ring-2 focus:ring-botanical-500 outline-none">
                                 <!-- Populated by JS -->
@@ -1022,7 +1023,7 @@
 
         // 5. DEFAULT GEAR, STORAGE KEY & GLOBAL APPLICATION STATE
         const STORAGE_KEY = 'botanical_infusion_tracker_v2';
-        const SCHEMA_VERSION = 3;
+        const SCHEMA_VERSION = 4;
 
         const DEFAULT_GEAR = {
             iceMode: 'steel', // 'steel' | 'melting'
@@ -1046,6 +1047,7 @@
                     tomorrowRecipeId: 'rec_2',
                     tomorrowStrainTime: '08:00',
                     lastUpdatedDate: '',
+                    pendingBrew: null, // { recipeId, targetDate } created by Confirm, applied 4h before strain time
                     dailyChecks: { date: '', flasks: {} }
                 },
                 history: [],
@@ -1498,12 +1500,19 @@
             if (raw.schedule && typeof raw.schedule === 'object') {
                 Object.assign(base.schedule, copyUnknown(raw.schedule, [
                     'todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime',
-                    'lastUpdatedDate', 'dailyChecks'
+                    'lastUpdatedDate', 'pendingBrew', 'dailyChecks'
                 ]));
                 base.schedule.todayRecipeId = raw.schedule.todayRecipeId || 'rec_1';
                 base.schedule.tomorrowRecipeId = raw.schedule.tomorrowRecipeId || 'rec_2';
                 base.schedule.tomorrowStrainTime = raw.schedule.tomorrowStrainTime || '08:00';
                 base.schedule.lastUpdatedDate = raw.schedule.lastUpdatedDate || '';
+                const pb = raw.schedule.pendingBrew;
+                base.schedule.pendingBrew = (pb && typeof pb === 'object' && pb.recipeId && pb.targetDate)
+                    ? Object.assign(copyUnknown(pb, ['recipeId', 'targetDate']), {
+                        recipeId: pb.recipeId,
+                        targetDate: pb.targetDate
+                    })
+                    : null;
                 if (raw.schedule.dailyChecks && typeof raw.schedule.dailyChecks === 'object') {
                     Object.assign(base.schedule.dailyChecks, copyUnknown(raw.schedule.dailyChecks, ['date', 'flasks']));
                     base.schedule.dailyChecks.date = raw.schedule.dailyChecks.date || '';
@@ -1667,6 +1676,69 @@
             return { iso, display };
         }
 
+        function getRotateThreshold() {
+            const parts = String((appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00').split(':');
+            const parsedH = parseInt(parts[0], 10);
+            const parsedM = parseInt(parts[1], 10);
+            const h = Number.isFinite(parsedH) ? parsedH : 8;
+            const m = Number.isFinite(parsedM) ? parsedM : 0;
+            const rotateAt = new Date();
+            rotateAt.setHours(0, 0, 0, 0);
+            rotateAt.setHours(h - 4, m, 0, 0); // setHours handles strain times before 04:00 by rolling back a day
+            return rotateAt;
+        }
+
+        function updatePendingBrewStatus() {
+            const el = document.getElementById('pending-brew-status');
+            if (!el) return;
+            const pending = appState.schedule && appState.schedule.pendingBrew;
+            const rotateAt = getRotateThreshold().toLocaleTimeString(appState.lang === 'vi' ? 'vi-VN' : 'en-US', {
+                hour: '2-digit', minute: '2-digit'
+            });
+            if (pending && pending.recipeId) {
+                el.textContent = appState.lang === 'vi'
+                    ? `✅ Đã xác nhận · đổi lúc ${rotateAt}`
+                    : `✅ Brew confirmed · rotates at ${rotateAt}`;
+                el.className = 'text-[11px] font-semibold text-botanical-700 mt-1';
+            } else {
+                el.textContent = appState.lang === 'vi'
+                    ? 'Chưa xác nhận · giữ công thức nếu bỏ qua'
+                    : 'Not confirmed · formula stays if skipped';
+                el.className = 'text-[11px] font-medium text-gray-400 mt-1';
+            }
+        }
+
+        // Apply a confirmed brew 4 hours before the configured strain time.
+        // If nothing was confirmed, the schedule is left untouched (that day is skipped).
+        function maybeRotateBrewSchedule() {
+            const sched = appState.schedule;
+            const pending = sched && sched.pendingBrew;
+            if (!pending || !pending.recipeId || !pending.targetDate) return;
+
+            const todayIso = getFormattedDate(0).iso;
+            if (pending.targetDate !== todayIso) return;
+
+            if (Date.now() < getRotateThreshold().getTime()) return;
+
+            const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
+            if (!plan.recipes.length) return;
+
+            const confirmedIdx = plan.recipes.findIndex(r => r.id === pending.recipeId);
+            if (confirmedIdx < 0) return; // formula temporarily unavailable; retry next tick
+
+            const confirmedRec = plan.recipes[confirmedIdx];
+            const nextRec = plan.recipes[(confirmedIdx + 1) % plan.recipes.length];
+            sched.todayRecipeId = confirmedRec.id;
+            sched.tomorrowRecipeId = nextRec.id;
+            sched.lastUpdatedDate = todayIso;
+            sched.pendingBrew = null;
+            saveState();
+            renderAll();
+            showToast(appState.lang === 'vi'
+                ? `🔄 Đã chuyển mẻ ủ đêm qua sang hôm nay: ${getRecField(confirmedRec, 'name')}`
+                : `🔄 Yesterday's brew is now Today: ${getRecField(confirmedRec, 'name')}`);
+        }
+
         function updateClockAndDates() {
             const now = new Date();
             const clockEl = document.getElementById('live-clock-display');
@@ -1693,6 +1765,8 @@
             if (strainInput && appState.schedule.tomorrowStrainTime) {
                 strainInput.value = appState.schedule.tomorrowStrainTime;
             }
+
+            maybeRotateBrewSchedule();
         }
 
         function applyStaticTranslations() {
@@ -1885,6 +1959,8 @@
                     forecastEl.innerHTML = cards.join('');
                 }
             }
+
+            updatePendingBrewStatus();
         }
 
         function renderRecipesSection() {
@@ -2206,6 +2282,12 @@
                 showToast(t('emptyStockTitle'));
                 return;
             }
+
+            // Mark this brew as pending: it becomes "Today" 4h before tomorrow's strain time.
+            appState.schedule.pendingBrew = {
+                recipeId: rec.id,
+                targetDate: getFormattedDate(1).iso
+            };
 
             const gear = getGearMetrics();
             const steep = computeRealTimeSteepMetrics();
