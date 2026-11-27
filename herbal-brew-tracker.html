@@ -2345,10 +2345,9 @@
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
-            setInterval(() => {
-                updateClockAndDates();
-                renderScheduleSection();
-            }, 30000);
+            // Tick the visible clock every second; re-render schedule less often.
+            setInterval(updateClockAndDates, 1000);
+            setInterval(renderScheduleSection, 30000);
         });
     </script>
 </body>
