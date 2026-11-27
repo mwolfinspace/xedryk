@@ -22,7 +22,7 @@ pm2 save
 Environment variables:
 
 - `PORT` (default `4317`)
-- `HOST` (default `127.0.0.1`; set `SHARE_HOST=172.29.0.1` when the page container reaches the API over its Docker bridge)
+- `HOST` (default `127.0.0.1,172.29.0.1`; override with `SHARE_HOST` if the Docker bridge address changes)
 - `BOTANICALAB_SHARE_DATA` (default OS temp dir; keep outside web root)
 - `ALLOWED_ORIGIN` (default `https://about.xedryk.top`)
 - `SHARE_TTL_SECONDS` (default `259200` = 3 days)
