@@ -172,6 +172,43 @@
         html.dark [class~="border-slate-300"] { border-color: rgba(226, 232, 240, 0.25) !important; }
         html.dark [class*="divide-gray-200"] > * + * { border-color: rgba(158, 196, 173, 0.16) !important; }
         html.dark input, html.dark select, html.dark textarea { color-scheme: dark; }
+
+        /* Mobile/tablet touch targets: keep dense data, but make every control tappable. */
+        @media (max-width: 1023px) {
+            /* The desktop nav does not fit until full desktop width. */
+            header nav.md\:flex { display: none !important; }
+            header .md\:hidden { display: flex !important; }
+
+            button,
+            select,
+            input[type="time"],
+            input[type="datetime-local"],
+            input[type="number"] {
+                min-height: 42px;
+            }
+            button.text-\[10px\],
+            button.text-\[11px\],
+            select.text-\[11px\] {
+                font-size: 12px !important;
+            }
+            button.text-xs,
+            select.text-xs,
+            input.text-xs {
+                font-size: 13px !important;
+            }
+            .no-scrollbar > a {
+                min-height: 42px;
+                display: inline-flex;
+                align-items: center;
+                font-size: 13px;
+            }
+            #lang-toggle-btn,
+            #theme-toggle-btn,
+            #install-app-btn {
+                min-height: 42px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body class="antialiased selection:bg-botanical-200 selection:text-botanical-900 pb-20">
