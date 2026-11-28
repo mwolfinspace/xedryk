@@ -512,7 +512,13 @@
 
             <!-- Pantry Filter Bar -->
             <div class="mb-5 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-gray-200/80 shadow-2xs">
-                <div id="pantry-tier-tabs" class="flex flex-wrap items-center gap-1.5"></div>
+                <div class="flex flex-col gap-2">
+                    <div id="pantry-tier-tabs" class="flex flex-wrap items-center gap-1.5"></div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span id="pantry-sort-label" class="text-[10px] font-bold uppercase tracking-wider text-gray-400"></span>
+                        <div id="pantry-sort-buttons" class="flex flex-wrap items-center gap-1.5"></div>
+                    </div>
+                </div>
                 <div class="relative w-full md:w-64 shrink-0">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
                     <input type="text" id="pantry-search-input" oninput="updatePantrySearch(this.value)" placeholder="Lọc tên thảo mộc trong kho..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-xl bg-cream focus:bg-white focus:ring-2 focus:ring-botanical-500 outline-none">
@@ -814,6 +820,10 @@
                 sec3Tag: '30 Botanicals • Stock & Personal Allergy Controls',
                 sec3Title: 'Botanical Pantry Stock',
                 btnRestockCore: 'Restock 9 Core Herbs',
+                pantrySortLabel: 'Sort:',
+                pantrySortAvailable: 'In stock first',
+                pantrySortName: 'Name',
+                pantrySortTier: 'Core / Extra',
                 firstSetupTitle: 'First setup: start from an empty pantry',
                 firstSetupDesc: 'Enter the grams you actually have in each jar below. The first positive entry stamps today as imported/restocked; a later top-up over 50g (or the Restock button) starts a new freshness clock.',
                 freshSinceLabel: 'Imported / restocked:',
@@ -979,6 +989,10 @@
                 sec3Tag: 'Quản lý 30 Thảo Mộc • Hết hàng & Dị ứng cá nhân',
                 sec3Title: 'Kho Nguyên Liệu Thảo Mộc',
                 btnRestockCore: 'Nạp 9 món cơ bản',
+                pantrySortLabel: 'Sắp xếp:',
+                pantrySortAvailable: 'Có hàng trước',
+                pantrySortName: 'Tên',
+                pantrySortTier: 'Cơ bản / Mở rộng',
                 firstSetupTitle: 'Thiết lập lần đầu: kho bắt đầu từ 0g',
                 firstSetupDesc: 'Nhập số gram bạn đang có ở từng vị bên dưới. Lần nhập >0 đầu tiên sẽ ghi ngày nhập kho; lần tăng trên 50g (hoặc nút Nạp mới) sẽ bắt đầu chu kỳ tươi mới.',
                 freshSinceLabel: 'Nhập / nạp ngày:',
@@ -1196,6 +1210,7 @@
                     recipeCategory: 'all',
                     recipeSearch: '',
                     pantryTier: 'all',
+                    pantrySort: 'available',
                     pantrySearch: '',
                     scienceTier: 'all',
                     scienceSearch: '',
@@ -1784,6 +1799,7 @@
                 };
             }
             if (!['all', 'brew', 'stock'].includes(base.uiFilters.historyFilter)) base.uiFilters.historyFilter = 'all';
+            if (!['available', 'name', 'tier'].includes(base.uiFilters.pantrySort)) base.uiFilters.pantrySort = 'available';
 
             if (raw.schedule && typeof raw.schedule === 'object') {
                 Object.assign(base.schedule, copyUnknown(raw.schedule, ['todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime', 'lastUpdatedDate', 'pendingBrew', 'pendingBrews', 'brewTimingMode', 'customBrewTime', 'dailyChecks', 'rotation']));
@@ -1880,6 +1896,7 @@
                     theme: appState.theme,
                     setupComplete: appState.setupComplete,
                     userProfile: appState.userProfile,
+                    uiFilters: { pantrySort: appState.uiFilters.pantrySort },
                     schedule: {
                         todayRecipeId: appState.schedule.todayRecipeId,
                         tomorrowRecipeId: appState.schedule.tomorrowRecipeId,
@@ -1920,6 +1937,7 @@
                         theme: parsed.theme === 'dark' ? 'dark' : 'light',
                         setupComplete: parsed.setupComplete === true,
                         userProfile: parsed.userProfile,
+                        uiFilters: parsed.uiFilters,
                         schedule: parsed.schedule,
                         history: Array.isArray(parsed.brewLog) ? parsed.brewLog : [],
                         ingredients: DEFAULT_INGREDIENTS.map(d => ({
@@ -3021,7 +3039,9 @@
         }
 
         function renderRecipesSection() {
-            const plan = currentAdaptivePlan.allEvaluated ? currentAdaptivePlan : computeAdaptiveEngine();
+            // Recompute on every render so a newly added/restocked herb instantly
+            // reveals any formula that just became brewable.
+            const plan = computeAdaptiveEngine();
             const isEn = appState.lang === 'en';
             const f = appState.uiFilters;
 
@@ -3311,6 +3331,22 @@
                 }).join('');
             }
 
+            const sortLabelEl = document.getElementById('pantry-sort-label');
+            if (sortLabelEl) sortLabelEl.textContent = t('pantrySortLabel');
+            const sortEl = document.getElementById('pantry-sort-buttons');
+            if (sortEl) {
+                const sortOpts = [
+                    { id: 'available', label: `🟢 ${t('pantrySortAvailable')}` },
+                    { id: 'name', label: `🔤 ${t('pantrySortName')}` },
+                    { id: 'tier', label: `🌿 ${t('pantrySortTier')}` }
+                ];
+                sortEl.innerHTML = sortOpts.map(opt => {
+                    const active = f.pantrySort === opt.id;
+                    const cls = active ? 'bg-botanical-700 text-white border-botanical-800' : 'bg-cream hover:bg-botanical-50 text-gray-700 border-gray-200';
+                    return `<button type="button" onclick="setPantrySort('${opt.id}')" class="px-2.5 py-1 rounded-lg border text-[10px] font-bold transition ${cls}">${opt.label}</button>`;
+                }).join('');
+            }
+
             const bannerEl = document.getElementById('first-setup-banner');
             if (bannerEl) {
                 const totalHerbs = appState.ingredients.length;
@@ -3327,10 +3363,36 @@
             }
 
             const q = (f.pantrySearch || '').trim().toLowerCase();
-            const list = appState.ingredients.filter(ing => {
+            const filtered = appState.ingredients.filter(ing => {
                 if (f.pantryTier !== 'all' && ing.tier !== f.pantryTier) return false;
                 if (q && !`${ing.nameVi} ${ing.nameEn} ${ing.latin}`.toLowerCase().includes(q)) return false;
                 return true;
+            });
+
+            const sortMode = ['available', 'name', 'tier'].includes(f.pantrySort) ? f.pantrySort : 'available';
+            const collator = new Intl.Collator(isEn ? 'en' : 'vi', { sensitivity: 'base', numeric: true });
+            const tierRank = { core: 0, expansion_t1: 1, expansion_vn: 2 };
+            const hasStock = ing => !ing.isOutOfStock && Number(ing.currentGrams) > 0;
+            const compareTier = (a, b) => (tierRank[a.tier] ?? 3) - (tierRank[b.tier] ?? 3);
+            const compareName = (a, b) => collator.compare(getIngName(a), getIngName(b));
+
+            // Availability is always the primary key: in-stock jars stay above
+            // out-of-stock jars, then the selected sort decides the order inside
+            // each group. A restock raises the jar toward the top immediately.
+            const list = filtered.slice().sort((a, b) => {
+                const aStock = hasStock(a), bStock = hasStock(b);
+                if (aStock !== bStock) return aStock ? -1 : 1;
+                if (sortMode === 'name') return compareName(a, b);
+                if (sortMode === 'tier') {
+                    const byTier = compareTier(a, b);
+                    return byTier || compareName(a, b);
+                }
+                if (aStock) {
+                    const byGrams = Number(b.currentGrams || 0) - Number(a.currentGrams || 0);
+                    if (Math.abs(byGrams) > 0.001) return byGrams;
+                }
+                const byTier = compareTier(a, b);
+                return byTier || compareName(a, b);
             });
 
             const gridEl = document.getElementById('inventory-grid');
@@ -3734,6 +3796,12 @@
 
         function setPantryTier(tierId) {
             appState.uiFilters.pantryTier = tierId;
+            saveState();
+            renderInventorySection();
+        }
+
+        function setPantrySort(mode) {
+            appState.uiFilters.pantrySort = ['available', 'name', 'tier'].includes(mode) ? mode : 'available';
             saveState();
             renderInventorySection();
         }
