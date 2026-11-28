@@ -2,8 +2,23 @@
 <html lang="vi" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BotanicaLab — Herbal Brew, Allergy Matrix & 30-Herb Encyclopedia</title>
+
+    <!-- PWA / install metadata -->
+    <meta name="description" content="30 herbs, 113 herbal infusion formulas, allergy-safe brew planning, stock tracking and no-sign-in share codes.">
+    <meta name="theme-color" content="#244d38">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BotanicaLab">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="./apple-touch-icon-precomposed.png" sizes="180x180">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & Playfair Display -->
@@ -196,6 +211,10 @@
                     <button id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark theme" class="px-2.5 py-1.5 rounded-xl bg-botanical-50 hover:bg-botanical-100 text-botanical-900 border border-botanical-300 text-xs font-bold transition flex items-center gap-1 whitespace-nowrap shadow-xs">
                         <span id="theme-toggle-icon">🌙</span>
                         <span id="theme-toggle-label">Tối</span>
+                    </button>
+                    <button id="install-app-btn" onclick="handleInstallClick()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition flex items-center gap-1 whitespace-nowrap shadow-xs">
+                        <span>📲</span>
+                        <span id="install-app-label">Cài app</span>
                     </button>
                     <span id="storage-status-badge" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-botanical-100 text-botanical-700 whitespace-nowrap">
                         <span class="w-1.5 h-1.5 rounded-full bg-botanical-500 animate-pulse"></span>
@@ -774,6 +793,17 @@
         </div>
     </div>
 
+    <!-- PWA INSTALL HELP (iOS cannot use beforeinstallprompt) -->
+    <div id="install-help-modal" class="hidden fixed inset-0 z-[70] bg-black/70 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="install-help-title" onclick="if(event.target===this) closeInstallHelp()">
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 id="install-help-title" class="font-serif text-lg font-bold text-gray-900"></h3>
+            <p id="install-help-body" class="text-xs text-gray-600 mt-2 leading-relaxed"></p>
+            <div class="flex justify-end mt-4">
+                <button type="button" onclick="closeInstallHelp()" id="install-help-close" class="px-3 py-2 rounded-xl bg-botanical-700 hover:bg-botanical-900 text-white text-xs font-bold transition">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION BANNER -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
 
@@ -838,6 +868,13 @@
                 btnImport: 'Import',
                 btnExportShort: 'Backup JSON',
                 btnImportShort: 'Restore JSON',
+                installAppBtn: 'Install app',
+                installIosBtn: 'Add to Home',
+                installHelpTitleIos: 'Add BotanicaLab to your iPhone',
+                installHelpBodyIos: 'In Safari, tap the Share button, then choose "Add to Home Screen". The BotanicaLab icon will open the tracker full-screen, just like a native app.',
+                installHelpTitleAndroid: 'Install BotanicaLab',
+                installHelpBodyAndroid: 'Tap "Install app" and confirm. If your browser does not show the prompt, open its menu and choose "Install app" or "Add to Home screen".',
+                installHelpClose: 'Close',
                 simTitle: '🧪 Quick Pantry & Allergy Scenario Simulator:',
                 simHint: '1-tap test for stock depletion or allergy filtering',
                 simFull: '✅ 9 Core Ready',
@@ -1007,6 +1044,13 @@
                 btnImport: 'Nhập file',
                 btnExportShort: 'Sao lưu JSON',
                 btnImportShort: 'Khôi phục JSON',
+                installAppBtn: 'Cài app',
+                installIosBtn: 'Thêm vào màn hình',
+                installHelpTitleIos: 'Thêm BotanicaLab vào iPhone',
+                installHelpBodyIos: 'Trong Safari, bấm nút Chia sẻ rồi chọn "Thêm vào Màn hình chính". Biểu tượng BotanicaLab sẽ mở ứng dụng toàn màn hình như app thật.',
+                installHelpTitleAndroid: 'Cài BotanicaLab',
+                installHelpBodyAndroid: 'Bấm "Cài app" rồi xác nhận. Nếu trình duyệt không hiện hộp thoại, mở menu trình duyệt và chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".',
+                installHelpClose: 'Đóng',
                 simTitle: '🧪 Mô phỏng nhanh các kịch bản kho & dị ứng:',
                 simHint: 'Bấm thử 1 chạm để xem hệ thống tự thích ứng',
                 simFull: '✅ Đủ 9 món cơ bản',
@@ -4622,6 +4666,83 @@
             await initShareFromHash();
         }
 
+        // 12. PWA INSTALL: real Android/Chrome prompt + iOS Add-to-Home-Screen help
+        let deferredInstallPrompt = null;
+        let pwaInstallMode = 'unsupported';
+
+        function isStandalonePwa() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .catch((err) => console.warn('Service worker registration failed:', err));
+            });
+        }
+
+        function initPwaInstall() {
+            const btn = document.getElementById('install-app-btn');
+            const label = document.getElementById('install-app-label');
+            if (!btn || isStandalonePwa()) return;
+
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            if (isIOS) {
+                pwaInstallMode = 'ios';
+                btn.classList.remove('hidden');
+                if (label) label.textContent = t('installIosBtn');
+                return;
+            }
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredInstallPrompt = event;
+                pwaInstallMode = 'android';
+                btn.classList.remove('hidden');
+                if (label) label.textContent = t('installAppBtn');
+            });
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                btn.classList.add('hidden');
+            });
+        }
+
+        function showInstallHelp(mode) {
+            const modal = document.getElementById('install-help-modal');
+            if (!modal) return;
+            const ios = mode === 'ios';
+            const title = document.getElementById('install-help-title');
+            const body = document.getElementById('install-help-body');
+            const close = document.getElementById('install-help-close');
+            if (title) title.textContent = t(ios ? 'installHelpTitleIos' : 'installHelpTitleAndroid');
+            if (body) body.textContent = t(ios ? 'installHelpBodyIos' : 'installHelpBodyAndroid');
+            if (close) close.textContent = t('installHelpClose');
+            modal.classList.remove('hidden');
+        }
+
+        function closeInstallHelp() {
+            const modal = document.getElementById('install-help-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function handleInstallClick() {
+            if (pwaInstallMode === 'android' && deferredInstallPrompt) {
+                const promptEvent = deferredInstallPrompt;
+                deferredInstallPrompt = null;
+                promptEvent.prompt();
+                promptEvent.userChoice.finally(() => {
+                    const btn = document.getElementById('install-app-btn');
+                    if (btn) btn.classList.add('hidden');
+                });
+                return;
+            }
+            showInstallHelp(pwaInstallMode === 'ios' ? 'ios' : 'android');
+        }
+
         // 11. BOOTSTRAP
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
@@ -4629,6 +4750,8 @@
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
+            registerServiceWorker();
+            initPwaInstall();
             initShare();
             window.addEventListener('hashchange', () => { initShareFromHash(); });
             setInterval(updateClockAndDates, 1000);
