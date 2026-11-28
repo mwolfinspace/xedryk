@@ -308,8 +308,28 @@
                             </div>
                         </div>
 
+                        <!-- Brew timing: one nightly batch plus optional short daytime steeps -->
+                        <div class="mb-3 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 flex flex-wrap items-center gap-2 text-xs">
+                            <span data-i18n="brewTimingLabel" class="font-bold text-amber-900">Brew timing:</span>
+                            <label class="flex items-center gap-1 font-semibold text-gray-700 cursor-pointer">
+                                <input type="radio" name="brew-timing" value="night" checked onchange="updateBrewTimingMode(this.value)" class="accent-botanical-700">
+                                <span data-i18n="brewTimingNight">Tối nay → sáng mai</span>
+                            </label>
+                            <label class="flex items-center gap-1 font-semibold text-gray-700 cursor-pointer">
+                                <input type="radio" name="brew-timing" value="day" onchange="updateBrewTimingMode(this.value)" class="accent-amber-600">
+                                <span data-i18n="brewTimingDay">Ủ ngắn trong ngày</span>
+                            </label>
+                            <div id="custom-brew-time-wrap" class="hidden flex items-center gap-1.5 flex-wrap ml-auto">
+                                <span data-i18n="customStrainLabel" class="font-semibold text-gray-700">Vắt lúc:</span>
+                                <input type="datetime-local" id="custom-brew-time" onchange="saveCustomBrewTime(this.value)" class="px-2 py-1 rounded-lg border border-amber-300 bg-white font-bold text-amber-900 text-xs outline-none focus:ring-2 focus:ring-amber-500">
+                                <button type="button" onclick="setCustomBrewTime(1)" class="px-1.5 py-1 rounded-md bg-white hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-800 transition" data-i18n="customStrainPlus1">+1h</button>
+                                <button type="button" onclick="setCustomBrewTime(2)" class="px-1.5 py-1 rounded-md bg-white hover:bg-amber-100 border border-amber-200 text-[11px] font-semibold text-amber-800 transition" data-i18n="customStrainPlus2">+2h</button>
+                            </div>
+                        </div>
+
                         <div id="tonight-water-summary" class="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
                         </div>
+                        <div id="extra-brew-progress" class="space-y-2 mb-3"></div>
                         <div id="brew-progress-panel" class="hidden brew-panel-pulse mb-3 rounded-2xl border-2 border-botanical-500 bg-gradient-to-r from-botanical-50 to-amber-50 p-3 sm:p-4" role="status">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
@@ -743,7 +763,7 @@
             <p id="cancel-confirm-recipe" class="text-[11px] font-semibold text-botanical-700 mt-2"></p>
             <div class="flex flex-wrap gap-2 mt-4 justify-end">
                 <button type="button" onclick="closeCancelConfirm()" data-i18n="cancelConfirmKeep" class="px-3 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold transition">Giữ nguyên mẻ ủ</button>
-                <button type="button" id="cancel-confirm-yes" onclick="confirmCancelPendingBrew()" data-i18n="cancelConfirmYes" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-800 text-white text-xs font-bold shadow transition">Xác nhận hủy & hoàn kho</button>
+                <button type="button" id="cancel-confirm-yes" onclick="confirmCancelPendingBrew(cancelConfirmIndex)" data-i18n="cancelConfirmYes" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-800 text-white text-xs font-bold shadow transition">Xác nhận hủy & hoàn kho</button>
             </div>
         </div>
     </div>
@@ -844,6 +864,16 @@
                 cubesDropLabel: 'steel cubes',
                 totalBoilLabel: 'Boiled Water (22:00)',
                 strainTimeLabel: 'Tomorrow Strain Time:',
+                brewTimingLabel: 'Brew timing:',
+                brewTimingNight: '🌙 Tonight → tomorrow morning',
+                brewTimingDay: '☕ Short daytime steep',
+                customStrainLabel: 'Strain at:',
+                customStrainPlus1: '+1h',
+                customStrainPlus2: '+2h',
+                noBrewToday: '☀️ No brew logged for today',
+                lastBrewContext: 'Last logged brew: {name} on {date} (history only)',
+                dayBrewBadge: 'day steep',
+                nightBrewBadge: 'night steep',
                 logBadge: 'Auto-Log',
                 logTitle: 'Brewing History',
                 btnClearLogs: 'Clear Logs',
@@ -999,6 +1029,16 @@
                 cubesDropLabel: 'viên đá inox',
                 totalBoilLabel: 'Nước đun sôi (22h00)',
                 strainTimeLabel: 'Giờ rót bỏ xác ngày mai:',
+                brewTimingLabel: 'Thời điểm ủ:',
+                brewTimingNight: '🌙 Tối nay → sáng mai',
+                brewTimingDay: '☕ Ủ ngắn trong ngày',
+                customStrainLabel: 'Vắt lúc:',
+                customStrainPlus1: '+1 giờ',
+                customStrainPlus2: '+2 giờ',
+                noBrewToday: '☀️ Hôm nay chưa có mẻ đang uống',
+                lastBrewContext: 'Mẻ gần nhất: {name} ngày {date} (chỉ trong lịch sử)',
+                dayBrewBadge: 'ủ ngắn trong ngày',
+                nightBrewBadge: 'ủ qua đêm',
                 logBadge: 'Nhật ký tự động',
                 logTitle: 'Lịch Sử Pha Chế',
                 btnClearLogs: 'Xóa lịch sử',
@@ -1168,6 +1208,9 @@
                     tomorrowStrainTime: '08:00',
                     lastUpdatedDate: '',
                     pendingBrew: null,
+                    pendingBrews: [],
+                    brewTimingMode: 'night',
+                    customBrewTime: '',
                     dailyChecks: { date: '', flasks: {} },
                     rotation: {
                         seed: 20261127,
@@ -1743,24 +1786,39 @@
             if (!['all', 'brew', 'stock'].includes(base.uiFilters.historyFilter)) base.uiFilters.historyFilter = 'all';
 
             if (raw.schedule && typeof raw.schedule === 'object') {
-                Object.assign(base.schedule, copyUnknown(raw.schedule, ['todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime', 'lastUpdatedDate', 'pendingBrew', 'dailyChecks', 'rotation']));
+                Object.assign(base.schedule, copyUnknown(raw.schedule, ['todayRecipeId', 'tomorrowRecipeId', 'tomorrowStrainTime', 'lastUpdatedDate', 'pendingBrew', 'pendingBrews', 'brewTimingMode', 'customBrewTime', 'dailyChecks', 'rotation']));
                 base.schedule.todayRecipeId = raw.schedule.todayRecipeId || 'rec_1';
                 base.schedule.tomorrowRecipeId = raw.schedule.tomorrowRecipeId || 'rec_2';
                 base.schedule.tomorrowStrainTime = raw.schedule.tomorrowStrainTime || '08:00';
                 base.schedule.lastUpdatedDate = raw.schedule.lastUpdatedDate || '';
-                const pb = raw.schedule.pendingBrew;
-                if (pb && typeof pb === 'object' && pb.recipeId && pb.targetDate) {
-                    const cleanPb = copyUnknown(pb, []);
-                    cleanPb.recipeId = pb.recipeId;
-                    cleanPb.targetDate = pb.targetDate;
-                    cleanPb.confirmedAt = numOr(pb.confirmedAt, Date.now());
+                base.schedule.brewTimingMode = raw.schedule.brewTimingMode === 'day' ? 'day' : 'night';
+                base.schedule.customBrewTime = typeof raw.schedule.customBrewTime === 'string' ? raw.schedule.customBrewTime : '';
+                const cleanPending = (pb) => {
+                    if (!pb || typeof pb !== 'object' || !pb.recipeId || !pb.targetDate) return null;
+                    const out = copyUnknown(pb, []);
+                    out.recipeId = pb.recipeId;
+                    out.targetDate = pb.targetDate;
+                    out.confirmedAt = numOr(pb.confirmedAt, Date.now());
+                    out.strainAt = numOr(pb.strainAt, 0);
+                    out.strainTime = typeof pb.strainTime === 'string' ? pb.strainTime : '';
+                    out.brewId = pb.brewId || pb.id || '';
+                    out.kind = pb.kind === 'day' ? 'day' : 'night';
+                    if (typeof pb.prevSetupComplete === 'boolean') out.prevSetupComplete = pb.prevSetupComplete;
                     if (Array.isArray(pb.deducted)) {
-                        cleanPb.deducted = pb.deducted.filter(d => d && typeof d === 'object' && d.id).map(d => ({ id: d.id, grams: numOr(d.grams, 0) }));
+                        out.deducted = pb.deducted.filter(d => d && typeof d === 'object' && d.id).map(d => ({ id: d.id, grams: numOr(d.grams, 0) }));
                     }
-                    base.schedule.pendingBrew = cleanPb;
-                } else {
-                    base.schedule.pendingBrew = null;
-                }
+                    if (Array.isArray(pb.prevUsage)) {
+                        out.prevUsage = pb.prevUsage.filter(s => s && typeof s === 'object' && s.id && s.usage).map(s => ({ id: s.id, usage: sanitizeUsage(s.usage) }));
+                    }
+                    return out;
+                };
+                const migratedPending = cleanPending(raw.schedule.pendingBrew);
+                const pendingList = Array.isArray(raw.schedule.pendingBrews)
+                    ? raw.schedule.pendingBrews.map(cleanPending).filter(Boolean)
+                    : (migratedPending ? [migratedPending] : []);
+                if (!pendingList.length && migratedPending) pendingList.push(migratedPending);
+                base.schedule.pendingBrews = pendingList;
+                base.schedule.pendingBrew = pendingList[0] || null;
                 if (raw.schedule.dailyChecks && typeof raw.schedule.dailyChecks === 'object') {
                     base.schedule.dailyChecks.date = raw.schedule.dailyChecks.date || '';
                     base.schedule.dailyChecks.flasks = stripUnsafe(raw.schedule.dailyChecks.flasks || {});
@@ -1778,7 +1836,20 @@
                 }
             }
 
-            if (Array.isArray(raw.history)) base.history = raw.history.map(stripUnsafe);
+            if (Array.isArray(raw.history)) {
+                base.history = raw.history.map(entry => {
+                    const clean = stripUnsafe(entry);
+                    if (!clean.eventType || clean.eventType === 'brew') {
+                        clean.eventType = 'brew';
+                        clean.recipeId = typeof clean.recipeId === 'string' ? clean.recipeId : '';
+                        clean.confirmedAt = numOr(clean.confirmedAt, 0);
+                        clean.strainAt = numOr(clean.strainAt, 0);
+                        clean.strainTime = typeof clean.strainTime === 'string' ? clean.strainTime : '';
+                        clean.kind = clean.kind === 'day' ? 'day' : 'night';
+                    }
+                    return clean;
+                });
+            }
             if (raw.customExtensions && typeof raw.customExtensions === 'object') base.customExtensions = stripUnsafe(raw.customExtensions);
 
             base.schemaVersion = SCHEMA_VERSION;
@@ -1809,9 +1880,23 @@
                     theme: appState.theme,
                     setupComplete: appState.setupComplete,
                     userProfile: appState.userProfile,
-                    schedule: { todayRecipeId: appState.schedule.todayRecipeId, tomorrowRecipeId: appState.schedule.tomorrowRecipeId, tomorrowStrainTime: appState.schedule.tomorrowStrainTime },
+                    schedule: {
+                        todayRecipeId: appState.schedule.todayRecipeId,
+                        tomorrowRecipeId: appState.schedule.tomorrowRecipeId,
+                        tomorrowStrainTime: appState.schedule.tomorrowStrainTime,
+                        brewTimingMode: appState.schedule.brewTimingMode,
+                        customBrewTime: appState.schedule.customBrewTime
+                    },
                     stock: appState.ingredients.filter(i => !i.isOutOfStock).map(i => [i.id, i.currentGrams]),
-                    usage: appState.ingredients.filter(i => i.usage && (i.usage.useCount || i.usage.lastUsedDate || i.usage.freshSince)).map(i => [i.id, i.usage])
+                    usage: appState.ingredients.filter(i => i.usage && (i.usage.useCount || i.usage.lastUsedDate || i.usage.freshSince)).map(i => [i.id, i.usage]),
+                    // Compact brew journal keeps the cookie fallback date-aware without exceeding cookie limits.
+                    brewLog: appState.history.filter(h => !h.eventType || h.eventType === 'brew').slice(0, 8).map(h => ({
+                        id: h.id, recipeId: h.recipeId || '', recipeCode: h.recipeCode || '', recipeName: h.recipeName || '',
+                        isoDate: h.isoDate || '', targetDate: h.targetDate || '', strainTime: h.strainTime || '',
+                        strainAt: h.strainAt || 0, confirmedAt: h.confirmedAt || 0, status: h.status || '',
+                        summaryText: h.summaryText || '', timestamp: h.timestamp || '', totalGrams: h.totalGrams || 0,
+                        herbs: Array.isArray(h.herbs) ? h.herbs.slice(0, 8) : []
+                    }))
                 });
                 setCookie(STORAGE_KEY + '_c', compactCookie, 365);
             } catch (err) { console.warn('Storage warning:', err); }
@@ -1836,6 +1921,7 @@
                         setupComplete: parsed.setupComplete === true,
                         userProfile: parsed.userProfile,
                         schedule: parsed.schedule,
+                        history: Array.isArray(parsed.brewLog) ? parsed.brewLog : [],
                         ingredients: DEFAULT_INGREDIENTS.map(d => ({
                             id: d.id,
                             currentGrams: stockMap.has(d.id) ? stockMap.get(d.id) : 0,
@@ -1889,6 +1975,7 @@
                     if (!payload || (!Array.isArray(payload.ingredients) && !payload.schedule && !payload.gear)) throw new Error('Invalid');
                     const prevVer = Number(payload.schemaVersion || parsed.schemaVersion) || 1;
                     appState = migrateAndSanitizeState(payload);
+                    reconcileScheduleFromHistory({ force: true });
                     saveState();
                     applyStaticTranslations();
                     updateClockAndDates();
@@ -2141,34 +2228,8 @@
         // On a new day, quietly point "tonight" at a fresh formula unless the
         // user already chose one or a brew is still steeping.
         function autoRotateTomorrowSelection() {
-            const sched = appState.schedule;
-            if (!sched) return;
-            const rot = getRotationState();
-            const todayIso = getFormattedDate(0).iso;
-            if (!rot.autoDate) {
-                rot.autoDate = todayIso;
-                saveState();
-                return;
-            }
-            if (rot.autoDate === todayIso) return;
-            if (sched.pendingBrew && sched.pendingBrew.recipeId) {
-                rot.autoDate = todayIso;
-                saveState();
-                return;
-            }
-            const plan = (currentAdaptivePlan && currentAdaptivePlan.recipes) ? currentAdaptivePlan : computeAdaptiveEngine();
-            if (!plan.recipes || !plan.recipes.length) {
-                rot.autoDate = todayIso;
-                saveState();
-                return;
-            }
-            const fresh = buildFreshRotation(plan.recipes, 2).find(r => r.id !== sched.todayRecipeId);
-            if (fresh) {
-                sched.tomorrowRecipeId = fresh.id;
-                markRotationUsed(fresh.id, todayIso);
-            }
-            rot.autoDate = todayIso;
-            saveState();
+            // Kept as a compatibility hook: schedule rotation is now derived from history.
+            return reconcileScheduleFromHistory();
         }
 
         function numOr(val, fallback) { const n = Number(val); return Number.isFinite(n) ? n : fallback; }
@@ -2184,9 +2245,10 @@
         }
 
         function getPendingStrainDate(pending) {
+            if (Number(pending.strainAt) > 0) return new Date(Number(pending.strainAt));
             const parts = String(pending.targetDate || '').split('-');
             const y = parseInt(parts[0], 10), mo = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
-            const tp = String((appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00').split(':');
+            const tp = String(pending.strainTime || (appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00').split(':');
             const h = parseInt(tp[0], 10), mi = parseInt(tp[1], 10);
             if (![y, mo, d, h, mi].every(Number.isFinite)) {
                 const fb = new Date(); fb.setDate(fb.getDate() + 1); fb.setHours(8, 0, 0, 0); return fb;
@@ -2194,14 +2256,205 @@
             return new Date(y, mo - 1, d, h, mi, 0, 0);
         }
 
-        function getBrewTimeline() {
-            const pending = appState.schedule && appState.schedule.pendingBrew;
+        // Multiple pending brews are allowed (a short daytime steep plus the nightly batch).
+        // `pendingBrew` remains the primary/first entry for backward compatibility.
+        function getPendingList() {
+            const sched = appState.schedule || (appState.schedule = {});
+            if (!Array.isArray(sched.pendingBrews)) sched.pendingBrews = [];
+            if (!sched.pendingBrew && sched.pendingBrews.length) sched.pendingBrew = sched.pendingBrews[0];
+            if (sched.pendingBrew && !sched.pendingBrews.some(p =>
+                p === sched.pendingBrew
+                || (p.brewId && p.brewId === sched.pendingBrew.brewId)
+                || (p.historyId && p.historyId === sched.pendingBrew.historyId)
+            )) {
+                sched.pendingBrews.push(sched.pendingBrew);
+            }
+            sched.pendingBrews.sort((a, b) => getPendingStrainDate(a).getTime() - getPendingStrainDate(b).getTime());
+            sched.pendingBrew = sched.pendingBrews[0] || null;
+            return sched.pendingBrews;
+        }
+
+        function getBrewTimeline(index = 0) {
+            const list = getPendingList();
+            const pending = list[index];
             if (!pending || !pending.recipeId || !pending.targetDate) return null;
             const target = getPendingStrainDate(pending);
             const startedAt = Number(pending.confirmedAt) || Date.now();
             const duration = Math.max(1000, target.getTime() - startedAt);
             const remaining = target.getTime() - Date.now();
-            return { pending, target, startedAt, duration, remaining };
+            return { pending, target, startedAt, duration, remaining, index, list };
+        }
+
+        function getAllBrewTimelines() {
+            return getPendingList().map((_, idx) => getBrewTimeline(idx)).filter(Boolean);
+        }
+
+        // ---- History-driven schedule reconciliation ---------------------------------
+        // The log is the source of truth after F5/revisit/share sync. Persisted
+        // schedule IDs are only a cache; they are rebuilt from brew records below.
+        function findPlanRecipe(recipeId, plan) {
+            if (!recipeId) return null;
+            const list = [
+                ...((plan && plan.allEvaluated) || []),
+                ...((plan && plan.recipes) || []),
+                ...(Array.isArray(BASE_RECIPES) ? BASE_RECIPES : [])
+            ];
+            return list.find(r => r && r.id === recipeId) || null;
+        }
+
+        function resolveHistoryRecipeId(entry, plan) {
+            if (!entry) return '';
+            if (entry.recipeId && findPlanRecipe(entry.recipeId, plan)) return entry.recipeId;
+            if (entry.recipeCode) {
+                const byCode = [...((plan && plan.allEvaluated) || []), ...(Array.isArray(BASE_RECIPES) ? BASE_RECIPES : [])]
+                    .find(r => r && r.code === entry.recipeCode);
+                if (byCode) return byCode.id;
+            }
+            if (entry.recipeName) {
+                const byName = [...((plan && plan.allEvaluated) || []), ...(Array.isArray(BASE_RECIPES) ? BASE_RECIPES : [])]
+                    .find(r => r && getRecField(r, 'name') === entry.recipeName);
+                if (byName) return byName.id;
+            }
+            return typeof entry.recipeId === 'string' ? entry.recipeId : '';
+        }
+
+        function getHistoryStrainMs(entry) {
+            if (Number(entry.strainAt) > 0) return Number(entry.strainAt);
+            const dateIso = entry.targetDate || entry.isoDate || '';
+            const parts = String(dateIso).split('-');
+            const y = parseInt(parts[0], 10), mo = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+            const timeStr = entry.strainTime || (appState.schedule && appState.schedule.tomorrowStrainTime) || '08:00';
+            const tp = String(timeStr).split(':');
+            const h = parseInt(tp[0], 10), mi = parseInt(tp[1], 10);
+            if (![y, mo, d, h, mi].every(Number.isFinite)) return 0;
+            return new Date(y, mo - 1, d, h, mi, 0, 0).getTime();
+        }
+
+        function getHistoryBrews(plan) {
+            return (Array.isArray(appState.history) ? appState.history : [])
+                .filter(entry => !entry.eventType || entry.eventType === 'brew')
+                .map(entry => ({
+                    entry,
+                    id: entry.id,
+                    recipeId: resolveHistoryRecipeId(entry, plan),
+                    confirmedAt: Number(entry.confirmedAt) || 0,
+                    strainAt: getHistoryStrainMs(entry),
+                    sourceDate: entry.isoDate || '',
+                    targetDate: entry.targetDate || entry.isoDate || '',
+                    kind: entry.kind === 'day' ? 'day' : 'night',
+                    status: entry.status || ''
+                }))
+                .sort((a, b) => (a.strainAt - b.strainAt) || (a.confirmedAt - b.confirmedAt));
+        }
+
+        function applyCompletionToHistory(pending, mode, completedAtMs, minsEarly = 0) {
+            const entry = (Array.isArray(appState.history) ? appState.history : [])
+                .find(h => h.id === pending.historyId);
+            if (!entry) return;
+            if (entry.status === 'early' && mode === 'onTime') return;
+            entry.eventType = entry.eventType || 'brew';
+            entry.completedAt = new Date(completedAtMs || Date.now()).toISOString();
+            entry.status = mode;
+            const isEn = appState.lang === 'en';
+            const suffix = mode === 'early'
+                ? (isEn ? ` ⏱ Strained early (${minsEarly}m)` : ` ⏱ Vắt sớm (${minsEarly} phút)`)
+                : (isEn ? ' ⏰ Strained on time' : ' ⏰ Vắt đúng giờ');
+            if (typeof entry.summaryText !== 'string') entry.summaryText = '';
+            if (!entry.summaryText.includes(suffix)) entry.summaryText += suffix;
+        }
+
+        let lastReconcileMinute = -1;
+        function reconcileScheduleFromHistory(options = {}) {
+            const now = Date.now();
+            const minute = Math.floor(now / 60000);
+            if (!options.force && minute === lastReconcileMinute) return false;
+            lastReconcileMinute = minute;
+
+            const sched = appState.schedule || (appState.schedule = {});
+            const todayIso = localIsoDate(0);
+            const rotateWindowMs = 4 * 60 * 60 * 1000;
+            let changed = false;
+
+            // 1) Any pending brew whose strain time has passed is already a success in the log.
+            const pendingList = getPendingList();
+            const activePending = [];
+            pendingList.forEach(pending => {
+                const strainMs = getPendingStrainDate(pending).getTime();
+                if (now >= strainMs) {
+                    applyCompletionToHistory(pending, 'onTime', strainMs);
+                    changed = true;
+                } else {
+                    activePending.push(pending);
+                }
+            });
+            if (changed && activePending.length !== pendingList.length) {
+                sched.pendingBrews = activePending;
+                sched.pendingBrew = activePending[0] || null;
+            }
+
+            // 2) Rebuild today's drink strictly from brew records inside today's window.
+            const plan = computeAdaptiveEngine();
+            const brews = getHistoryBrews(plan);
+            let todayBrew = null;
+            brews.forEach(brew => {
+                if (!brew.recipeId) return;
+                const inTodayWindow = brew.targetDate === todayIso || (brew.kind === 'day' && brew.sourceDate === todayIso);
+                if (!inTodayWindow) return;
+                const started = now >= brew.strainAt - rotateWindowMs;
+                const completed = (brew.status && brew.status !== 'steeping') || now >= brew.strainAt;
+                if (!started && !completed) return;
+                if (!todayBrew || brew.strainAt >= todayBrew.strainAt) todayBrew = brew;
+            });
+            // With no brew records at all we are still in setup/legacy state: keep the
+            // saved ID (the UI still shows the welcome gate). Once a journal exists,
+            // an empty today slot is intentional instead of showing a stale formula.
+            if (brews.length > 0) {
+                const nextTodayId = todayBrew ? todayBrew.recipeId : '';
+                if (sched.todayRecipeId !== nextTodayId) {
+                    sched.todayRecipeId = nextTodayId;
+                    changed = true;
+                }
+            } else if (!sched.todayRecipeId) {
+                sched.todayRecipeId = 'rec_1';
+                changed = true;
+            }
+            if (todayBrew && sched.lastUpdatedDate !== todayIso) {
+                sched.lastUpdatedDate = todayIso;
+                changed = true;
+            }
+
+            // 3) Tonight follows an already-confirmed night brew, otherwise a fresh
+            //    formula that is not the last logged one (unless stock forces a repeat).
+            const nightPending = (sched.pendingBrews || []).find(p => p.kind !== 'day');
+            if (nightPending) {
+                if (nightPending.recipeId && sched.tomorrowRecipeId !== nightPending.recipeId) {
+                    sched.tomorrowRecipeId = nightPending.recipeId;
+                    changed = true;
+                }
+            } else {
+                const rot = getRotationState();
+                const validIds = new Set(plan.recipes.map(r => r.id));
+                const lastBrew = [...brews].reverse().find(b => b.recipeId && validIds.has(b.recipeId));
+                const lastId = lastBrew ? lastBrew.recipeId : '';
+                const needsPick = rot.autoDate !== todayIso
+                    || !validIds.has(sched.tomorrowRecipeId)
+                    || (lastId && sched.tomorrowRecipeId === lastId && plan.recipes.length > 1);
+                if (needsPick && plan.recipes.length) {
+                    const ranked = buildFreshRotation(plan.recipes, Math.min(plan.recipes.length, 12));
+                    const pick = ranked.find(r => r.id !== lastId && r.id !== sched.todayRecipeId)
+                        || ranked.find(r => r.id !== lastId)
+                        || plan.recipes[0];
+                    if (pick && sched.tomorrowRecipeId !== pick.id) {
+                        sched.tomorrowRecipeId = pick.id;
+                        changed = true;
+                    }
+                    rot.autoDate = todayIso;
+                    changed = true;
+                }
+            }
+
+            if (changed) saveState();
+            return changed;
         }
 
         function formatBrewCountdown(ms) {
@@ -2226,43 +2479,114 @@
             }
         }
 
+        function fillBrewPanel(tl, ids) {
+            const panel = document.getElementById(ids.panel);
+            if (!panel) return;
+            const locked = tl.remaining <= BREW_LOCK_WINDOW_MS;
+            const isEn = appState.lang === 'en';
+            const rec = (currentAdaptivePlan.allEvaluated || []).find(r => r.id === tl.pending.recipeId);
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+            set(ids.countdown, formatBrewCountdown(tl.remaining));
+            const fill = document.getElementById(ids.fill);
+            if (fill) fill.style.width = `${Math.max(0, Math.min(100, (tl.remaining / tl.duration) * 100)).toFixed(3)}%`;
+            set(ids.title, locked
+                ? (isEn ? '🔒 Steeping · Locked' : '🔒 Đang ủ · Đã khóa')
+                : (isEn ? '⏳ Steeping · Tap to cancel' : '⏳ Đang ủ · Nhấn để hủy'));
+            set(ids.sub, rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId);
+            set(ids.hint, locked
+                ? (isEn ? '🔒 Cancel disabled' : '🔒 Không thể hủy')
+                : (isEn ? 'Tap to cancel · confirm required' : 'Nhấn để hủy · cần xác nhận'));
+            set(ids.lockNote, locked
+                ? (isEn ? 'Within 60 min of strain time' : 'Dưới 60 phút trước giờ vắt')
+                : (isEn ? `Cancel closes in ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}` : `Khóa hủy sau ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}`));
+            const earlyBtn = document.getElementById(ids.earlyBtn);
+            if (earlyBtn) {
+                earlyBtn.classList.toggle('hidden', !locked);
+                earlyBtn.textContent = isEn ? '⏱ Strain early' : '⏱ Vắt sớm';
+                earlyBtn.onclick = () => strainBrewEarly(tl.index);
+            }
+            panel.style.borderColor = locked ? '#d97706' : '#3d7a5a';
+            panel.style.cursor = locked ? 'default' : 'pointer';
+            if (ids.panel === 'brew-progress-panel') {
+                panel.onclick = locked ? null : openCancelConfirm;
+            } else {
+                panel.onclick = locked ? null : () => openCancelConfirm(tl.index);
+            }
+        }
+
         function updateBrewProgressUI() {
             const panel = document.getElementById('brew-progress-panel');
             const btn = document.getElementById('btn-brew-tonight');
             if (!panel || !btn) return;
-            const tl = getBrewTimeline();
-            if (!tl) { panel.classList.add('hidden'); btn.classList.remove('hidden'); return; }
-            if (tl.remaining <= 0) { finalizePendingBrew('onTime', tl); return; }
+            let timelines = getAllBrewTimelines();
+            const expired = timelines.find(tl => tl.remaining <= 0);
+            if (expired) { finalizePendingBrew('onTime', expired); return; }
+            timelines = timelines.filter(tl => tl.remaining > 0);
 
-            btn.classList.add('hidden');
-            panel.classList.remove('hidden');
-            const locked = tl.remaining <= BREW_LOCK_WINDOW_MS;
-            const isEn = appState.lang === 'en';
-            const rec = (currentAdaptivePlan.allEvaluated || []).find(r => r.id === tl.pending.recipeId);
-            document.getElementById('brew-progress-countdown').textContent = formatBrewCountdown(tl.remaining);
-            document.getElementById('brew-progress-fill').style.width = `${Math.max(0, Math.min(100, (tl.remaining / tl.duration) * 100)).toFixed(3)}%`;
-            document.getElementById('brew-progress-title').textContent = locked
-                ? (isEn ? '🔒 Steeping · Locked' : '🔒 Đang ủ · Đã khóa')
-                : (isEn ? '⏳ Steeping · Tap to cancel' : '⏳ Đang ủ · Nhấn để hủy');
-            document.getElementById('brew-progress-sub').textContent = rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId;
-            document.getElementById('brew-progress-hint').textContent = locked
-                ? (isEn ? '🔒 Cancel disabled' : '🔒 Không thể hủy')
-                : (isEn ? 'Tap to cancel · confirm required' : 'Nhấn để hủy · cần xác nhận');
-            document.getElementById('brew-progress-lock-note').textContent = locked
-                ? (isEn ? 'Within 60 min of strain time' : 'Dưới 60 phút trước giờ vắt')
-                : (isEn ? `Cancel closes in ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}` : `Khóa hủy sau ${formatBrewCountdown(tl.remaining - BREW_LOCK_WINDOW_MS)}`);
-            const earlyBtn = document.getElementById('btn-strain-early');
-            earlyBtn.classList.toggle('hidden', !locked);
-            earlyBtn.textContent = isEn ? '⏱ Strain early' : '⏱ Vắt sớm';
+            // A short daytime steep does not block the nightly batch; a night brew does.
+            const hasNightPending = timelines.some(tl => tl.pending.kind !== 'day');
+            btn.classList.toggle('hidden', hasNightPending);
+            panel.classList.toggle('hidden', timelines.length === 0);
 
-            panel.style.borderColor = locked ? '#d97706' : '#3d7a5a';
-            panel.style.cursor = locked ? 'default' : 'pointer';
-            panel.onclick = locked ? null : openCancelConfirm;
+            if (timelines.length) {
+                fillBrewPanel(timelines[0], {
+                    panel: 'brew-progress-panel',
+                    countdown: 'brew-progress-countdown',
+                    fill: 'brew-progress-fill',
+                    title: 'brew-progress-title',
+                    sub: 'brew-progress-sub',
+                    hint: 'brew-progress-hint',
+                    lockNote: 'brew-progress-lock-note',
+                    earlyBtn: 'btn-strain-early'
+                });
+            }
+
+            const extraWrap = document.getElementById('extra-brew-progress');
+            if (extraWrap) {
+                extraWrap.innerHTML = timelines.slice(1).map(tl => {
+                    const i = tl.index;
+                    return `
+                    <div id="extra-brew-progress-panel-${i}" class="brew-panel-pulse rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-botanical-50 p-3" role="status">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div id="extra-brew-progress-title-${i}" class="text-xs font-black uppercase tracking-wider text-amber-800"></div>
+                                <div id="extra-brew-progress-sub-${i}" class="text-[11px] text-gray-600 mt-0.5 truncate"></div>
+                            </div>
+                            <div id="extra-brew-progress-countdown-${i}" class="font-mono text-lg font-black text-botanical-900 tabular-nums"></div>
+                        </div>
+                        <div class="mt-2 h-2.5 rounded-full bg-white/80 border border-amber-200 overflow-hidden">
+                            <div id="extra-brew-progress-fill-${i}" class="brew-progress-fill h-full rounded-full" style="width:100%"></div>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between gap-2">
+                            <span id="extra-brew-progress-lock-note-${i}" class="text-[10px] text-gray-500"></span>
+                            <span id="extra-brew-progress-hint-${i}" class="text-[10px] font-semibold text-amber-700"></span>
+                            <button type="button" id="extra-strain-early-${i}" class="hidden px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold shadow transition">⏱ ${appState.lang === 'en' ? 'Strain early' : 'Vắt sớm'}</button>
+                        </div>
+                    </div>`;
+                }).join('');
+                timelines.slice(1).forEach(tl => {
+                    const i = tl.index;
+                    fillBrewPanel(tl, {
+                        panel: `extra-brew-progress-panel-${i}`,
+                        countdown: `extra-brew-progress-countdown-${i}`,
+                        fill: `extra-brew-progress-fill-${i}`,
+                        title: `extra-brew-progress-title-${i}`,
+                        sub: `extra-brew-progress-sub-${i}`,
+                        hint: `extra-brew-progress-hint-${i}`,
+                        lockNote: `extra-brew-progress-lock-note-${i}`,
+                        earlyBtn: `extra-strain-early-${i}`
+                    });
+                });
+            }
         }
 
-        function openCancelConfirm() {
-            const tl = getBrewTimeline();
+        let cancelConfirmIndex = 0;
+        function openCancelConfirm(index = 0) {
+            // Direct onclick assignment passes the MouseEvent as the first argument.
+            if (typeof index !== 'number' || !Number.isFinite(index)) index = 0;
+            const tl = getBrewTimeline(index);
             if (!tl || tl.remaining <= BREW_LOCK_WINDOW_MS) return;
+            cancelConfirmIndex = index;
             const rec = (currentAdaptivePlan.allEvaluated || []).find(r => r.id === tl.pending.recipeId);
             const recipeEl = document.getElementById('cancel-confirm-recipe');
             if (recipeEl) recipeEl.textContent = rec ? `${rec.code} • ${getRecField(rec, 'name')}` : tl.pending.recipeId;
@@ -2275,17 +2599,17 @@
             if (modal) modal.classList.add('hidden');
         }
 
-        function confirmCancelPendingBrew() {
+        function confirmCancelPendingBrew(index = 0) {
             closeCancelConfirm();
-            cancelPendingBrew();
+            cancelPendingBrew(index);
         }
 
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') closeCancelConfirm();
         });
 
-        function cancelPendingBrew() {
-            const tl = getBrewTimeline();
+        function cancelPendingBrew(index = 0) {
+            const tl = getBrewTimeline(index) || getBrewTimeline();
             if (!tl) return;
             if (tl.remaining <= BREW_LOCK_WINDOW_MS) return;
             (tl.pending.deducted || []).forEach(d => {
@@ -2298,36 +2622,52 @@
                 const ing = appState.ingredients.find(i => i.id === s.id);
                 if (ing && s.usage) ing.usage = { ...s.usage };
             });
-            if (tl.pending.historyId) appState.history = appState.history.filter(h => h.id !== tl.pending.historyId);
-            if (tl.pending.prevTodayRecipeId !== undefined) appState.schedule.todayRecipeId = tl.pending.prevTodayRecipeId;
-            if (tl.pending.prevTomorrowRecipeId !== undefined) appState.schedule.tomorrowRecipeId = tl.pending.prevTomorrowRecipeId;
-            if (tl.pending.prevLastUpdatedDate !== undefined) appState.schedule.lastUpdatedDate = tl.pending.prevLastUpdatedDate;
-            if (tl.pending.prevSetupComplete !== undefined) appState.setupComplete = !!tl.pending.prevSetupComplete;
-            appState.schedule.pendingBrew = null;
+            if (tl.pending.historyId) {
+                appState.history = appState.history.filter(h => h.id !== tl.pending.historyId);
+            }
+            const remaining = getPendingList().filter(p =>
+                p !== tl.pending
+                && !(tl.pending.historyId && p.historyId === tl.pending.historyId)
+            );
+            appState.schedule.pendingBrews = remaining;
+            appState.schedule.pendingBrew = remaining[0] || null;
+
+            const hasLaterBrew = (appState.history || []).some(h =>
+                (!h.eventType || h.eventType === 'brew')
+                && h.id !== tl.pending.historyId
+                && Number(h.confirmedAt || 0) > Number(tl.pending.confirmedAt || 0)
+            );
+            // Restore the exact pre-brew IDs only when this was the last pending brew
+            // and no later journal entry now owns the schedule.
+            if (!remaining.length && !hasLaterBrew) {
+                if (tl.pending.prevTodayRecipeId !== undefined) appState.schedule.todayRecipeId = tl.pending.prevTodayRecipeId;
+                if (tl.pending.prevTomorrowRecipeId !== undefined) appState.schedule.tomorrowRecipeId = tl.pending.prevTomorrowRecipeId;
+                if (tl.pending.prevLastUpdatedDate !== undefined) appState.schedule.lastUpdatedDate = tl.pending.prevLastUpdatedDate;
+                if (tl.pending.prevSetupComplete !== undefined) appState.setupComplete = !!tl.pending.prevSetupComplete;
+            }
+            reconcileScheduleFromHistory({ force: true });
             saveState(); renderAll();
             showToast(appState.lang === 'en' ? '↩️ Brew cancelled & stock restored' : '↩️ Đã hủy mẻ ủ & hoàn lại nguyên liệu');
         }
 
-        function strainBrewEarly() {
-            const tl = getBrewTimeline();
+        function strainBrewEarly(index = 0) {
+            const tl = getBrewTimeline(index) || getBrewTimeline();
             if (!tl) return;
             if (tl.remaining <= BREW_LOCK_WINDOW_MS) finalizePendingBrew(tl.remaining <= 0 ? 'onTime' : 'early', tl);
         }
 
         function finalizePendingBrew(mode, tl) {
-            const entry = appState.history.find(h => h.id === tl.pending.historyId);
+            if (!tl) return;
             const minsEarly = Math.max(0, Math.round(tl.remaining / 60000));
-            if (entry) {
-                entry.eventType = entry.eventType || 'brew';
-                entry.completedAt = new Date().toISOString();
-                entry.status = mode;
-                const isEn = appState.lang === 'en';
-                const suffix = mode === 'early'
-                    ? (isEn ? ` ⏱ Strained early (${minsEarly}m)` : ` ⏱ Vắt sớm (${minsEarly} phút)`)
-                    : (isEn ? ' ⏰ Strained on time' : ' ⏰ Vắt đúng giờ');
-                if (!entry.summaryText.includes(suffix)) entry.summaryText += suffix;
-            }
-            appState.schedule.pendingBrew = null;
+            const completedAt = mode === 'early' ? Date.now() : tl.target.getTime();
+            applyCompletionToHistory(tl.pending, mode, completedAt, minsEarly);
+            const remaining = getPendingList().filter(p =>
+                p !== tl.pending
+                && !(tl.pending.historyId && p.historyId === tl.pending.historyId)
+            );
+            appState.schedule.pendingBrews = remaining;
+            appState.schedule.pendingBrew = remaining[0] || null;
+            reconcileScheduleFromHistory({ force: true });
             saveState(); renderAll();
             showToast(appState.lang === 'en'
                 ? (mode === 'early' ? '⏱ Marked as strained early' : '⏰ Brew completed on time')
@@ -2335,21 +2675,8 @@
         }
 
         function maybeRotateBrewSchedule() {
-            const sched = appState.schedule, pending = sched && sched.pendingBrew;
-            if (!pending || !pending.recipeId || !pending.targetDate) return;
-            const todayIso = getFormattedDate(0).iso;
-            if (pending.targetDate !== todayIso || Date.now() < getRotateThreshold().getTime()) return;
-            const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
-            if (!plan.recipes.length) return;
-            const idx = plan.recipes.findIndex(r => r.id === pending.recipeId);
-            if (idx < 0) return;
-            const confirmedRec = plan.recipes[idx];
-            sched.todayRecipeId = confirmedRec.id;
-            markRotationUsed(confirmedRec.id, todayIso);
-            const freshNext = buildFreshRotation(plan.recipes, 4).find(r => r.id !== confirmedRec.id);
-            sched.tomorrowRecipeId = (freshNext || plan.recipes[(idx + 1) % plan.recipes.length]).id;
-            sched.lastUpdatedDate = todayIso;
-            saveState(); renderAll();
+            // The 4h-before-strain rotation is handled by reconcileScheduleFromHistory().
+            return reconcileScheduleFromHistory();
         }
 
         function updateClockAndDates() {
@@ -2371,9 +2698,10 @@
             }
             const strainInput = document.getElementById('input-tomorrow-strain-time');
             if (strainInput && appState.schedule.tomorrowStrainTime) strainInput.value = appState.schedule.tomorrowStrainTime;
-            autoRotateTomorrowSelection();
+            const scheduleChanged = autoRotateTomorrowSelection();
             maybeRotateBrewSchedule();
             updateBrewProgressUI();
+            if (scheduleChanged) renderAll();
         }
 
         function applyStaticTranslations() {
@@ -2492,7 +2820,7 @@
             }
 
             if (!setupGate && plan.recipes.length > 0) {
-                if (!plan.recipes.some(r => r.id === appState.schedule.todayRecipeId)) appState.schedule.todayRecipeId = plan.recipes[0].id;
+                if (appState.schedule.todayRecipeId && !plan.recipes.some(r => r.id === appState.schedule.todayRecipeId)) appState.schedule.todayRecipeId = plan.recipes[0].id;
                 if (!plan.recipes.some(r => r.id === appState.schedule.tomorrowRecipeId)) {
                     appState.schedule.tomorrowRecipeId = (freshRotation[1] || plan.recipes[Math.min(1, plan.recipes.length - 1)]).id;
                 }
@@ -2519,10 +2847,11 @@
                 });
             }
 
+            const noBrewToday = !setupGate && !appState.schedule.todayRecipeId;
             if (selToday) {
-                selToday.disabled = setupGate;
-                selToday.innerHTML = setupGate ? `<option value="">${t('setupTodayPlaceholder')}</option>` : optionsHTML;
-                selToday.value = setupGate ? '' : (appState.schedule.todayRecipeId || '');
+                selToday.disabled = setupGate || noBrewToday;
+                selToday.innerHTML = (setupGate || noBrewToday) ? `<option value="">${t(setupGate ? 'setupTodayPlaceholder' : 'noBrewToday')}</option>` : optionsHTML;
+                selToday.value = (setupGate || noBrewToday) ? '' : (appState.schedule.todayRecipeId || '');
             }
             if (selTomorrow) {
                 selTomorrow.disabled = false;
@@ -2530,12 +2859,28 @@
                 selTomorrow.value = appState.schedule.tomorrowRecipeId || '';
             }
 
-            const todayRec = plan.recipes.find(r => r.id === appState.schedule.todayRecipeId) || plan.recipes[0];
+            const todayRec = plan.recipes.find(r => r.id === appState.schedule.todayRecipeId);
             const tomorrowRec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
-            document.getElementById('today-recipe-display').innerHTML = setupGate
-                ? `<div class="p-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 text-xs text-amber-800 leading-relaxed">${t('setupTodayPlaceholder')}</div>`
-                : buildMiniRecipeHTML(todayRec, false);
-            document.getElementById('tomorrow-recipe-display').innerHTML = buildMiniRecipeHTML(tomorrowRec, true);
+            let todayHTML;
+            if (setupGate) {
+                todayHTML = `<div class="p-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 text-xs text-amber-800 leading-relaxed">${t('setupTodayPlaceholder')}</div>`;
+            } else if (noBrewToday) {
+                const brewRecords = getHistoryBrews(plan).sort((a, b) => (b.confirmedAt || b.strainAt) - (a.confirmedAt || a.strainAt));
+                const last = brewRecords[0];
+                const lastRecipe = last ? findPlanRecipe(last.recipeId, plan) : null;
+                const label = lastRecipe ? `${lastRecipe.code} • ${getRecField(lastRecipe, 'name')}` : (last?.entry?.recipeName || '—');
+                const dateLabel = formatFreshDate(last?.targetDate || last?.sourceDate || '', isEn);
+                const historyLine = last
+                    ? `<p class="mt-1.5 text-[11px] text-amber-800/80">${t('lastBrewContext').replace('{name}', label).replace('{date}', dateLabel)}</p>`
+                    : '';
+                todayHTML = `<div class="p-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 text-xs text-amber-800 leading-relaxed">${t('noBrewToday')}${historyLine}</div>`;
+            } else {
+                todayHTML = todayRec ? buildMiniRecipeHTML(todayRec, false) : `<div class="text-xs text-gray-500">${t('emptyStockTitle')}</div>`;
+            }
+            document.getElementById('today-recipe-display').innerHTML = todayHTML;
+            document.getElementById('tomorrow-recipe-display').innerHTML = tomorrowRec
+                ? buildMiniRecipeHTML(tomorrowRec, true)
+                : `<div class="text-xs text-gray-500">${t('emptyStockTitle')}</div>`;
 
             const checklistEl = document.getElementById('daily-flasks-checklist');
             if (checklistEl) {
@@ -2616,6 +2961,7 @@
                     forecastEl.innerHTML = cards.join('');
                 }
             }
+            updateBrewTimingUI();
             updatePendingBrewStatus();
         }
 
@@ -3468,21 +3814,99 @@
             renderScheduleSection();
         }
 
+        function localDateTimeInputValue(date) {
+            const d = date instanceof Date ? date : new Date(date);
+            if (Number.isNaN(d.getTime())) return '';
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function getStrainDateFor(targetDateIso, timeStr) {
+            const parts = String(targetDateIso || '').split('-');
+            const y = parseInt(parts[0], 10), mo = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+            const tp = String(timeStr || '08:00').split(':');
+            const h = parseInt(tp[0], 10), mi = parseInt(tp[1], 10);
+            if (![y, mo, d, h, mi].every(Number.isFinite)) return null;
+            return new Date(y, mo - 1, d, h, mi, 0, 0);
+        }
+
+        function setCustomBrewTime(hoursFromNow) {
+            const raw = new Date(Date.now() + (Number(hoursFromNow) || 1) * 3600000);
+            const rounded = new Date(Math.ceil(raw.getTime() / 300000) * 300000);
+            const value = localDateTimeInputValue(rounded);
+            appState.schedule.customBrewTime = value;
+            const input = document.getElementById('custom-brew-time');
+            if (input) input.value = value;
+            saveState();
+        }
+
+        function saveCustomBrewTime(value) {
+            appState.schedule.customBrewTime = typeof value === 'string' ? value : '';
+            saveState();
+        }
+
+        function updateBrewTimingUI() {
+            const mode = appState.schedule.brewTimingMode === 'day' ? 'day' : 'night';
+            const radios = document.querySelectorAll('input[name="brew-timing"]');
+            radios.forEach(radio => { radio.checked = radio.value === mode; });
+            const wrap = document.getElementById('custom-brew-time-wrap');
+            if (wrap) wrap.classList.toggle('hidden', mode !== 'day');
+            const input = document.getElementById('custom-brew-time');
+            if (input && appState.schedule.customBrewTime) input.value = appState.schedule.customBrewTime;
+        }
+
+        function updateBrewTimingMode(mode) {
+            appState.schedule.brewTimingMode = mode === 'day' ? 'day' : 'night';
+            if (mode === 'day' && !appState.schedule.customBrewTime) setCustomBrewTime(2);
+            updateBrewTimingUI();
+            saveState();
+        }
+
+        function getCustomStrainDate() {
+            const value = appState.schedule.customBrewTime;
+            if (!value) return null;
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) return null;
+            return date;
+        }
+
         function confirmBrewTonight() {
             const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
             const rec = plan.recipes.find(r => r.id === appState.schedule.tomorrowRecipeId) || plan.recipes[0];
             if (!rec) { showToast(t('emptyStockTitle')); return; }
+            const isDayBrew = appState.schedule.brewTimingMode === 'day';
+            let strainDate;
+            if (isDayBrew) {
+                strainDate = getCustomStrainDate();
+                if (!strainDate) {
+                    showToast(appState.lang === 'en' ? '⏰ Pick a strain time in the future' : '⏰ Chọn giờ vắt trong tương lai');
+                    updateBrewTimingUI();
+                    return;
+                }
+            } else {
+                strainDate = getStrainDateFor(getFormattedDate(1).iso, appState.schedule.tomorrowStrainTime);
+                if (!strainDate) strainDate = getPendingStrainDate({ targetDate: getFormattedDate(1).iso });
+            }
+            const strainIso = `${strainDate.getFullYear()}-${String(strainDate.getMonth() + 1).padStart(2, '0')}-${String(strainDate.getDate()).padStart(2, '0')}`;
+            const strainTime = `${String(strainDate.getHours()).padStart(2, '0')}:${String(strainDate.getMinutes()).padStart(2, '0')}`;
+            const kind = isDayBrew ? 'day' : 'night';
             const wasSetup = !appState.setupComplete;
             appState.setupComplete = true;
 
-            const historyId = Date.now() + Math.random();
-            appState.schedule.pendingBrew = {
-                recipeId: rec.id, targetDate: getFormattedDate(1).iso, confirmedAt: Date.now(), historyId,
+            const historyId = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8);
+            const pending = {
+                id: historyId, brewId: historyId, kind,
+                recipeId: rec.id, targetDate: strainIso, strainAt: strainDate.getTime(), strainTime,
+                confirmedAt: Date.now(), historyId,
                 deducted: [], prevUsage: [], prevTodayRecipeId: appState.schedule.todayRecipeId,
                 prevTomorrowRecipeId: appState.schedule.tomorrowRecipeId,
                 prevLastUpdatedDate: appState.schedule.lastUpdatedDate || '',
                 prevSetupComplete: !wasSetup
             };
+            const pendingList = getPendingList();
+            pendingList.push(pending);
+            appState.schedule.pendingBrews = pendingList;
+            appState.schedule.pendingBrew = pendingList[0];
 
             const gear = getGearMetrics(), steep = computeRealTimeSteepMetrics(), isEn = appState.lang === 'en';
             const deductedList = [];
@@ -3492,19 +3916,20 @@
                     ing.currentGrams = Math.max(0, Math.round((ing.currentGrams - item.grams) * 10) / 10);
                     if (ing.currentGrams <= 0) ing.isOutOfStock = true;
                     deductedList.push(`${getIngName(ing)} (${item.grams}g)`);
-                    appState.schedule.pendingBrew.deducted.push({ id: item.id, grams: item.grams });
-                    appState.schedule.pendingBrew.prevUsage.push({ id: item.id, usage: { ...getHerbUsage(ing) } });
+                    pending.deducted.push({ id: item.id, grams: item.grams });
+                    pending.prevUsage.push({ id: item.id, usage: { ...getHerbUsage(ing) } });
                 }
             });
 
-            markHerbsUsed(appState.schedule.pendingBrew.deducted, getFormattedDate(0).iso);
+            markHerbsUsed(pending.deducted, getFormattedDate(0).iso);
 
             const nowStr = new Date().toLocaleString(isEn ? 'en-US' : 'vi-VN', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const strainLabel = `${strainIso} ${strainTime}`;
             const summaryText = isEn
-                ? `Steeped ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, est. ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`
-                : `Ủ ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${steep.strainStr}, ${steep.steepHours}h, dự kiến ${steep.predictedTempC}°C): ${deductedList.join(', ')}.`;
+                ? `Steeped ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${strainLabel}, est. ${steep.predictedTempC}°C, ${isDayBrew ? t('dayBrewBadge') : t('nightBrewBadge')}): ${deductedList.join(', ')}.`
+                : `Ủ ${gear.boiledWaterMl}ml (${steep.startClockStr} ➔ ${strainLabel}, dự kiến ${steep.predictedTempC}°C, ${t(isDayBrew ? 'dayBrewBadge' : 'nightBrewBadge')}): ${deductedList.join(', ')}.`;
 
-            const brewHerbs = appState.schedule.pendingBrew.deducted.map(d => {
+            const brewHerbs = pending.deducted.map(d => {
                 const ing = appState.ingredients.find(i => i.id === d.id);
                 return { id: d.id, name: ing ? getIngName(ing) : d.id, grams: d.grams };
             });
@@ -3512,10 +3937,16 @@
             const startSuffix = wasSetup ? (isEn ? ' · 🚀 Journal started' : ' · 🚀 Bắt đầu nhật ký') : '';
             pushHistory({
                 id: historyId,
+                brewId: historyId,
                 eventType: 'brew',
                 status: 'steeping',
+                kind,
+                recipeId: rec.id,
+                confirmedAt: pending.confirmedAt,
+                strainAt: pending.strainAt,
+                strainTime,
                 isoDate: getFormattedDate(0).iso,
-                targetDate: getFormattedDate(1).iso,
+                targetDate: strainIso,
                 totalGrams,
                 herbs: brewHerbs,
                 recipeCode: rec.code,
@@ -3523,6 +3954,7 @@
                 summaryText: summaryText + startSuffix,
                 timestamp: nowStr
             });
+            reconcileScheduleFromHistory({ force: true });
             saveState(); renderAll();
             showToast(isEn ? '✅ Brew logged & stock deducted!' : '✅ Đã ghi nhật ký & trừ kho tự động!');
         }
@@ -3916,6 +4348,7 @@
                     throw new Error(shareText('shareNoApi', 'Invalid shared data'));
                 }
                 appState = migrateAndSanitizeState(data);
+                reconcileScheduleFromHistory({ force: true });
                 saveState();
                 applyStaticTranslations();
                 updateClockAndDates();
@@ -4124,6 +4557,7 @@
         // 11. BOOTSTRAP
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
+            reconcileScheduleFromHistory({ force: true });
             applyStaticTranslations();
             updateClockAndDates();
             renderAll();
