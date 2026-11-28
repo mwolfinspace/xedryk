@@ -794,6 +794,20 @@
         </div>
     </div>
 
+    <!-- DIRECT BREW CONFIRMATION: quick log for a tea already prepared / tasted -->
+    <div id="brewed-confirm-modal" class="hidden fixed inset-0 z-[65] bg-black/70 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="brewed-confirm-title" onclick="if(event.target===this) closeBrewedConfirm()">
+        <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 id="brewed-confirm-title" data-i18n="brewedConfirmTitle" class="font-serif text-lg font-bold text-gray-900">Ghi nhận mẻ đã pha?</h3>
+            <p id="brewed-confirm-body" data-i18n="brewedConfirmBody" class="text-xs text-gray-600 mt-2 leading-relaxed">Nguyên liệu của công thức này sẽ được trừ đúng số gram và lưu vào lịch sử ngay tại lúc bạn nhấn “Đã pha”.</p>
+            <p id="brewed-confirm-recipe" class="text-[11px] font-semibold text-botanical-700 mt-2"></p>
+            <p id="brewed-confirm-detail" class="text-[11px] text-gray-500 mt-1"></p>
+            <div class="flex flex-wrap gap-2 mt-4 justify-end">
+                <button type="button" onclick="closeBrewedConfirm()" data-i18n="brewedConfirmKeep" class="px-3 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold transition">Giữ nguyên kho</button>
+                <button type="button" id="brewed-confirm-yes" onclick="confirmBrewedNow()" data-i18n="brewedConfirmYes" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-800 text-white text-xs font-bold shadow transition">✅ Đã pha, trừ kho</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PWA INSTALL HELP (iOS cannot use beforeinstallprompt) -->
     <div id="install-help-modal" class="hidden fixed inset-0 z-[70] bg-black/70 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="install-help-title" onclick="if(event.target===this) closeInstallHelp()">
         <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
@@ -837,6 +851,11 @@
                 cancelConfirmBody: 'This restores the exact deducted grams, usage dates and the log entry. This cannot be undone after confirming.',
                 cancelConfirmKeep: 'Keep steeping',
                 cancelConfirmYes: 'Yes, cancel & refund',
+                brewedConfirmTitle: 'Log this brew?',
+                brewedConfirmBody: 'The exact scaled grams for this formula will be deducted from stock and saved to history at the moment you tapped “Brewed”.',
+                brewedConfirmKeep: 'Keep stock',
+                brewedConfirmYes: '✅ Yes, brewed',
+                statusBrewed: 'Brewed',
                 forecastHeader: '5-Day Balanced Rotation Forecast',
                 forecastSub: 'Uses only in-stock & allergy-safe formulas',
                 sec2Tag: '113 Conflict-Free Synergistic Formulas',
@@ -990,6 +1009,7 @@
                 vnBadge: 'VN Pack',
                 remainingLabel: 'Remaining:',
                 setTonightBtn: 'Set Tonight',
+                brewNowBtn: '☕ Brewed',
                 mechLabel: 'Synergy:',
                 measureNote: 'Eye measure: flower/leaf counts are estimates for a ~2L flask — a scale is still king.',
                 leftLabel: 'Left',
@@ -1020,6 +1040,11 @@
                 cancelConfirmBody: 'Thao tác này hoàn lại đúng số gram đã trừ, ngày dùng và mục nhật ký. Sau khi xác nhận sẽ không thể hoàn tác.',
                 cancelConfirmKeep: 'Giữ nguyên mẻ ủ',
                 cancelConfirmYes: 'Xác nhận hủy & hoàn kho',
+                brewedConfirmTitle: 'Ghi nhận mẻ đã pha?',
+                brewedConfirmBody: 'Số gram đã co giãn của công thức sẽ được trừ đúng khỏi kho và lưu vào lịch sử ngay tại lúc bạn nhấn “Đã pha”.',
+                brewedConfirmKeep: 'Giữ nguyên kho',
+                brewedConfirmYes: '✅ Vâng, đã pha',
+                statusBrewed: 'Đã pha',
                 forecastHeader: 'Dự báo xoay vòng cân bằng 5 ngày tới',
                 forecastSub: 'Chỉ dùng công thức đủ kho & an toàn dị ứng',
                 sec2Tag: 'Ma trận Dược lý 113 Công thức • Không xung khắc',
@@ -1173,6 +1198,7 @@
                 vnBadge: 'VN Mới',
                 remainingLabel: 'Còn lại:',
                 setTonightBtn: 'Chọn tối nay',
+                brewNowBtn: '☕ Đã pha',
                 mechLabel: 'Cơ chế:',
                 measureNote: 'Đong bằng mắt: số bông/lá là ước lượng cho bình ~2L; cân điện tử vẫn chuẩn hơn.',
                 leftLabel: 'Còn',
@@ -2681,8 +2707,137 @@
             cancelPendingBrew(index);
         }
 
+        // Direct “Brewed” action: a completed brew that was already prepared/tasted.
+        // It never creates a pending steep, so the nightly gate/cancel flow stays intact.
+        let brewedConfirmRecipeId = '';
+        let brewedConfirmPressedAt = 0;
+
+        function openBrewedConfirm(recipeId) {
+            const plan = currentAdaptivePlan.recipes ? currentAdaptivePlan : computeAdaptiveEngine();
+            const rec = plan.recipes.find(r => r.id === recipeId);
+            if (!rec || !rec.isAvailable) {
+                showToast(appState.lang === 'en'
+                    ? 'This formula is not currently brewable'
+                    : 'Công thức này hiện chưa pha được');
+                return;
+            }
+            brewedConfirmRecipeId = recipeId;
+            // Stamp the exact moment the Brewed button was tapped, not the later Yes tap.
+            brewedConfirmPressedAt = Date.now();
+            const isEn = appState.lang === 'en';
+            const totalGrams = Math.round(rec.ingredients.reduce((s, i) => s + Number(i.grams || 0), 0) * 10) / 10;
+            const stamp = new Date(brewedConfirmPressedAt).toLocaleString(isEn ? 'en-US' : 'vi-VN', {
+                month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            const recipeEl = document.getElementById('brewed-confirm-recipe');
+            if (recipeEl) recipeEl.textContent = `${rec.code} • ${getRecField(rec, 'name')}`;
+            const detailEl = document.getElementById('brewed-confirm-detail');
+            if (detailEl) detailEl.textContent = isEn
+                ? `${rec.ingredients.length} herbs · ${totalGrams}g · ${stamp}`
+                : `${rec.ingredients.length} vị · ${totalGrams}g · ${stamp}`;
+            const modal = document.getElementById('brewed-confirm-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeBrewedConfirm() {
+            const modal = document.getElementById('brewed-confirm-modal');
+            if (modal) modal.classList.add('hidden');
+            brewedConfirmRecipeId = '';
+            brewedConfirmPressedAt = 0;
+        }
+
+        function confirmBrewedNow() {
+            const recipeId = brewedConfirmRecipeId;
+            const pressedAt = brewedConfirmPressedAt || Date.now();
+            if (!recipeId) return;
+            closeBrewedConfirm();
+
+            const plan = computeAdaptiveEngine();
+            const rec = plan.recipes.find(r => r.id === recipeId);
+            if (!rec || !rec.isAvailable) {
+                showToast(appState.lang === 'en'
+                    ? '⚠️ Stock changed — this formula is no longer available'
+                    : '⚠️ Tồn kho đã đổi — công thức này không còn pha được');
+                renderAll();
+                return;
+            }
+
+            const isEn = appState.lang === 'en';
+            const deducted = [];
+            const brewHerbs = [];
+            const deductedList = [];
+            for (const item of rec.ingredients) {
+                const grams = Math.round(Number(item.grams) * 10) / 10;
+                const ing = appState.ingredients.find(i => i.id === item.id);
+                if (!(grams > 0) || !ing || ing.isOutOfStock || (Number(ing.currentGrams) || 0) + 1e-9 < grams) {
+                    showToast(isEn
+                        ? '⚠️ Stock changed — nothing was deducted'
+                        : '⚠️ Tồn kho đã đổi — không trừ nguyên liệu');
+                    renderAll();
+                    return;
+                }
+                deducted.push({ id: item.id, grams });
+                brewHerbs.push({ id: item.id, name: getIngName(ing), grams });
+                deductedList.push(`${getIngName(ing)} (${grams}g)`);
+            }
+
+            // All checks passed: deduct the exact displayed grams once.
+            deducted.forEach(d => {
+                const ing = appState.ingredients.find(i => i.id === d.id);
+                if (!ing) return;
+                ing.currentGrams = Math.max(0, Math.round((Number(ing.currentGrams) - d.grams) * 10) / 10);
+                if (ing.currentGrams <= 0) ing.isOutOfStock = true;
+            });
+            const todayIso = localIsoDate(0);
+            markHerbsUsed(deducted, todayIso);
+
+            const pressedDate = new Date(pressedAt);
+            const timeOnly = `${String(pressedDate.getHours()).padStart(2, '0')}:${String(pressedDate.getMinutes()).padStart(2, '0')}`;
+            const timestamp = pressedDate.toLocaleString(isEn ? 'en-US' : 'vi-VN', {
+                month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            const totalGrams = Math.round(brewHerbs.reduce((sum, h) => sum + Number(h.grams), 0) * 10) / 10;
+            const summaryText = isEn
+                ? `☕ Already brewed at ${timeOnly} (tap time ${timestamp}): ${deductedList.join(', ')}.`
+                : `☕ Đã pha lúc ${timeOnly} (thời điểm nhấn ${timestamp}): ${deductedList.join(', ')}.`;
+            const historyId = `brewed-${pressedAt}-${Math.random().toString(36).slice(2, 8)}`;
+
+            pushHistory({
+                id: historyId,
+                brewId: historyId,
+                eventType: 'brew',
+                status: 'done',
+                source: 'brewedButton',
+                kind: 'day',
+                recipeId: rec.id,
+                brewedAt: pressedAt,
+                confirmedAt: pressedAt,
+                completedAt: pressedDate.toISOString(),
+                strainAt: pressedAt,
+                strainTime: timeOnly,
+                isoDate: todayIso,
+                targetDate: todayIso,
+                totalGrams,
+                herbs: brewHerbs,
+                recipeCode: rec.code,
+                recipeName: getRecField(rec, 'name'),
+                summaryText,
+                timestamp
+            });
+            markRotationUsed(rec.id, todayIso);
+            reconcileScheduleFromHistory({ force: true });
+            saveState();
+            renderAll();
+            showToast(isEn
+                ? '✅ Brew logged · stock deducted at your tap time'
+                : '✅ Đã ghi nhận mẻ pha · trừ kho đúng lúc bạn nhấn');
+        }
+
         document.addEventListener('keydown', event => {
-            if (event.key === 'Escape') closeCancelConfirm();
+            if (event.key === 'Escape') {
+                closeCancelConfirm();
+                closeBrewedConfirm();
+            }
         });
 
         function cancelPendingBrew(index = 0) {
@@ -3301,9 +3456,14 @@
                 let footerActionHTML = '';
                 if (rec.isAvailable) {
                     footerActionHTML = `
-                        <button onclick="selectFormulaForTonight('${rec.id}')" class="px-3 py-1.5 rounded-xl bg-botanical-50 hover:bg-botanical-700 text-botanical-800 hover:text-white border border-botanical-200 text-xs font-bold transition whitespace-nowrap">
-                            🌙 ${t('setTonightBtn')}
-                        </button>`;
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <button type="button" onclick="selectFormulaForTonight('${rec.id}')" class="px-3 py-1.5 rounded-xl bg-botanical-50 hover:bg-botanical-700 text-botanical-800 hover:text-white border border-botanical-200 text-xs font-bold transition whitespace-nowrap">
+                                🌙 ${t('setTonightBtn')}
+                            </button>
+                            <button type="button" onclick="openBrewedConfirm('${rec.id}')" title="${isEn ? 'Log this tea as already brewed' : 'Ghi nhận mẻ trà này đã được pha'}" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-800 text-white border border-emerald-700 text-xs font-bold transition whitespace-nowrap shadow-xs active:scale-[0.98]">
+                                ${t('brewNowBtn')}
+                            </button>
+                        </div>`;
                 } else if (isBlocked) {
                     footerActionHTML = `
                         <span class="px-2.5 py-1.5 rounded-xl bg-red-100 text-red-800 border border-red-300 text-[11px] font-extrabold whitespace-nowrap">
@@ -3885,7 +4045,9 @@
                         ? (appState.lang === 'en' ? 'Steeping' : 'Đang ủ')
                         : (entry.status === 'early'
                             ? (appState.lang === 'en' ? 'Strained early' : 'Vắt sớm')
-                            : (appState.lang === 'en' ? 'Strained on time' : 'Vắt đúng giờ')))
+                            : (entry.status === 'done' || entry.source === 'brewedButton'
+                                ? t('statusBrewed')
+                                : (appState.lang === 'en' ? 'Strained on time' : 'Vắt đúng giờ'))))
                     : '';
                 const statusHTML = statusText
                     ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-botanical-50 text-botanical-700 border border-botanical-200 shrink-0">${statusText}</span>`
