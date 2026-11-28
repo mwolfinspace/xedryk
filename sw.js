@@ -1,12 +1,10 @@
 /* BotanicaLab service worker: offline app shell, never intercepts /api/share. */
-const CACHE_VERSION = 'botanicalab-pwa-v2';
+const CACHE_VERSION = 'botanicalab-pwa-v1';
 const APP_SHELL = [
   './',
   './index.html',
   './herbal-brew-tracker.html',
   './herbal_brew_inventory_tracker.html',
-  './assets/css/styles.css',
-  './assets/js/scripts.js',
   './manifest.json',
   './favicon.ico',
   './favicon-16x16.png',
